@@ -8,7 +8,9 @@ if (!isMainThread && parentPort) {
   parentPort.on('message', (job) => {
     try {
       const res = engine.runGames(job.cfg, job.policy, job.seed, job.from, job.to);
-      const data = job.compact ? res.map((r) => [r.win ? 1 : 0, r.progress, r.index]) : res;
+      // compact: [win, progress, index, sumHp, minHp, lowHp, healOver, damageTaken]
+      const data = job.compact ? res.map((r) => [r.win ? 1 : 0, r.progress, r.index, r.sumHp, r.minHp, r.lowHp,
+        r.st.healOver, r.st.dmgFist + r.st.dmgWeapon + r.st.dmgMagic + r.st.dmgThief]) : res;
       parentPort.postMessage({ id: job.id, data });
     } catch (e) {
       parentPort.postMessage({ id: job.id, error: String(e && e.stack || e) });

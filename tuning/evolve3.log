@@ -1,0 +1,60 @@
+Evolution: Population 48, Elite 8, 1000 Spiele je Variante und Generation, 50 Generationen
+Gen   1: beste 71.1% (Ø über 1 Gen. 71.1%)  Population Ø 58.7%  185s, 48000 Spiele
+Gen   2: beste 70.6% (Ø über 1 Gen. 70.6%)  Population Ø 58.9%  340s, 96000 Spiele
+Gen   3: beste 70.0% (Ø über 1 Gen. 70.0%)  Population Ø 56.6%  478s, 144000 Spiele
+Gen   4: beste 70.5% (Ø über 2 Gen. 70.2%)  Population Ø 60.4%  622s, 192000 Spiele
+Gen   5: beste 69.9% (Ø über 3 Gen. 70.1%)  Population Ø 60.7%  771s, 240000 Spiele
+Gen   6: beste 71.3% (Ø über 1 Gen. 71.3%)  Population Ø 60.9%  916s, 288000 Spiele
+Gen   7: beste 69.0% (Ø über 5 Gen. 70.2%)  Population Ø 57.8%  1055s, 336000 Spiele
+Gen   8: beste 71.6% (Ø über 6 Gen. 70.4%)  Population Ø 58.1%  1177s, 384000 Spiele
+Gen   9: beste 69.2% (Ø über 7 Gen. 70.2%)  Population Ø 59.2%  1310s, 432000 Spiele
+Gen  10: beste 69.8% (Ø über 5 Gen. 70.0%)  Population Ø 57.5%  1448s, 480000 Spiele
+Gen  11: beste 70.7% (Ø über 6 Gen. 70.1%)  Population Ø 58.8%  1593s, 528000 Spiele
+Gen  12: beste 70.8% (Ø über 7 Gen. 70.2%)  Population Ø 59.7%  1734s, 576000 Spiele
+Gen  13: beste 72.3% (Ø über 8 Gen. 70.5%)  Population Ø 61.2%  1878s, 624000 Spiele
+Gen  14: beste 73.2% (Ø über 9 Gen. 70.8%)  Population Ø 58.4%  2026s, 672000 Spiele
+Gen  15: beste 70.6% (Ø über 10 Gen. 70.8%)  Population Ø 60.3%  2168s, 720000 Spiele
+Gen  16: beste 68.2% (Ø über 11 Gen. 70.5%)  Population Ø 59.6%  2312s, 768000 Spiele
+Gen  17: beste 72.7% (Ø über 1 Gen. 72.7%)  Population Ø 60.5%  2466s, 816000 Spiele
+Gen  18: beste 71.5% (Ø über 2 Gen. 72.1%)  Population Ø 59.9%  2614s, 864000 Spiele
+Gen  19: beste 72.5% (Ø über 2 Gen. 72.2%)  Population Ø 60.5%  2764s, 912000 Spiele
+Gen  20: beste 68.8% (Ø über 3 Gen. 71.1%)  Population Ø 57.8%  2922s, 960000 Spiele
+Gen  21: beste 70.6% (Ø über 4 Gen. 71.0%)  Population Ø 62.0%  3086s, 1008000 Spiele
+Gen  22: beste 72.8% (Ø über 1 Gen. 72.8%)  Population Ø 60.8%  3255s, 1056000 Spiele
+Gen  23: beste 72.4% (Ø über 18 Gen. 70.9%)  Population Ø 61.1%  3405s, 1104000 Spiele
+Gen  24: beste 71.2% (Ø über 19 Gen. 70.9%)  Population Ø 60.3%  3567s, 1152000 Spiele
+Gen  25: beste 72.8% (Ø über 8 Gen. 71.0%)  Population Ø 63.1%  3720s, 1200000 Spiele
+Gen  26: beste 71.9% (Ø über 1 Gen. 71.9%)  Population Ø 62.2%  3874s, 1248000 Spiele
+Gen  27: beste 71.7% (Ø über 2 Gen. 71.8%)  Population Ø 61.2%  4025s, 1296000 Spiele
+Gen  28: beste 71.2% (Ø über 3 Gen. 71.6%)  Population Ø 61.2%  4174s, 1344000 Spiele
+Gen  29: beste 71.1% (Ø über 2 Gen. 71.2%)  Population Ø 61.3%  4337s, 1392000 Spiele
+Gen  30: beste 72.4% (Ø über 1 Gen. 72.4%)  Population Ø 61.5%  4485s, 1440000 Spiele
+Gen  31: beste 71.9% (Ø über 2 Gen. 72.0%)  Population Ø 59.8%  4611s, 1488000 Spiele
+Gen  32: beste 71.1% (Ø über 3 Gen. 71.7%)  Population Ø 62.0%  4746s, 1536000 Spiele
+Gen  33: beste 69.5% (Ø über 4 Gen. 71.1%)  Population Ø 60.0%  4885s, 1584000 Spiele
+Gen  34: beste 70.1% (Ø über 17 Gen. 70.9%)  Population Ø 59.8%  5032s, 1632000 Spiele
+Gen  35: beste 71.7% (Ø über 1 Gen. 71.7%)  Population Ø 63.4%  5180s, 1680000 Spiele
+Gen  36: beste 70.6% (Ø über 2 Gen. 71.0%)  Population Ø 60.6%  5325s, 1728000 Spiele
+Gen  37: beste 71.7% (Ø über 1 Gen. 71.7%)  Population Ø 63.1%  5466s, 1776000 Spiele
+Gen  38: beste 72.0% (Ø über 4 Gen. 71.5%)  Population Ø 61.5%  5602s, 1824000 Spiele
+Gen  39: beste 70.6% (Ø über 5 Gen. 71.3%)  Population Ø 62.8%  5753s, 1872000 Spiele
+Gen  40: beste 72.3% (Ø über 3 Gen. 71.3%)  Population Ø 63.0%  5906s, 1920000 Spiele
+Gen  41: beste 72.4% (Ø über 1 Gen. 72.4%)  Population Ø 63.2%  6064s, 1968000 Spiele
+Gen  42: beste 70.2% (Ø über 2 Gen. 71.3%)  Population Ø 62.2%  6220s, 2016000 Spiele
+Gen  43: beste 71.7% (Ø über 1 Gen. 71.7%)  Population Ø 64.4%  6380s, 2064000 Spiele
+Gen  44: beste 70.5% (Ø über 10 Gen. 71.0%)  Population Ø 61.8%  6538s, 2112000 Spiele
+Gen  45: beste 71.2% (Ø über 8 Gen. 70.9%)  Population Ø 62.5%  6706s, 2160000 Spiele
+Gen  46: beste 71.0% (Ø über 12 Gen. 70.9%)  Population Ø 61.7%  6860s, 2208000 Spiele
+Gen  47: beste 71.9% (Ø über 1 Gen. 71.9%)  Population Ø 63.4%  7008s, 2256000 Spiele
+Gen  48: beste 70.3% (Ø über 2 Gen. 71.1%)  Population Ø 62.0%  7150s, 2304000 Spiele
+Gen  49: beste 71.1% (Ø über 1 Gen. 71.1%)  Population Ø 61.6%  7294s, 2352000 Spiele
+Gen  50: beste 73.1% (Ø über 1 Gen. 73.1%)  Population Ø 63.9%  7432s, 2400000 Spiele
+
+Validierung der besten 5 auf 20000 neuen Spielen:
+  70.19%  (Training Ø 71.5% über 4 Gen.)
+  69.55%  (Training Ø 71.4% über 2 Gen.)
+  70.84%  (Training Ø 71.1% über 3 Gen.)
+  70.81%  (Training Ø 71.0% über 2 Gen.)
+  70.84%  (Training Ø 70.9% über 16 Gen.)
+Champion: 70.84%
+{"riskHp":0,"riskW":4.2205,"weaponUses":2.4579,"horizonMode":"repl","replScale":0.6863,"kMax":6.9389,"wWeapon":0.6841,"wMinHp":0,"holdGood":0.9484,"holdBad":0.6838,"holdBadEnd":0.1459,"holdEndDeck":7.7732,"holdWeaponAbs":1.0273,"holdHealAbs":0.9142,"futureHeld":0.8013,"phantom":0.0816,"phantomScale":0.8748,"badMix":0.4748,"fleeT1":1.5086,"fleeT2":8.2983,"fleeBottomW":0,"bottomFree":36.7162,"bottomScale":41.6149,"fleeDangerW":0.0585,"fleeDangerFrac":1.2646,"fleeRelW":0.7775,"svThief":7.1228,"svHeal":0.7821,"svWeapon":0.5565,"start":"signals","startT0":10.2561,"startT1":22.9877,"startT2":26.8747,"orderPref":"bad","resolveExact":0,"catcherW":0.0592,"bigE":9.7561,"wBig":0,"hpTopW":0.0148,"hpTop":6.5499,"fleeEarlyW":-0.0031,"wMagic":0.8762,"bottomMode":"ratio","hpEndW":0.0807,"fleePosW":0.7493,"fleeNegW":0.8215,"endLook":0,"fleeHorizon":0.6494,"fleeLatePen":0.965,"imbW":0.0603,"imbFree":16.9929,"imbScale":23.9058}

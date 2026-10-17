@@ -57,12 +57,50 @@ const GENES = [
   { key: 'fleeEarlyW', type: 'lin', min: -1, max: 2, s: 0.15 },
   { key: 'wMagic', type: 'log', min: 0.2, max: 4, s: 0.15 },
   { key: 'bottomMode', type: 'cat', values: ['net', 'ratio'] },
-  { key: 'heldResW', type: 'lin', min: 0, max: 1.5, s: 0.15 },
+  { key: 'hpEndW', type: 'lin', min: -0.5, max: 3, s: 0.2 },
+  { key: 'fleePosW', type: 'lin', min: 0, max: 3, s: 0.15 },
+  { key: 'fleeNegW', type: 'lin', min: 0, max: 3, s: 0.15 },
+  { key: 'endLook', type: 'cat', values: [0, 1] },
   { key: 'fleeHorizon', type: 'lin', min: 0, max: 40, s: 4 },
   { key: 'fleeLatePen', type: 'lin', min: 0, max: 20, s: 2 },
   { key: 'imbW', type: 'lin', min: 0, max: 3, s: 0.2 },
   { key: 'imbFree', type: 'lin', min: 0, max: 60, s: 5 },
   { key: 'imbScale', type: 'log', min: 3, max: 300, s: 0.3 },
+];
+
+// Genes of the rule player (hybrid): its levers plus the resolver's evaluation.
+const RULE_GENES = [
+  { key: 'riskHp', type: 'lin', min: 0, max: 16, s: 2 },
+  { key: 'riskW', type: 'log', min: 0.05, max: 5, s: 0.3 },
+  { key: 'weaponUses', type: 'lin', min: 0.5, max: 8, s: 0.6 },
+  { key: 'replScale', type: 'log', min: 0.2, max: 3, s: 0.2 },
+  { key: 'kMax', type: 'lin', min: 1, max: 14, s: 1.2 },
+  { key: 'wWeapon', type: 'log', min: 0.2, max: 4, s: 0.15 },
+  { key: 'r_range', type: 'lin', min: 0, max: 2, s: 0.1 },
+  { key: 'r_magicKeep', type: 'lin', min: 0, max: 2, s: 0.1 },
+  { key: 'r_thiefWeapon', type: 'lin', min: 0, max: 2, s: 0.1 },
+  { key: 'r_hpRisk', type: 'lin', min: 0, max: 5, s: 0.3 },
+  { key: 'r_deathCost', type: 'log', min: 1, max: 1000, s: 0.3 },
+  { key: 'r_weaponGain', type: 'log', min: 0.1, max: 5, s: 0.2 },
+  { key: 'r_healGain', type: 'log', min: 0.1, max: 5, s: 0.2 },
+  { key: 'r_lowHpBonus', type: 'lin', min: 0, max: 3, s: 0.2 },
+  { key: 'r_badFirstWhenFree', type: 'cat', values: [0, 1] },
+  { key: 'r_goodBeforeBad', type: 'cat', values: [0, 1] },
+  { key: 'r_holdBadRatio', type: 'lin', min: 0, max: 1.5, s: 0.1 },
+  { key: 'r_holdGoodMin', type: 'lin', min: -2, max: 8, s: 0.6 },
+  { key: 'r_holdEndDeck', type: 'lin', min: 0, max: 30, s: 3 },
+  { key: 'r_fleeDanger', type: 'log', min: 0.1, max: 5, s: 0.2 },
+  { key: 'r_fleeHelp', type: 'log', min: 0.1, max: 5, s: 0.2 },
+  { key: 'r_stockGood', type: 'lin', min: 0, max: 3, s: 0.15 },
+  { key: 'r_fleeT1', type: 'lin', min: 0, max: 30, s: 2 },
+  { key: 'r_fleeT2', type: 'lin', min: 1, max: 50, s: 3 },
+  { key: 'r_bottomLimit', type: 'lin', min: -20, max: 100, s: 8 },
+  { key: 'r_bottomW', type: 'lin', min: 0, max: 2, s: 0.15 },
+  { key: 'r_fleeLateDeck', type: 'lin', min: 0, max: 40, s: 4 },
+  { key: 'r_fleeLatePen', type: 'lin', min: 0, max: 30, s: 3 },
+  { key: 'r_followGive', type: 'lin', min: 0, max: 30, s: 3 },
+  { key: 'r_startBig', type: 'lin', min: 2, max: 15, s: 1 },
+  { key: 'r_startWeapon', type: 'lin', min: 2, max: 11, s: 1 },
 ];
 
 function parseArgs(argv) {
@@ -79,8 +117,10 @@ function parseArgs(argv) {
     else if (k === '--pm') a.pm = Number(next());
     else if (k === '--validate') a.validate = Number(next());
     else if (k === '--set') a.set.push(next());
+    else if (k === '--genes') a.genes = next();
     else throw new Error('Unbekannte Option: ' + k);
   }
+  if (a.genes === 'rules') { GENES.length = 0; GENES.push(...RULE_GENES); }
   return a;
 }
 

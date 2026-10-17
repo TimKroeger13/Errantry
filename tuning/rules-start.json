@@ -1,0 +1,16 @@
+{
+ "policy": {
+  "play": "rules",
+  "flee": "rules",
+  "start": "rules",
+  "riskHp": 0,
+  "riskW": 2.3174,
+  "weaponUses": 2.4579,
+  "horizonMode": "repl",
+  "replScale": 0.6453,
+  "kMax": 6.6547,
+  "wWeapon": 0.659,
+  "futureHeld": 0.8626,
+  "resolveExact": 0
+ }
+}

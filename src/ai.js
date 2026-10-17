@@ -2,9 +2,9 @@
 // The AI only reads public information plus the acting player's own hand
 // (exception: flee mode 'fullInfo', which deliberately models a team that sees all hands).
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./config'));
-  else (root.Errantry = root.Errantry || {}).ai = factory(root.Errantry.config);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (config) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./config'), require('./rules'));
+  else (root.Errantry = root.Errantry || {}).ai = factory(root.Errantry.config, root.Errantry.rules);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (config, rulesMod) {
   'use strict';
 
   const { T, code, isBad } = config;
@@ -24,6 +24,7 @@
     play: 'planner', // planner | pimc | greedy | random | oracle
     pimcSamples: 6, // pimc: imagined partner hands per decision
     pimcSignals: 1, // pimc: imagined hands must match the partner's flee/start signals
+    pimcDecisions: 99, // pimc only for the first N own plays of a round, then the plain planner
     pimcTries: 30, // pimc: rejection-sampling attempts per imagined hand
     pimcUseFinal: 1, // pimc: also match the adjusted (second) flee signal
     flee: 'signals', // signals | never | fullInfo
@@ -40,6 +41,7 @@
     wMinHp: 0.5, // team bonus on the weakest player's HP
     catcherW: 0, // team bonus for the best weapon that can still block big enemies
     wBig: 0, // per player: extra value of a weapon that can still block big enemies
+    hpEndW: 0, // HP is worth more towards the end of the deck (fewer heals still to come)
     hpTopW: 0, // HP close to the maximum is worth less (future heals would be capped)
     hpTop: 5, // ... within this many HP of the maximum
     bigE: 11, // "big" enemy threshold for the catcher bonus
@@ -59,7 +61,11 @@
     fleeDangerFrac: 1,
     fleeRelW: 0, // flee is judged relative: a hand that is equally bad later is no reason to flee
     fleeEarlyW: 0, // extra flee urge early in the deck (fled cards return late)
+    fleePosW: -1, // value of own GOOD cards at the end of the deck (stock them by fleeing); -1 = use fleeRelW
+    fleeNegW: -1, // cost of own BAD cards at the end of the deck; -1 = use fleeRelW
     heldResW: 0, // resolution keeps the own held card in mind (cost of facing it next round)
+    endLook: 0, // 1 = in the second-to-last round, judge plans by whether the last hand is survivable
+    endLookRes: 1, // ... and also use it when resolving the cards at the end of that round
     fleeHorizon: 0, // fleeing with fewer deck cards than this is scaled down (cards return soon)
     fleeLatePen: 0, // ... and penalised by up to this much
     // bottom of the deck as positive/negative balance relative to the deck's average mix
@@ -90,6 +96,8 @@
     startT2: 30,
   };
 
+  Object.assign(DEFAULT_POLICY, rulesMod.RULE_DEFAULTS);
+
   const PRESETS = {
     planner: {},
     greedy: { play: 'greedy' },
@@ -98,6 +106,7 @@
     fullinfo: { flee: 'fullInfo' },
     oracle: { play: 'oracle', flee: 'fullInfo' },
     pimc: { play: 'pimc' },
+    rules: { play: 'rules', flee: 'rules', start: 'rules' },
   };
 
   function makePolicy(p) {
@@ -221,6 +230,8 @@
       P, maxHp: cfg.hp, thiefDmg: cfg.thiefDamage, W, ww, mw, bw, rem, meanE, badFrac: remCards ? remBad / remCards : 0,
       deckFrac: g.deck.length / Math.max(1, g.total),
       deckLeft: g.deck.length,
+      endLook: mode !== 'resolve' && P.endLook && !g.lastHand && g.deck.length > 0 && g.deck.length <= g.nP * (g.handSize - 1),
+      viewer: 0,
       numericKeys: cfg.hp < 128 && maxV < 64,
       pileCache: [], impactCache: new Map(), states: g.players.map(stateOf), phantomCard: null, nPh: 0,
     };
@@ -235,6 +246,7 @@
   function evalSoft(ctx, hp, wv, lim, mg) {
     const P = ctx.P;
     let v = hpTerm(P, hp);
+    if (P.hpEndW) v *= 1 + P.hpEndW * (1 - ctx.deckFrac);
     if (P.hpTopW) { const over = hp - (ctx.maxHp - P.hpTop); if (over > 0) v -= P.hpTopW * over; }
     if (wv > 0) {
       v += P.wWeapon * ctx.ww[wv * ctx.W + lim];
@@ -265,7 +277,7 @@
   //   heal/weapon/magic/smith: 0 use/equip, 1 discard
 
   // soft = true: ignore death (hp may go negative) – used to grade hopeless plans.
-  function resolvePile(ctx, st, allCards, soft, held) {
+  function resolvePile(ctx, st, allCards, soft, held, leafFn) {
     // Only one heal per round can be used, and the largest heal is never worse than a
     // smaller one at the same moment: all other heals are discarded up front.
     let cards = allCards, inert = null;
@@ -278,6 +290,7 @@
     const n = cards.length;
     const heldW = held && held.length && ctx.P.heldResW ? ctx.P.heldResW : 0;
     const leaf = (hp, wv, lim, mg) => {
+      if (leafFn && !soft) return hp <= 0 ? DEATH : leafFn(hp, wv, lim, mg);
       let v = soft ? evalSoft(ctx, hp, wv, lim, mg) : evalEnd(ctx, hp, wv, lim, mg);
       if (heldW && v > DEATH / 2) {
         const s = { hp, maxHp: st.maxHp, wv, lim, mg, kills: lim ? [lim] : [] };
@@ -486,6 +499,81 @@
     return r;
   }
 
+  // ---------------------------------------------------------------- last-hand lookahead
+  // Evaluation for the very last hand: nothing comes afterwards, only survival counts.
+  function finalCtx(g) {
+    const base = g.ctx;
+    if (base.finalCtx) return base.finalCtx;
+    const fc = Object.assign({}, base, {
+      ww: new Float64Array(base.ww.length), mw: new Float64Array(base.mw.length), bw: new Float64Array(base.bw.length),
+      P: Object.assign({}, base.P, { hpTopW: 0, wBig: 0, riskHp: 0 }), pileCache: [], frCache: new Map(), resCache: new Map(),
+    });
+    base.finalCtx = fc;
+    return fc;
+  }
+
+  // Cards that will make up the last hand besides the held ones: the rest of the deck,
+  // as far as public (known bottom cards), the unknown rest imagined from the pool.
+  function futureCards(g, p) {
+    const ctx = g.ctx;
+    ctx.future = ctx.future || [];
+    if (ctx.future[p]) return ctx.future[p];
+    const known = [], pool = Int32Array.from(ctx.rem);
+    for (const c of g.players[p].hand) pool[code(c)]--;
+    for (const id of g.known) { const c = g.cards[id]; known.push(c); pool[code(c)]--; }
+    const bag = [];
+    for (let cd = 0; cd < pool.length; cd++) for (let k = 0; k < pool[cd]; k++) bag.push({ id: -1000 - bag.length, t: cd >> 6, v: cd & 63 });
+    const need = Math.max(0, g.deck.length - known.length);
+    for (let i = 0; i < need && bag.length; i++) { const j = g.aiRng.int(bag.length); known.push(bag[j]); bag[j] = bag[bag.length - 1]; bag.pop(); }
+    ctx.future[p] = known;
+    return known;
+  }
+
+  function stateKey(e) { return e.hp + ',' + e.wv + ',' + e.lim + ',' + e.mg + ',' + (e.kills ? e.kills.join('.') : ''); }
+
+  // Best joint split of the last-hand cards between the players (all must be played).
+  function finalRoundValue(g, ends, cards) {
+    const fc = finalCtx(g), P = g.policy, n = ends.length;
+    const key = ends.map(stateKey).join('|') + '#' + pileKey(cards) + '#' + cards.length;
+    const hit = fc.frCache.get(key);
+    if (hit !== undefined) return hit;
+    const piles = ends.map(() => []), bc = new Array(n).fill(0);
+    let best = -Infinity;
+    const res = (t) => {
+      const k = stateKey(ends[t]) + '#' + pileKey(piles[t]) + '#' + piles[t].length;
+      let r = fc.resCache.get(k);
+      if (!r) {
+        r = resolvePile(fc, ends[t], piles[t]);
+        if (r.dead) r.softHp = resolvePile(fc, ends[t], piles[t], true).end.hp;
+        fc.resCache.set(k, r);
+      }
+      return r;
+    };
+    (function rec(i) {
+      if (i === cards.length) {
+        let mn = Infinity, mx = -Infinity;
+        for (const b of bc) { if (b < mn) mn = b; if (b > mx) mx = b; }
+        if (mx - mn > 1) return;
+        let v = 0, minHp = Infinity, dead = false;
+        for (let t = 0; t < n; t++) {
+          const r = res(t);
+          if (r.dead) { dead = true; v += 1000 * Math.min(0, r.softHp - 1); } else { v += r.end.hp; if (r.end.hp < minHp) minHp = r.end.hp; }
+        }
+        v = dead ? DEATH_STEP / 2 + v : 100000 + v + P.wMinHp * minHp;
+        if (v > best) best = v;
+        return;
+      }
+      const c = cards[i], bad = isBad(c);
+      for (let t = 0; t < n; t++) {
+        piles[t].push(c); if (bad) bc[t]++;
+        rec(i + 1);
+        piles[t].pop(); if (bad) bc[t]--;
+      }
+    })(0);
+    fc.frCache.set(key, best);
+    return best;
+  }
+
   function holdValue(g, c, ends) {
     const ctx = g.ctx, P = g.policy;
     let best = -Infinity;
@@ -507,7 +595,8 @@
   function teamValue(g, piles, held) {
     const P = g.policy;
     let sum = 0, minHp = Infinity, dead = 0;
-    const ends = held ? [] : null;
+    const endLook = g.ctx.endLook;
+    const ends = held || endLook ? [] : null;
     for (let t = 0; t < piles.length; t++) {
       const r = resolveCached(g, t, piles[t]);
       if (r.dead) {
@@ -521,6 +610,11 @@
       if (ends) ends.push(r.end);
     }
     if (dead) return sum;
+    if (endLook) {
+      const cards = futureCards(g, g.ctx.viewer).slice();
+      if (held) { if (Array.isArray(held)) cards.push(...held); else cards.push(held); }
+      return finalRoundValue(g, ends, cards);
+    }
     sum += P.wMinHp * minHp;
     if (P.catcherW) {
       let c = 0;
@@ -607,12 +701,16 @@
         let mn = Infinity, mx = -Infinity;
         for (const b of bc) { if (b < mn) mn = b; if (b > mx) mx = b; }
         if (mx - mn > 1) return;
-        let v = teamValue(g, piles, null);
-        if (v > DEATH_STEP / 2) {
-          let ends = null;
-          for (const h of held) if (h) {
-            if (!ends) ends = piles.map((pl, t) => resolveCached(g, t, pl).end);
-            v += holdValue(g, h, ends);
+        let v;
+        if (g.ctx.endLook) v = teamValue(g, piles, held.filter(Boolean));
+        else {
+          v = teamValue(g, piles, null);
+          if (v > DEATH_STEP / 2) {
+            let ends = null;
+            for (const h of held) if (h) {
+              if (!ends) ends = piles.map((pl, t) => resolveCached(g, t, pl).end);
+              v += holdValue(g, h, ends);
+            }
           }
         }
         onLeaf(assign, v);
@@ -740,13 +838,15 @@
 
   function choosePlay(g, p) {
     const P = g.policy, hand = g.players[p].hand;
+    g.ctx.viewer = p;
     const moves = legalMoves(g, p);
     if (P.play === 'random') return moves[g.aiRng.int(moves.length)];
     if (P.play === 'oracle') {
       const mv = oracleMove(g, p);
       if (mv) return mv;
     }
-    if (P.play === 'pimc') return pimcMove(g, p, moves);
+    if (P.play === 'pimc' && (!g.played || g.played[p].length < P.pimcDecisions)) return pimcMove(g, p, moves);
+    if (P.play === 'rules') return rules.play(g, p);
     const piles = g.piles.map((x) => x.slice());
     const bc = g.badCount.slice();
     // expected bad cards the other players will still play this round
@@ -798,6 +898,25 @@
     if (!g.resolveCtx || g.resolveCtx.round !== g.round) {
       g.resolveCtx = makeCtx(g, 'resolve');
       g.resolveCtx.round = g.round;
+    }
+    const P = g.policy;
+    if (P.endLook && P.endLookRes && g.ctx.endLook) {
+      // the others resolve their piles in the usual way; my end state is judged by
+      // whether the last hand (my held card + rest of the deck) is survivable
+      const others = g.players.map((pl, t) => (t === p ? null : resolvePile(g.resolveCtx, stateOf(pl), g.piles[t]).end));
+      const cards = futureCards(g, p).concat(g.players[p].hand);
+      const memo = new Map();
+      const leafFn = (hp, wv, lim, mg) => {
+        const k = hp + ',' + wv + ',' + lim + ',' + mg;
+        let v = memo.get(k);
+        if (v === undefined) {
+          const ends = others.map((e) => e || { hp, maxHp: g.players[p].maxHp, wv, lim, mg, kills: lim ? [lim] : [] });
+          v = finalRoundValue(g, ends, cards);
+          memo.set(k, v);
+        }
+        return v;
+      };
+      return resolvePile(g.resolveCtx, stateOf(g.players[p]), g.piles[p], false, null, leafFn).actions;
     }
     return resolvePile(g.resolveCtx, stateOf(g.players[p]), g.piles[p], false, g.players[p].hand).actions;
   }
@@ -872,7 +991,12 @@
       d += P.fleeDangerW * Math.max(0, danger - P.fleeDangerFrac * minHp);
     }
     const others = (g.nP - 1) * g.handSize * (sSv / cnt);
-    if (P.fleeRelW) d -= P.fleeRelW * ((g.handSize * sSv) / cnt - svOwn);
+    if (P.fleePosW >= 0 || P.fleeNegW >= 0) {
+      // fleeing moves own cards to the end of the deck and brings an average hand now
+      const pnOwn = posNeg(g, hand), avg = poolPosNegAvg(g, pool, cnt);
+      const wp = P.fleePosW >= 0 ? P.fleePosW : P.fleeRelW, wn = P.fleeNegW >= 0 ? P.fleeNegW : P.fleeRelW;
+      d += wp * (pnOwn.pos - g.handSize * avg.pos) - wn * (pnOwn.neg - g.handSize * avg.neg);
+    } else if (P.fleeRelW) d -= P.fleeRelW * ((g.handSize * sSv) / cnt - svOwn);
     if (P.fleeEarlyW) d += P.fleeEarlyW * (ctx.deckFrac - 0.5) * 10;
     if (P.fleeHorizon > 0 && g.deck.length < P.fleeHorizon) {
       const f = g.deck.length / P.fleeHorizon; // 1 = far away, 0 = cards come right back
@@ -896,6 +1020,16 @@
     for (const c of cards) { const v = staticValue(g, c); if (v >= 0) pos += v; else neg -= v; }
     return { pos, neg };
   }
+  function poolPosNegAvg(g, pool, cnt) {
+    let pos = 0, neg = 0;
+    for (let cd = 0; cd < pool.length; cd++) {
+      const k = pool[cd];
+      if (k <= 0) continue;
+      const v = staticValue(g, { t: cd >> 6, v: cd & 63 });
+      if (v >= 0) pos += k * v; else neg -= k * v;
+    }
+    return { pos: pos / cnt, neg: neg / cnt };
+  }
   function bottomPosNeg(g) {
     const cs = [];
     for (const id of g.known) cs.push(g.cards[id]);
@@ -911,6 +1045,7 @@
   function decideFlee(g) {
     const P = g.policy;
     if (P.flee === 'never') return { flee: false };
+    if (P.flee === 'rules') return rules.flee(g);
     const deltas = g.players.map((_, p) => fleeDelta(g, p));
     if (P.flee === 'fullInfo') {
       const s = deltas.reduce((a, b) => a + b, 0);
@@ -956,6 +1091,7 @@
     const P = g.policy, n = g.nP;
     if (P.start === 'random') return { start: g.aiRng.int(n) };
     if (P.start === 'rotate') return { start: (g.lastStart + 1 + n) % n };
+    if (P.start === 'rules') return rules.start(g);
     if (P.start === 'strongest') {
       let best = -Infinity, start = 0;
       g.players.forEach((pl, p) => {
@@ -973,6 +1109,8 @@
     }
     return { start, levels };
   }
+
+  const rules = rulesMod.create({ stateOf, resolveCached, legalMoves, posNeg, bottomPosNeg, averagePosNeg });
 
   return {
     DEATH, DEFAULT_POLICY, PRESETS, makePolicy,

@@ -45,7 +45,7 @@
       totalCodes, resolvedCodes: new Int32Array(config.CODE_SPACE),
       resolvedCount: 0, totalEnemySum, resolvedEnemySum: 0,
       piles: null, badCount: null, passed: null, lastHand: false, ctx: null,
-      deathInfo: null, deadSeats: [],
+      deathInfo: null, deadSeats: [], lowHp: Infinity,
       log: opts.log ? [] : null,
       st: newCounters(nP),
       result: null,
@@ -166,6 +166,7 @@
             parts.push(label(c) + ' Magie −' + dmg);
           } else throw new Error('Ungültige Aktion für Gegner');
           pl.hp -= dmg;
+          if (pl.hp < g.lowHp) g.lowHp = pl.hp;
           g.resolvedEnemySum += v;
           break;
         }
@@ -176,6 +177,7 @@
             pl.weapon = null; st.thiefSteal++; st.weaponStolen++;
           } else if (a.opt === 0) {
             pl.hp -= g.cfg.thiefDamage; st.dmgThief += g.cfg.thiefDamage; st.thiefDamage++;
+            if (pl.hp < g.lowHp) g.lowHp = pl.hp;
             parts.push('D −' + g.cfg.thiefDamage);
           } else throw new Error('Ungültige Aktion für Dieb');
           break;
@@ -309,6 +311,7 @@
       score: win ? sumHp : -(g.totalEnemySum - g.resolvedEnemySum),
       death: win ? null : g.deathInfo,
       deadSeats: g.deadSeats.slice(),
+      lowHp: Math.min(g.lowHp, ...hp), // lowest HP any player had during the game
       st: g.st,
     };
     if (g.log) {

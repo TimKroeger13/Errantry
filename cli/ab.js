@@ -30,8 +30,14 @@ async function main() {
   const pool = createPool();
   const rows = [];
   for (const v of a.variants) {
-    const pol = Object.assign({}, base);
-    if (v !== 'base') for (const kv of v.split(',')) { const [k, val] = kv.split('='); if (!(k in ai.DEFAULT_POLICY)) throw new Error('Unbekannter Parameter ' + k); pol[k] = parseVal(val); }
+    let pol = Object.assign({}, base);
+    let spec = v;
+    if (v.startsWith('@')) { // "@file.json[,k=v...]": policy from a file
+      const [file, ...rest] = v.slice(1).split(',');
+      pol = Object.assign({}, JSON.parse(fs.readFileSync(file, 'utf8')).policy);
+      spec = rest.length ? rest.join(',') : 'base';
+    }
+    if (spec !== 'base') for (const kv of spec.split(',')) { const [k, val] = kv.split('='); if (!(k in ai.DEFAULT_POLICY)) throw new Error('Unbekannter Parameter ' + k); pol[k] = parseVal(val); }
     const t0 = Date.now();
     const res = await pool.run(cfg, ai.makePolicy(pol), a.seed, a.games, true);
     const ms = Date.now() - t0;
