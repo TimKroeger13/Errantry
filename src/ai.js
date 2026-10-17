@@ -2,9 +2,9 @@
 // The AI only reads public information plus the acting player's own hand
 // (exception: flee mode 'fullInfo', which deliberately models a team that sees all hands).
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./config'), require('./rules'));
-  else (root.Errantry = root.Errantry || {}).ai = factory(root.Errantry.config, root.Errantry.rules);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (config, rulesMod) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./config'), require('./rules'), require('./tuned'));
+  else (root.Errantry = root.Errantry || {}).ai = factory(root.Errantry.config, root.Errantry.rules, root.Errantry.tuned);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (config, rulesMod, tuned) {
   'use strict';
 
   const { T, code, isBad } = config;
@@ -25,6 +25,8 @@
     pimcSamples: 6, // pimc: imagined partner hands per decision
     pimcSignals: 1, // pimc: imagined hands must match the partner's flee/start signals
     pimcDecisions: 99, // pimc only for the first N own plays of a round, then the plain planner
+    pimcMargin: 0, // pimc only if the planner's best two moves are closer than this (0 = always)
+    pimcMaxItems: 8, // pimc: max. cards in the joint plan (own + imagined); with 3 players only the next player's hand fits
     pimcTries: 30, // pimc: rejection-sampling attempts per imagined hand
     pimcUseFinal: 1, // pimc: also match the adjusted (second) flee signal
     flee: 'signals', // signals | never | fullInfo
@@ -90,6 +92,12 @@
     svWeapon: 1.0,
     svMagic: 0.6,
     svSmith: 3,
+    // negotiation: everyone states one of 4 levels at the same time (no fixed first
+    // speaker), then up to 2 reaction rounds in which everyone may adjust after
+    // hearing the others. Fixed levels + few rounds = no room for "Morse code".
+    fleeRounds: 1, // reaction rounds when deciding to flee (0–2)
+    startRounds: 0, // reaction rounds when deciding who starts (0–2)
+    startEsc: 30, // start impact from which a player escalates a tie ("will" -> "will unbedingt")
     // start signals
     startT0: 10,
     startT1: 20,
@@ -97,8 +105,14 @@
   };
 
   Object.assign(DEFAULT_POLICY, rulesMod.RULE_DEFAULTS);
+  // hand-set defaults above are the untrained starting point; the trained values win
+  const UNTRAINED = Object.assign({}, DEFAULT_POLICY);
+  Object.assign(DEFAULT_POLICY, tuned || {});
 
   const PRESETS = {
+    expert: { play: 'pimc', pimcSamples: 4 }, // trained values + partner-hand inference (strongest, slower)
+    fast: {}, // trained values, plain planner (about 100x faster)
+    untrained: Object.assign({}, UNTRAINED),
     planner: {},
     greedy: { play: 'greedy' },
     random: { play: 'random', flee: 'never', start: 'random' },
@@ -128,7 +142,7 @@
     const exact = mode === 'resolve' && P.resolveExact && g.piles;
     if (exact) for (const pile of g.piles) for (const c of pile) rem[code(c)]--;
     let maxV = 1;
-    for (const e of cfg.cards) if (e.value > maxV) maxV = e.value;
+    for (const e of cfg.deckCards || cfg.cards) if (e.value > maxV) maxV = e.value;
     const W = maxV + 1;
     let totE = 0;
     const ev = [], ec = [];
@@ -166,7 +180,7 @@
       const wvals = [];
       for (let wv = 1; wv <= maxV; wv++) {
         let present = 0;
-        for (const e of cfg.cards) if ((e.type === 'weapon') && e.value === wv) present = 1;
+        for (const e of cfg.deckCards || cfg.cards) if ((e.type === 'weapon') && e.value === wv) present = 1;
         if (present) wvals.push(wv);
       }
       for (let j = 1; j <= Math.floor(kTop) + 1; j++) {
@@ -276,6 +290,41 @@
   //   enemy: 0 fist, 1 weapon, 2 magic | thief: 0 take damage, 1 give weapon
   //   heal/weapon/magic/smith: 0 use/equip, 1 discard
 
+  // Fast memo for the resolver's numeric state keys: open addressing in typed arrays,
+  // shared between calls (a generation stamp marks the valid slots). A resolve that
+  // runs inside another resolve (last-hand lookahead) uses a plain Map instead.
+  let memoCap = 1 << 15, memoMask = memoCap - 1;
+  let memoKeys = new Float64Array(memoCap), memoVals = new Float64Array(memoCap), memoStamp = new Int32Array(memoCap);
+  let memoGen = 0, memoCount = 0, memoBusy = false;
+  function memoSlot(k) {
+    const lo = k % 4294967296, hi = (k - lo) / 4294967296;
+    let h = Math.imul((lo | 0) ^ Math.imul(hi | 0, 0x9e3779b1), 0x85ebca6b);
+    h ^= h >>> 15;
+    return h & memoMask;
+  }
+  function memoGet(k) {
+    let i = memoSlot(k);
+    while (memoStamp[i] === memoGen) {
+      if (memoKeys[i] === k) return memoVals[i];
+      i = (i + 1) & memoMask;
+    }
+    return undefined;
+  }
+  function memoSet(k, v) {
+    if (memoCount * 2 > memoCap) memoGrow();
+    let i = memoSlot(k);
+    while (memoStamp[i] === memoGen && memoKeys[i] !== k) i = (i + 1) & memoMask;
+    if (memoStamp[i] !== memoGen) memoCount++;
+    memoStamp[i] = memoGen; memoKeys[i] = k; memoVals[i] = v;
+  }
+  function memoGrow() {
+    const ok = memoKeys, ov = memoVals, os = memoStamp, gen = memoGen;
+    memoCap *= 2; memoMask = memoCap - 1;
+    memoKeys = new Float64Array(memoCap); memoVals = new Float64Array(memoCap); memoStamp = new Int32Array(memoCap);
+    memoGen = 1; memoCount = 0;
+    for (let i = 0; i < os.length; i++) if (os[i] === gen) memoSet(ok[i], ov[i]);
+  }
+
   // soft = true: ignore death (hp may go negative) – used to grade hopeless plans.
   function resolvePile(ctx, st, allCards, soft, held, leafFn) {
     // Only one heal per round can be used, and the largest heal is never worse than a
@@ -309,8 +358,15 @@
       if (ts[i] === T.SMITH) hasSmith = true;
     }
     const full = (1 << n) - 1;
-    const memo = new Map();
     const numeric = ctx.numericKeys && n <= 20 && !hasSmith;
+    const fast = numeric && !memoBusy;
+    const memo = fast ? null : new Map();
+    if (fast) {
+      memoBusy = true;
+      if (++memoGen > 2000000000) { memoStamp.fill(0); memoGen = 1; }
+      memoCount = 0;
+    }
+    try {
 
     function key(mask, hp, wv, lim, mg, hu, stk) {
       if (numeric) return ((((mask * 1024 + hp + 512) * 64 + wv) * 64 + lim) * 64 + mg) * 2 + hu;
@@ -323,7 +379,7 @@
       if (mask === full) return leaf(hp, wv, lim, mg);
       const k = wantChoice ? 0 : key(mask, hp, wv, lim, mg, hu, stk);
       if (!wantChoice) {
-        const m = memo.get(k);
+        const m = fast ? memoGet(k) : memo.get(k);
         if (m !== undefined) return m;
       }
       let best = -Infinity, bc = -1, r;
@@ -395,7 +451,7 @@
         for (let i = 0; i < n; i++) if (!(mask & (1 << i)) && !(same[i] & ~mask)) { bc = i * 4 + (ts[i] >= T.HEAL ? 1 : 0); break; }
       }
       if (wantChoice) return bc;
-      memo.set(k, best);
+      if (fast) memoSet(k, best); else memo.set(k, best);
       return best;
     }
 
@@ -441,6 +497,9 @@
       value, dead: hp <= 0, actions,
       end: { hp, maxHp, wv, lim: kills.length ? kills[kills.length - 1] : 0, mg, kills },
     };
+    } finally {
+      if (fast) memoBusy = false;
+    }
   }
 
   // Value of a state after one more card next round (heal allowed again).
@@ -745,24 +804,28 @@
     const score = new Map(); // move index -> summed value
     const moveIdx = new Map();
     moves.forEach((mv, i) => { moveIdx.set(mv.pass ? 'pass' : code(mv.card) + ':' + mv.target, i); score.set(i, 0); });
-    const shuffle = () => { for (let i = bag.length - 1; i > 0; i--) { const j = g.aiRng.int(i + 1); const tmp = bag[i]; bag[i] = bag[j]; bag[j] = tmp; } };
+    // shuffles only the not yet handed-out part of the bag (from position "from" on)
+    const shuffle = (from) => { for (let i = bag.length - 1; i > from; i--) { const j = from + g.aiRng.int(i - from + 1); const tmp = bag[i]; bag[i] = bag[j]; bag[j] = tmp; } };
     for (let s = 0; s < P.pimcSamples; s++) {
       // draw partner hands, preferably consistent with their signals this round
       const items = mine.map((c) => ({ c, o: p }));
       let off = 0;
-      g.players.forEach((pl, q) => {
-        if (q === p || g.passed[q] || !pl.hand.length) return;
+      // other players in turn order after me; hands that do not fit the cap are left out
+      for (let k2 = 1; k2 < g.nP; k2++) {
+        const q = (p + k2) % g.nP, pl = g.players[q];
+        if (g.passed[q] || !pl.hand.length) continue;
         const h = pl.hand.length;
+        if (items.length + h > Math.max(P.pimcMaxItems, mine.length + 1)) break;
         let tries = 0;
         for (;;) {
-          shuffle();
+          shuffle(off);
           if (off + h > bag.length) break;
           if (!P.pimcSignals || tries++ >= P.pimcTries) break;
           const startHand = g.played ? g.played[q].concat(bag.slice(off, off + h)) : bag.slice(off, off + h);
           if (consistentWithSignals(g, q, startHand)) break;
         }
         for (let k = 0; k < h && off < bag.length; k++) items.push({ c: bag[off++], o: q });
-      });
+      }
       const best = new Array(moves.length).fill(-Infinity);
       jointEnumerate(g, items, (assign, v) => {
         for (let k = 0; k < mine.length; k++) {
@@ -845,7 +908,8 @@
       const mv = oracleMove(g, p);
       if (mv) return mv;
     }
-    if (P.play === 'pimc' && (!g.played || g.played[p].length < P.pimcDecisions)) return pimcMove(g, p, moves);
+    const wantPimc = P.play === 'pimc' && (!g.played || g.played[p].length < P.pimcDecisions);
+    if (wantPimc && !(P.pimcMargin > 0)) return pimcMove(g, p, moves);
     if (P.play === 'rules') return rules.play(g, p);
     const piles = g.piles.map((x) => x.slice());
     const bc = g.badCount.slice();
@@ -877,6 +941,12 @@
       }
       mv.v = v;
       if (v > bestV || best === null) { bestV = v; best = mv; }
+    }
+    if (wantPimc) {
+      // the planner is unsure (two moves close together): imagine the partner's hand
+      let second = -Infinity;
+      for (const mv of moves) if (mv !== best && mv.v > second) second = mv.v;
+      if (bestV - second < P.pimcMargin) return pimcMove(g, p, moves);
     }
     if (P.orderPref !== 'none') {
       // equally good plans differ only in order: reveal information / secure routing first
@@ -1051,18 +1121,37 @@
       const s = deltas.reduce((a, b) => a + b, 0);
       return { flee: s > P.fleeFullT, deltas };
     }
-    const first = deltas.map((d) => fleeLevel(P, d));
-    const final = deltas.map((d, i) => fleeLevelFinal(P, d, first, i));
+    const rounds = [deltas.map((d) => fleeLevel(P, d))];
+    const R = Math.max(0, Math.min(2, Math.round(P.fleeRounds)));
+    for (let r = 1; r <= R; r++) rounds.push(deltas.map((d, i) => fleeLevelFinal(P, d, rounds[r - 1], i)));
+    const final = rounds[rounds.length - 1];
     const score = final.reduce((a, l) => a + SIGNAL_NUM[l], 0);
-    return { flee: score > 0, deltas, first, final };
+    return { flee: score > 0, deltas, first: rounds[0], final, rounds };
   }
 
   function fleeLevel(P, d) { return d >= P.fleeT2 ? 3 : d >= P.fleeT1 ? 2 : d > -P.fleeT1 ? 1 : 0; }
-  function fleeLevelFinal(P, d, first, i) {
+  // Reaction: own value plus what the others' last statements typically mean.
+  function fleeLevelFinal(P, d, heard, i) {
     const mid = [-(P.fleeT1 + 3), 0, (P.fleeT1 + P.fleeT2) / 2, P.fleeT2 + 4];
     let u = d;
-    for (let j = 0; j < first.length; j++) if (j !== i) u += mid[first[j]];
+    for (let j = 0; j < heard.length; j++) if (j !== i) u += mid[heard[j]];
     return fleeLevel(P, u);
+  }
+
+  // Start negotiation rounds: a player tied for the highest level may escalate once
+  // per round if its hand is strong enough; everyone else keeps the statement.
+  function startRoundsFor(P, imps) {
+    const rounds = [imps.map((d) => startLevel(P, d))];
+    const R = Math.max(0, Math.min(2, Math.round(P.startRounds)));
+    for (let r = 1; r <= R; r++) {
+      const prev = rounds[r - 1];
+      rounds.push(prev.map((l, i) => {
+        let m = -1;
+        for (let j = 0; j < prev.length; j++) if (j !== i && prev[j] > m) m = prev[j];
+        return l === m && l < 3 && imps[i] >= P.startEsc ? l + 1 : l;
+      }));
+    }
+    return rounds;
   }
 
   function startImpact(g, hand) {
@@ -1079,10 +1168,21 @@
     if (sig.flee && sig.flee.first) {
       const d = fleeDeltaHand(g, hand);
       if (fleeLevel(P, d) !== sig.flee.first[q]) return false;
-      if (P.pimcUseFinal && fleeLevelFinal(P, d, sig.flee.first, q) !== sig.flee.final[q]) return false;
+      if (P.pimcUseFinal) {
+        const rs = sig.flee.rounds || [sig.flee.first, sig.flee.final];
+        for (let r = 1; r < rs.length; r++) if (fleeLevelFinal(P, d, rs[r - 1], q) !== rs[r][q]) return false;
+      }
     }
-    if (sig.start && sig.start.levels) {
-      if (startLevel(P, startImpact(g, hand)) !== sig.start.levels[q]) return false;
+    if (sig.start && sig.start.rounds) {
+      // q's statements must follow from the hypothetical hand and what q heard
+      const imp = startImpact(g, hand), rs = sig.start.rounds;
+      if (startLevel(P, imp) !== rs[0][q]) return false;
+      for (let r = 1; r < rs.length; r++) {
+        let m = -1;
+        for (let j = 0; j < rs[r - 1].length; j++) if (j !== q && rs[r - 1][j] > m) m = rs[r - 1][j];
+        const l = rs[r - 1][q];
+        if ((l === m && l < 3 && imp >= P.startEsc ? l + 1 : l) !== rs[r][q]) return false;
+      }
     }
     return true;
   }
@@ -1101,13 +1201,14 @@
       });
       return { start };
     }
-    const levels = g.players.map((pl) => startLevel(P, startImpact(g, pl.hand)));
+    const rounds = startRoundsFor(P, g.players.map((pl) => startImpact(g, pl.hand)));
+    const levels = rounds[rounds.length - 1];
     let best = -1, start = 0;
     for (let k = 1; k <= n; k++) {
       const p = (g.lastStart + k + n) % n;
       if (levels[p] > best) { best = levels[p]; start = p; }
     }
-    return { start, levels };
+    return { start, levels, rounds };
   }
 
   const rules = rulesMod.create({ stateOf, resolveCached, legalMoves, posNeg, bottomPosNeg, averagePosNeg });

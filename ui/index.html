@@ -105,7 +105,7 @@ details summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
 .tile .l { font-size: 12px; color: var(--text-2); }
 .tile .v { font-size: 20px; font-weight: 650; margin-top: 2px; }
 .tile .d { font-size: 12px; color: var(--muted); }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; margin-top: 12px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 12px; }
 .grid2 .card { margin-top: 0; }
 .chart { position: relative; width: 100%; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
@@ -118,7 +118,7 @@ details summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
 table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.data th, table.data td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--grid); }
 table.data th { color: var(--text-2); font-weight: 600; font-size: 12px; }
-table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
+table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .runs .run { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--grid); font-size: 13px; }
 .runs .run .w { font-weight: 650; min-width: 58px; font-variant-numeric: tabular-nums; }
 .runs .run .lbl { flex: 1; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -135,15 +135,23 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 .delta-up { color: var(--good); }
 .delta-down { color: var(--critical); }
 .mono { font-family: var(--mono); }
+.subhead { font-size: 12px; font-weight: 600; color: var(--text-2); margin: 12px 0 4px; }
+.eta { font-variant-numeric: tabular-nums; }
+.versions .v { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--grid); }
+.versions .v .name { font-weight: 600; }
+.versions .v .meta { color: var(--text-2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.versions .v .acts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
 </style>
 </head>
 <body>
 <header class="top">
   <h1>Errantry · Balancing-Simulator</h1>
-  <span class="sub">Kartenmix, Leben und Spieleranzahl einstellen und tausende Partien simulieren</span>
+  <span class="sub">Decks und Versionen definieren, tausende Partien von einer trainierten KI spielen lassen, vergleichen</span>
 </header>
 <nav class="tabs" role="tablist">
   <button role="tab" data-tab="sim" aria-selected="true">Simulation</button>
+  <button role="tab" data-tab="versions" aria-selected="false">Versionen</button>
   <button role="tab" data-tab="sweep" aria-selected="false">Parameter-Sweep</button>
   <button role="tab" data-tab="game" aria-selected="false">Einzelspiel</button>
   <button role="tab" data-tab="help" aria-selected="false">Regeln &amp; KI</button>
@@ -169,38 +177,52 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       <h2>Karten</h2>
       <div class="row">
         <button class="btn" id="presetStd">Standarddeck</button>
-        <button class="btn" id="presetEmpty">Leeren</button>
+        <button class="btn" id="presetEmpty">Alles leeren</button>
         <button class="btn" id="exportCfg">Export</button>
         <label class="btn" style="cursor:pointer">Import<input type="file" id="importCfg" accept=".json,application/json" hidden></label>
       </div>
       <div class="row" style="margin-top:10px">
-        <select id="genType"></select>
+        <label class="f">Liste<select id="genList"><option value="cards">Grunddeck</option><option value="cards3">Zusatz bei 3 Spielern</option></select></label>
+        <label class="f">Typ<select id="genType"></select></label>
         <label class="f">von<input type="number" id="genFrom" value="2" min="1" max="63"></label>
         <label class="f">bis<input type="number" id="genTo" value="10" min="1" max="63"></label>
         <label class="f">je Anzahl<input type="number" id="genCount" value="2" min="0" max="99"></label>
         <button class="btn" id="genAdd" style="align-self:flex-end">Setzen</button>
       </div>
-      <p class="hint">„Setzen“ legt für jeden Wert im Bereich die Anzahl fest (0 entfernt).</p>
+      <p class="hint">„Setzen“ legt für jeden Wert im Bereich die Anzahl fest (0 entfernt). Typen ohne Wert (Dieb, Schmied) nutzen nur die Anzahl.</p>
+      <div class="subhead">Grunddeck (immer im Spiel)</div>
       <div class="scroll"><table class="cards"><thead><tr><th>Typ</th><th>Wert</th><th>Anzahl</th><th></th></tr></thead><tbody id="cardRows"></tbody></table></div>
-      <div class="row" style="margin-top:8px"><button class="btn" id="addRow">+ Karte</button></div>
+      <div class="row" style="margin-top:6px"><button class="btn" id="addRow">+ Karte</button></div>
+      <div class="subhead">Zusatzkarten nur bei 3 Spielern</div>
+      <div class="scroll" style="max-height:180px"><table class="cards"><thead><tr><th>Typ</th><th>Wert</th><th>Anzahl</th><th></th></tr></thead><tbody id="cardRows3"></tbody></table></div>
+      <div class="row" style="margin-top:6px"><button class="btn" id="addRow3">+ Zusatzkarte</button></div>
       <div class="summary" id="deckSummary"></div>
     </section>
 
     <section class="card">
       <h2>Spieler-KI</h2>
       <div class="row">
-        <select id="policy">
-          <option value="expert">Experte (evolutionär trainiert)</option>
-          <option value="planner">Planer (untrainiert)</option>
-          <option value="greedy">Gierig (1 Zug voraus)</option>
-          <option value="random">Zufall</option>
-          <option value="oracle">Orakel (sieht alle Hände, langsam)</option>
+        <select id="policy" style="max-width:100%">
+          <option value="expert">Experte (stark, langsamer)</option>
+          <option value="fast">Schnell (ca. 100× schneller)</option>
+          <option value="untrained">Untrainiert (Vergleich)</option>
+          <option value="random">Zufall (Vergleich)</option>
         </select>
       </div>
-      <details style="margin-top:10px"><summary>KI-Parameter anpassen (JSON)</summary>
-        <p class="hint">Überschreibt einzelne Parameter der gewählten KI, z. B. <span class="mono">{"flee":"never"}</span>.</p>
+      <p class="hint" id="policyHint"></p>
+      <details style="margin-top:6px"><summary>KI-Parameter anpassen (JSON)</summary>
+        <p class="hint">Überschreibt einzelne Parameter der gewählten KI, z. B. <span class="mono">{"flee":"never"}</span> (nie fliehen) oder <span class="mono">{"pimcSamples":8}</span>.</p>
         <textarea id="policyJson" rows="4" placeholder="{}"></textarea>
       </details>
+    </section>
+
+    <section class="card">
+      <h2>Als Version speichern</h2>
+      <div class="row">
+        <input type="text" id="verName" placeholder="z. B. v2 – mit Magie 3–8" style="flex:1;min-width:160px">
+        <button class="btn" id="verSave">Speichern</button>
+      </div>
+      <p class="hint">Gespeicherte Versionen findest du im Reiter „Versionen“ – dort lassen sie sich laden und gegeneinander simulieren.</p>
     </section>
   </aside>
 
@@ -210,11 +232,11 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     <div data-panel="sim">
       <div class="card">
         <div class="row">
-          <label class="f">Spiele<input type="number" id="games" value="5000" min="10" max="1000000" step="1000"></label>
+          <label class="f">Spiele<input type="number" id="games" value="1000" min="10" max="1000000" step="500"></label>
           <label class="f">Seed<input type="number" id="seed" value="1" min="0"></label>
           <button class="primary btn" id="runBtn" style="align-self:flex-end">Simulieren</button>
           <button class="btn" id="stopBtn" style="align-self:flex-end" hidden>Abbrechen</button>
-          <span class="hint" id="runInfo" style="align-self:flex-end"></span>
+          <span class="hint eta" id="runInfo" style="align-self:flex-end"></span>
         </div>
         <div class="progress"><div id="bar"></div></div>
       </div>
@@ -224,6 +246,33 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
         <div id="runs"></div>
         <p class="hint">Ein Lauf als Referenz wird in den Diagrammen orange mit angezeigt.</p>
       </div>
+    </div>
+
+    <!-- versions -->
+    <div data-panel="versions" hidden>
+      <div class="card versions">
+        <h2>Versionen</h2>
+        <div class="row">
+          <button class="btn" id="verExport">Alle exportieren</button>
+          <label class="btn" style="cursor:pointer">Importieren<input type="file" id="verImport" accept=".json,application/json" hidden></label>
+          <span class="hint">Versionen werden im Browser gespeichert. Zum Sichern oder Weitergeben exportieren.</span>
+        </div>
+        <div id="verList" style="margin-top:8px"></div>
+      </div>
+      <div class="card">
+        <h2>Ausgewählte Versionen vergleichen</h2>
+        <div class="row">
+          <label class="f">Spieleranzahl<select id="cmpPlayers">
+            <option value="saved">wie gespeichert</option><option value="2">immer 2</option><option value="3">immer 3</option><option value="both">2 und 3</option></select></label>
+          <label class="f">Spiele je Version<input type="number" id="cmpGames" value="1000" min="50" step="500"></label>
+          <button class="primary btn" id="cmpRun" style="align-self:flex-end">Vergleich starten</button>
+          <button class="btn" id="cmpStop" style="align-self:flex-end" hidden>Abbrechen</button>
+          <span class="hint eta" id="cmpInfo" style="align-self:flex-end"></span>
+        </div>
+        <div class="progress"><div id="cmpBar"></div></div>
+        <p class="hint">Alle Versionen nutzen denselben Seed. Unterschiede kommen damit vom Deck und nicht vom Zufall der Mischung.</p>
+      </div>
+      <div id="cmpResults"></div>
     </div>
 
     <!-- sweep -->
@@ -236,9 +285,10 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
           <label class="f">von<input type="number" id="swFrom" value="14"></label>
           <label class="f">bis<input type="number" id="swTo" value="30"></label>
           <label class="f">Schritt<input type="number" id="swStep" value="2" min="1"></label>
-          <label class="f">Spiele je Punkt<input type="number" id="swGames" value="2000" min="50" step="500"></label>
+          <label class="f">Spiele je Punkt<input type="number" id="swGames" value="1000" min="50" step="500"></label>
           <button class="primary btn" id="swRun" style="align-self:flex-end">Sweep starten</button>
           <button class="btn" id="swStop" style="align-self:flex-end" hidden>Abbrechen</button>
+          <span class="hint eta" id="swInfo" style="align-self:flex-end"></span>
         </div>
         <div class="progress"><div id="swBar"></div></div>
       </div>
@@ -255,8 +305,9 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
           <button class="primary btn" id="gRun" style="align-self:flex-end">Spiel zeigen</button>
           <button class="btn" id="gNextLoss" style="align-self:flex-end">Nächste Niederlage</button>
           <button class="btn" id="gNextWin" style="align-self:flex-end">Nächster Sieg</button>
+          <span class="hint" id="gInfo" style="align-self:flex-end"></span>
         </div>
-        <p class="hint">Gleicher Seed und gleiche Spielnummer ergeben dasselbe Spiel wie in der Massensimulation. Legende: G = Gegner, D = Dieb, H = Heilung, W = Waffe, M = Magie, S = Schmied. „W8&lt;12“ = Waffe 8, blockt nur noch Gegner unter 12.</p>
+        <p class="hint">Gleicher Seed und gleiche Spielnummer ergeben dasselbe Spiel wie in der Massensimulation. Legende: G = Gegner, D = Dieb, H = Heilung, W = Waffe, M = Magie, S = Schmied. „W8&lt;12“ = Waffe 8, blockt nur noch Gegner unter 12. „Hand +12/−25“ = Positiv- und Negativwert der Hand.</p>
         <div class="chips" id="gChips"></div>
         <div class="log" id="gLog">–</div>
       </div>

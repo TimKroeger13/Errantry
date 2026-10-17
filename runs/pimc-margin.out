@@ -1,0 +1,5 @@
+﻿@tuning/evolve3.json                     Sieg  68.80%  Fortschritt 91.2%  2.0s
+@tuning/evolve3.json,play=pimc,pimcSamples=4 Sieg  84.30%  Fortschritt 93.3%  z vs base   9.09  61.4s
+@tuning/evolve3.json,play=pimc,pimcSamples=4,pimcMargin=1 Sieg  81.70%  Fortschritt 92.9%  z vs base   7.75  59.9s
+@tuning/evolve3.json,play=pimc,pimcSamples=4,pimcMargin=3 Sieg  83.20%  Fortschritt 93.2%  z vs base   8.58  59.4s
+@tuning/evolve3.json,play=pimc,pimcSamples=4,pimcMargin=8 Sieg  83.70%  Fortschritt 93.1%  z vs base   8.99  61.1s

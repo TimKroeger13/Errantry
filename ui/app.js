@@ -1,11 +1,12 @@
-/* Errantry simulator UI. Engine: window.Errantry (rng, config, ai, engine, stats). */
+/* Errantry simulator UI. Engine: window.Errantry (rng, config, rules, tuned, ai, engine, stats). */
 (function () {
   'use strict';
   const E = window.Errantry;
   const C = E.config;
   const $ = (id) => document.getElementById(id);
   const SEAT = 'ABC';
-  const STORE_KEY = 'errantry.ui.v1';
+  const STORE_KEY = 'errantry.ui.v2';
+  const VERSIONS_KEY = 'errantry.versions.v1';
 
   // ------------------------------------------------------------------ helpers
   function el(tag, attrs, children) {
@@ -29,33 +30,47 @@
   const num = (x, d) => x.toFixed(d === undefined ? 1 : d).replace('.', ',');
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  function fmtTime(s) {
+    s = Math.max(0, Math.round(s));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+    return (h ? h + ' h ' : '') + (h || m ? m + ' min ' : '') + r + ' s';
+  }
+  // progress text with elapsed time and remaining-time estimate
+  function etaText(t0, f, what) {
+    const el2 = (performance.now() - t0) / 1000;
+    const rest = f > 0.01 ? (el2 / f) * (1 - f) : null;
+    return Math.round(f * 100) + ' %' + (what ? ' · ' + what : '') + ' · vergangen ' + fmtTime(el2) + (rest !== null ? ' · Rest ca. ' + fmtTime(rest) : ' · Restzeit wird berechnet …');
+  }
+  function download(name, obj) {
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    const a = el('a', { href: URL.createObjectURL(blob), download: name });
+    document.body.appendChild(a); a.click(); a.remove();
+  }
 
   // ------------------------------------------------------------------ state
-  const state = {
-    cfg: clone(C.DEFAULT_CONFIG),
-    policy: E.ai.PRESETS.expert ? 'expert' : 'planner',
-    policyJson: '',
-    runs: [],
-    refIdx: -1,
-  };
+  const state = { cfg: clone(C.DEFAULT_CONFIG), policy: 'expert', policyJson: '', runs: [], refIdx: -1, versions: [], selected: new Set() };
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
     if (saved && saved.cfg) Object.assign(state, { cfg: saved.cfg, policy: saved.policy || state.policy, policyJson: saved.policyJson || '' });
+    state.versions = JSON.parse(localStorage.getItem(VERSIONS_KEY) || '[]');
   } catch (e) { /* storage unavailable */ }
+  if (!state.cfg.cards3) state.cfg.cards3 = [];
+  if (!E.ai.PRESETS[state.policy]) state.policy = 'expert';
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify({ cfg: state.cfg, policy: state.policy, policyJson: state.policyJson })); } catch (e) { /* ignore */ }
+  }
+  function saveVersions() {
+    try { localStorage.setItem(VERSIONS_KEY, JSON.stringify(state.versions)); } catch (e) { /* ignore */ }
   }
 
   function currentPolicy() {
     let over = {};
-    if (state.policyJson.trim()) {
-      over = JSON.parse(state.policyJson); // throws on invalid JSON – caught by callers
-    }
+    if (state.policyJson.trim()) over = JSON.parse(state.policyJson); // throws on invalid JSON – caught by callers
     return Object.assign({}, E.ai.PRESETS[state.policy] || {}, over);
   }
   function policyLabel() {
-    const o = $('policy').selectedOptions[0];
-    return (o ? o.textContent.split(' (')[0] : state.policy) + (state.policyJson.trim() ? ' + Anpassung' : '');
+    const names = { expert: 'Experte', fast: 'Schnell', untrained: 'Untrainiert', random: 'Zufall' };
+    return (names[state.policy] || state.policy) + (state.policyJson.trim() ? ' + Anpassung' : '');
   }
 
   // ------------------------------------------------------------------ worker pool
@@ -63,8 +78,13 @@
 self.onmessage = function (e) {
   var m = e.data;
   try {
-    var res = Errantry.engine.runGames(m.cfg, m.policy, m.seed, m.from, m.to);
-    self.postMessage({ id: m.id, res: res });
+    if (m.kind === 'log') {
+      var g = Errantry.engine.runGame(m.cfg, m.policy, Errantry.engine.gameSeed(m.seed, m.index), { log: !m.quiet });
+      self.postMessage({ id: m.id, log: g.log, result: g.result });
+    } else {
+      var res = Errantry.engine.runGames(m.cfg, m.policy, m.seed, m.from, m.to);
+      self.postMessage({ id: m.id, res: res });
+    }
   } catch (err) { self.postMessage({ id: m.id, error: String(err && err.message || err) }); }
 };`;
   let pool = null;
@@ -86,9 +106,11 @@ self.onmessage = function (e) {
   }
 
   // Runs games [0, games) – in workers if possible, else chunked on the main thread.
+  // onProgress(fraction) is called after every finished chunk.
   function runBatch(cfg, policy, seed, games, onProgress, token) {
     const p = getPool();
-    const chunk = Math.max(25, Math.ceil(games / Math.max(1, p.workers.length * 8)));
+    const slow = policy.play === 'pimc';
+    const chunk = Math.max(slow ? 2 : 25, Math.ceil(games / Math.max(1, p.workers.length * (slow ? 24 : 8))));
     const jobs = [];
     for (let from = 0; from < games; from += chunk) jobs.push({ from, to: Math.min(games, from + chunk) });
     const out = [];
@@ -125,28 +147,37 @@ self.onmessage = function (e) {
           feed(w);
         };
         w.onerror = (ev) => { failed = true; killPool(); reject(new Error(ev.message || 'Worker-Fehler')); };
-        w.postMessage({ id: next, cfg, policy, seed, from: job.from, to: job.to });
+        w.postMessage({ kind: 'games', cfg, policy, seed, from: job.from, to: job.to });
       };
       for (const w of p.workers) feed(w);
     });
   }
 
-  // ------------------------------------------------------------------ config editor
-  function renderConfig() {
-    const cfg = state.cfg;
-    for (const b of $('players').querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.v) === Number(cfg.players)));
-    $('hp').value = cfg.hp;
-    $('thiefDamage').value = cfg.thiefDamage;
-    $('fleeBlockDeck').value = cfg.fleeBlockDeck;
-    $('handInfo').textContent = 'Handkarten je Spieler: ' + C.handSize(Number(cfg.players)) + ' (fest durch die Spieleranzahl)';
-    $('policy').value = state.policy;
-    $('policyJson').value = state.policyJson;
+  // One game (optionally with log) in a worker, so slow AIs do not freeze the page.
+  function runOne(cfg, policy, seed, index, withLog) {
+    const p = getPool();
+    if (!p.workers.length) {
+      const g = E.engine.runGame(cfg, policy, E.engine.gameSeed(seed, index), { log: withLog });
+      return Promise.resolve({ log: g.log, result: g.result });
+    }
+    const w = p.workers[0];
+    return new Promise((resolve, reject) => {
+      w.onmessage = (ev) => (ev.data.error ? reject(new Error(ev.data.error)) : resolve(ev.data));
+      w.onerror = (ev) => reject(new Error(ev.message || 'Worker-Fehler'));
+      w.postMessage({ kind: 'log', cfg, policy, seed, index, quiet: !withLog });
+    });
+  }
 
+  // ------------------------------------------------------------------ config editor
+  function renderCardList(listKey, tbodyId) {
+    const cfg = state.cfg;
+    const list = cfg[listKey];
     const order = (e) => C.TYPE_BY_KEY[e.type].t * 100 + (Number(e.value) || 0);
-    cfg.cards.sort((a, b) => order(a) - order(b));
-    const tb = $('cardRows');
+    list.sort((a, b) => order(a) - order(b));
+    const tb = $(tbodyId);
     tb.textContent = '';
-    cfg.cards.forEach((e, i) => {
+    if (!list.length) tb.appendChild(el('tr', null, [el('td', { colspan: '4', class: 'hint', text: listKey === 'cards3' ? 'Keine Zusatzkarten – bei 3 Spielern wird das Grunddeck gespielt.' : 'Keine Karten.' })]));
+    list.forEach((e, i) => {
       const ti = C.TYPE_BY_KEY[e.type];
       const typeSel = el('select', { 'aria-label': 'Typ' }, C.TYPES.map((t) => el('option', { value: t.key, text: t.name })));
       typeSel.value = e.type;
@@ -156,27 +187,61 @@ self.onmessage = function (e) {
       val.addEventListener('change', () => { e.value = Math.max(1, Math.min(63, Number(val.value) || 1)); changed(true); });
       const cnt = el('input', { type: 'number', min: '0', max: '99', value: String(e.count), 'aria-label': 'Anzahl' });
       cnt.addEventListener('change', () => { e.count = Math.max(0, Number(cnt.value) || 0); changed(false); });
-      const del = el('button', { class: 'ghost', title: 'Entfernen', 'aria-label': 'Entfernen', text: '✕', onclick: () => { cfg.cards.splice(i, 1); changed(true); } });
+      const del = el('button', { class: 'ghost', title: 'Entfernen', 'aria-label': 'Entfernen', text: '✕', onclick: () => { list.splice(i, 1); changed(true); } });
       tb.appendChild(el('tr', null, [el('td', null, [typeSel]), el('td', null, [val]), el('td', null, [cnt]), el('td', null, [del])]));
     });
+  }
+
+  function renderConfig() {
+    const cfg = state.cfg;
+    if (!cfg.cards3) cfg.cards3 = [];
+    for (const b of $('players').querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.v) === Number(cfg.players)));
+    $('hp').value = cfg.hp;
+    $('thiefDamage').value = cfg.thiefDamage;
+    $('fleeBlockDeck').value = cfg.fleeBlockDeck;
+    $('handInfo').textContent = 'Handkarten je Spieler: ' + C.handSize(Number(cfg.players)) + ' (fest durch die Spieleranzahl)';
+    $('policy').value = state.policy;
+    $('policyJson').value = state.policyJson;
+    renderCardList('cards', 'cardRows');
+    renderCardList('cards3', 'cardRows3');
     renderSummary();
+    renderPolicyHint();
+  }
+
+  function deckStats(cfg, players) {
+    const n = C.normalize(Object.assign(clone(cfg), { players }));
+    const by = {};
+    let total = 0;
+    for (const e of n.deckCards) {
+      const b = by[e.type] || (by[e.type] = { n: 0, sum: 0 });
+      b.n += e.count; b.sum += e.count * (e.value || 0); total += e.count;
+    }
+    return { by, total };
   }
 
   function renderSummary() {
-    const cfg = state.cfg;
-    const by = {};
-    let total = 0;
-    for (const e of cfg.cards) {
-      const b = by[e.type] || (by[e.type] = { n: 0, sum: 0 });
-      b.n += Number(e.count) || 0; b.sum += (Number(e.count) || 0) * (Number(e.value) || 0);
-      total += Number(e.count) || 0;
-    }
-    const s = $('deckSummary');
+    const cfg = state.cfg, s = $('deckSummary');
     s.textContent = '';
-    s.appendChild(el('div', null, [el('b', { text: total + ' Karten' }), ' · ' + C.TYPES.filter((t) => by[t.key] && by[t.key].n).map((t) => t.name + ' ' + by[t.key].n).join(' · ')]));
-    const enemy = by.enemy ? by.enemy.sum : 0, heal = by.heal ? by.heal.sum : 0, weap = by.weapon ? by.weapon.sum : 0;
-    s.appendChild(el('div', null, ['Gegnerstärke gesamt ', el('b', { text: String(enemy) }), ' · Heilung gesamt ', el('b', { text: String(heal) }),
-      ' · Waffenstärke gesamt ', el('b', { text: String(weap) }), ' · Leben gesamt ', el('b', { text: String(cfg.players * cfg.hp) })]));
+    try {
+      for (const players of [2, 3]) {
+        const { by, total } = deckStats(cfg, players);
+        const active = Number(cfg.players) === players;
+        s.appendChild(el('div', { style: active ? '' : 'opacity:.65' }, [
+          el('b', { text: players + ' Spieler: ' + total + ' Karten' }), ' · ' + C.TYPES.filter((t) => by[t.key] && by[t.key].n).map((t) => t.name + ' ' + by[t.key].n).join(' · ') +
+          ' · Gegnerstärke ' + (by.enemy ? by.enemy.sum : 0) + ' · Heilung ' + (by.heal ? by.heal.sum : 0) + ' · Leben gesamt ' + players * cfg.hp,
+        ]));
+      }
+    } catch (e) { s.appendChild(el('div', { text: 'Fehler: ' + e.message })); }
+  }
+
+  function renderPolicyHint() {
+    const hints = {
+      expert: 'Schließt aus den Flucht- und Startsignalen auf die Partnerhand (PIMC). Ca. 0,4 s je Spiel und Prozessorkern, mit 3 Spielern ca. 2 s – 1000 Spiele dauern je nach Rechner etwa 1–4 Minuten.',
+      fast: 'Gleiche trainierte Bewertung, aber ohne Partnerhand-Schluss: einige tausend Spiele pro Sekunde, ideal für große Sweeps. Spielt etwas schwächer als der Experte.',
+      untrained: 'Die Bewertung vor der Evolution – zeigt, wie viel das Training gebracht hat.',
+      random: 'Spielt zufällige erlaubte Züge – untere Grenze zum Vergleich.',
+    };
+    $('policyHint').textContent = hints[state.policy] || '';
   }
 
   function changed(rerender) {
@@ -189,27 +254,25 @@ self.onmessage = function (e) {
     for (const b of $('players').querySelectorAll('button')) b.addEventListener('click', () => { state.cfg.players = Number(b.dataset.v); changed(true); });
     for (const id of ['hp', 'thiefDamage', 'fleeBlockDeck']) $(id).addEventListener('change', () => { state.cfg[id] = Math.max(0, Number($(id).value) || 0); if (id === 'hp') state.cfg.hp = Math.max(1, state.cfg.hp); changed(true); });
     $('presetStd').addEventListener('click', () => { state.cfg = clone(C.DEFAULT_CONFIG); changed(true); });
-    $('presetEmpty').addEventListener('click', () => { state.cfg.cards = []; changed(true); });
+    $('presetEmpty').addEventListener('click', () => { state.cfg.cards = []; state.cfg.cards3 = []; changed(true); });
     $('addRow').addEventListener('click', () => { state.cfg.cards.push({ type: 'enemy', value: 2, count: 1 }); changed(true); });
+    $('addRow3').addEventListener('click', () => { state.cfg.cards3.push({ type: 'heal', value: 5, count: 1 }); changed(true); });
     const gt = $('genType');
     for (const t of C.TYPES) gt.appendChild(el('option', { value: t.key, text: t.name }));
     $('genAdd').addEventListener('click', () => {
+      const list = state.cfg[$('genList').value];
       const type = gt.value, ti = C.TYPE_BY_KEY[type], count = Math.max(0, Number($('genCount').value) || 0);
       const from = ti.hasValue ? Math.max(1, Number($('genFrom').value) || 1) : 0, to = ti.hasValue ? Math.min(63, Number($('genTo').value) || from) : 0;
       for (let v = from; v <= to; v++) {
-        const idx = state.cfg.cards.findIndex((e) => e.type === type && Number(e.value) === v);
-        if (idx >= 0) { if (count) state.cfg.cards[idx].count = count; else state.cfg.cards.splice(idx, 1); }
-        else if (count) state.cfg.cards.push({ type, value: v, count });
+        const idx = list.findIndex((e) => e.type === type && Number(e.value) === v);
+        if (idx >= 0) { if (count) list[idx].count = count; else list.splice(idx, 1); }
+        else if (count) list.push({ type, value: v, count });
       }
       changed(true);
     });
-    $('policy').addEventListener('change', () => { state.policy = $('policy').value; save(); });
+    $('policy').addEventListener('change', () => { state.policy = $('policy').value; save(); renderPolicyHint(); });
     $('policyJson').addEventListener('change', () => { state.policyJson = $('policyJson').value; save(); });
-    $('exportCfg').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(state.cfg, null, 2)], { type: 'application/json' });
-      const a = el('a', { href: URL.createObjectURL(blob), download: 'errantry-deck.json' });
-      document.body.appendChild(a); a.click(); a.remove();
-    });
+    $('exportCfg').addEventListener('click', () => download('errantry-deck.json', state.cfg));
     $('importCfg').addEventListener('change', (ev) => {
       const f = ev.target.files[0];
       if (!f) return;
@@ -349,7 +412,7 @@ self.onmessage = function (e) {
 
   // horizontal bars: rows [{label, value, tip}]
   function barChart(box, o) {
-    const rowH = 26, m = { l: 54, r: 56, t: 4, b: 4 };
+    const rowH = 26, m = { l: o.labelW || 54, r: 56, t: 4, b: 4 };
     const W = Math.max(300, box.wrap.clientWidth || 600), H = m.t + m.b + rowH * o.rows.length;
     const vMax = Math.max(1e-9, ...o.rows.map((r) => r.value));
     const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': o.aria || '' });
@@ -381,15 +444,19 @@ self.onmessage = function (e) {
     const t0 = performance.now();
     runToken = { cancelled: false };
     const tok = runToken;
-    $('runInfo').textContent = 'läuft …';
+    $('bar').style.width = '0%';
+    $('runInfo').textContent = 'startet …';
     try {
-      const res = await runBatch(cfg, policy, seed, games, (f) => { $('bar').style.width = (f * 100).toFixed(1) + '%'; $('runInfo').textContent = Math.round(f * games) + ' / ' + games + ' Spiele'; }, tok);
+      const res = await runBatch(cfg, policy, seed, games, (f) => {
+        $('bar').style.width = (f * 100).toFixed(1) + '%';
+        $('runInfo').textContent = etaText(t0, f, Math.round(f * games) + ' / ' + games + ' Spiele');
+      }, tok);
       const ms = performance.now() - t0;
       const s = E.stats.aggregate(res, cfg.hp);
       const run = { s, cfg, policy, policyLabel: policyLabel(), seed, games, ms, label: cfgLabel(cfg), when: new Date() };
       state.runs.unshift(run);
       if (state.refIdx >= 0) state.refIdx++;
-      $('runInfo').textContent = games + ' Spiele in ' + num(ms / 1000) + ' s';
+      $('runInfo').textContent = games + ' Spiele in ' + fmtTime(ms / 1000);
       renderResults();
       renderRuns();
     } catch (e) {
@@ -400,9 +467,12 @@ self.onmessage = function (e) {
   }
 
   function cfgLabel(cfg) {
+    const n = C.normalize(clone(cfg));
     const by = {};
-    for (const e of cfg.cards) by[e.type] = (by[e.type] || 0) + Number(e.count);
-    return cfg.players + ' Sp. · ' + cfg.hp + ' LP · ' + C.TYPES.filter((t) => by[t.key]).map((t) => t.short + by[t.key]).join(' ');
+    for (const e of n.deckCards) by[e.type] = (by[e.type] || 0) + Number(e.count);
+    const extra = n.cards3.reduce((x, e) => x + e.count, 0);
+    return cfg.players + ' Sp. · ' + cfg.hp + ' LP · ' + C.TYPES.filter((t) => by[t.key]).map((t) => t.short + by[t.key]).join(' ') +
+      (extra ? (Number(cfg.players) === 3 ? ' (inkl. ' + extra + ' Zusatzkarten)' : ' · +' + extra + ' Zusatzkarten bei 3 Sp.') : '');
   }
 
   function tile(l, v, d) { return el('div', { class: 'tile' }, [el('div', { class: 'l', text: l }), el('div', { class: 'v', text: v }), d ? el('div', { class: 'd', text: d }) : null]); }
@@ -524,6 +594,164 @@ self.onmessage = function (e) {
     });
   }
 
+  // ------------------------------------------------------------------ versions
+  function flash(btn, txt) {
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+    btn.textContent = txt;
+    clearTimeout(btn._flash);
+    btn._flash = setTimeout(() => { btn.textContent = btn.dataset.label; }, 1500);
+  }
+
+  function renderVersions() {
+    const box = $('verList');
+    box.textContent = '';
+    if (!state.versions.length) {
+      box.appendChild(el('p', { class: 'hint', text: 'Noch keine Versionen. Links unter „Als Version speichern“ den aktuellen Stand sichern.' }));
+      return;
+    }
+    state.versions.forEach((v, i) => {
+      const cb = el('input', { type: 'checkbox', 'aria-label': 'Für den Vergleich auswählen' });
+      cb.checked = state.selected.has(v.id);
+      cb.addEventListener('change', () => { if (cb.checked) state.selected.add(v.id); else state.selected.delete(v.id); });
+      let label;
+      try { label = cfgLabel(v.cfg); } catch (e) { label = 'ungültig: ' + e.message; }
+      const meta = label + ' · gespeichert ' + new Date(v.saved).toLocaleString('de-DE') + (v.lastResult !== undefined ? ' · zuletzt ' + pct(v.lastResult) : '');
+      box.appendChild(el('div', { class: 'v' }, [
+        cb,
+        el('div', null, [el('div', { class: 'name', text: v.name }), el('div', { class: 'meta', title: meta, text: meta })]),
+        el('div', { class: 'acts' }, [
+          el('button', { class: 'btn', text: 'Laden', onclick: () => { state.cfg = clone(v.cfg); if (!state.cfg.cards3) state.cfg.cards3 = []; changed(true); } }),
+          el('button', { class: 'btn', text: 'Überschreiben', title: 'Mit dem aktuellen Stand links überschreiben', onclick: () => {
+            if (confirm('Version „' + v.name + '“ mit dem aktuellen Stand überschreiben?')) { v.cfg = clone(state.cfg); v.saved = Date.now(); delete v.lastResult; saveVersions(); renderVersions(); }
+          } }),
+          el('button', { class: 'ghost', text: '✕', title: 'Löschen', 'aria-label': 'Löschen', onclick: () => {
+            if (confirm('Version „' + v.name + '“ löschen?')) { state.versions.splice(i, 1); state.selected.delete(v.id); saveVersions(); renderVersions(); }
+          } }),
+        ]),
+      ]));
+    });
+  }
+
+  function saveVersion() {
+    try { C.normalize(state.cfg); } catch (e) { alert('Konfiguration ungültig: ' + e.message); return; }
+    const name = $('verName').value.trim() || 'Version ' + (state.versions.length + 1);
+    const v = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, cfg: clone(state.cfg), saved: Date.now() };
+    state.versions.push(v);
+    state.selected.add(v.id);
+    saveVersions();
+    renderVersions();
+    $('verName').value = '';
+    flash($('verSave'), 'Gespeichert ✓');
+  }
+
+  function setupVersions() {
+    $('verSave').addEventListener('click', saveVersion);
+    $('verName').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') saveVersion(); });
+    $('verExport').addEventListener('click', () => download('errantry-versionen.json', state.versions));
+    $('verImport').addEventListener('change', (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const list = JSON.parse(r.result);
+          if (!Array.isArray(list)) throw new Error('Datei enthält keine Versionsliste');
+          for (const v of list) {
+            if (!v || !v.cfg || !v.name) continue;
+            C.normalize(v.cfg);
+            state.versions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: String(v.name), cfg: v.cfg, saved: v.saved || Date.now() });
+          }
+          saveVersions();
+          renderVersions();
+        } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
+      };
+      r.readAsText(f);
+      ev.target.value = '';
+    });
+    $('cmpRun').addEventListener('click', runCompare);
+    $('cmpStop').addEventListener('click', () => { if (cmpToken) { cmpToken.cancelled = true; if (cmpToken.cancel) cmpToken.cancel(); } });
+  }
+
+  let cmpToken = null;
+  async function runCompare() {
+    const vs = state.versions.filter((v) => state.selected.has(v.id));
+    if (!vs.length) { alert('Bitte mindestens eine Version auswählen.'); return; }
+    let policy;
+    try { policy = currentPolicy(); } catch (e) { alert('KI-Parameter ungültig: ' + e.message); return; }
+    const mode = $('cmpPlayers').value;
+    const games = Math.max(50, Number($('cmpGames').value) || 1000), seed = Math.floor(Number($('seed').value) || 0);
+    const jobs = [];
+    for (const v of vs) {
+      const ps = mode === 'saved' ? [Number(v.cfg.players)] : mode === 'both' ? [2, 3] : [Number(mode)];
+      for (const p of ps) jobs.push({ v, cfg: Object.assign(clone(v.cfg), { players: p }) });
+    }
+    // the expert needs about 5x as long with 3 players – weight the progress accordingly
+    const weight = (j) => (policy.play === 'pimc' && j.cfg.players === 3 ? 5 : 1);
+    const totalW = jobs.reduce((s, j) => s + weight(j), 0);
+    $('cmpRun').disabled = true; $('cmpStop').hidden = false;
+    cmpToken = { cancelled: false };
+    const tok = cmpToken;
+    const t0 = performance.now();
+    let doneW = 0;
+    const rows = [];
+    $('cmpBar').style.width = '0%';
+    try {
+      for (const j of jobs) {
+        C.normalize(j.cfg);
+        const res = await runBatch(j.cfg, policy, seed, games, (f) => {
+          const tf = (doneW + f * weight(j)) / totalW;
+          $('cmpBar').style.width = (tf * 100).toFixed(1) + '%';
+          $('cmpInfo').textContent = etaText(t0, tf, j.v.name + ' (' + j.cfg.players + ' Sp.)');
+        }, tok);
+        doneW += weight(j);
+        const s = E.stats.aggregate(res, j.cfg.hp);
+        rows.push({ v: j.v, players: j.cfg.players, s });
+        if (j.cfg.players === Number(j.v.cfg.players)) { j.v.lastResult = s.winRate; saveVersions(); }
+        renderCompare(rows, games);
+      }
+      $('cmpInfo').textContent = 'fertig in ' + fmtTime((performance.now() - t0) / 1000);
+      renderVersions();
+    } catch (e) {
+      $('cmpInfo').textContent = e.message === 'abgebrochen' ? 'abgebrochen' : 'Fehler: ' + e.message;
+    } finally {
+      $('cmpRun').disabled = false; $('cmpStop').hidden = true;
+    }
+  }
+
+  function renderCompare(rows, games) {
+    const out = $('cmpResults');
+    out.textContent = '';
+    const c1 = cssVar('--series-1');
+    const box = chartBox('Siegquote je Version', games + ' Spiele je Version · KI: ' + policyLabel() + ' · Linie = 95 %-Konfidenzintervall im Tooltip');
+    out.appendChild(box.card);
+    barChart(box, {
+      labelW: 170,
+      rows: rows.map((r) => ({ label: (r.v.name.length > 20 ? r.v.name.slice(0, 19) + '…' : r.v.name) + ' · ' + r.players + ' Sp.', value: r.s.winRate, tip: r.v.name + ', ' + r.players + ' Spieler · 95 %-KI ' + pct(r.s.winCI[0]) + ' – ' + pct(r.s.winCI[1]) })),
+      color: c1, fmt: (v) => pct(v), aria: 'Siegquote je Version',
+    });
+    const card = el('div', { class: 'card' });
+    card.appendChild(el('h2', { text: 'Kennzahlen im Vergleich' }));
+    const heads = ['Version', 'Spieler', 'Karten', 'Siegquote', '95 %-KI', 'Δ zur ersten', 'Ø Fortschritt', 'Restleben (Sieg)', 'schwächster (Sieg)', 'knappe Siege', 'Fluchten'];
+    const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, heads.map((x) => el('th', { text: x })))])]);
+    const tb = el('tbody');
+    for (const r of rows) {
+      const first = rows.find((q) => q.players === r.players);
+      const d = (r.s.winRate - first.s.winRate) * 100;
+      const n = C.normalize(Object.assign(clone(r.v.cfg), { players: r.players }));
+      const cards = n.deckCards.reduce((s, e) => s + e.count, 0);
+      tb.appendChild(el('tr', null, [
+        el('td', { text: r.v.name }), el('td', { class: 'n', text: String(r.players) }), el('td', { class: 'n', text: String(cards) }),
+        el('td', { class: 'n', text: pct(r.s.winRate) }), el('td', { class: 'n', text: pct(r.s.winCI[0]) + ' – ' + pct(r.s.winCI[1]) }),
+        el('td', { class: 'n ' + (r === first ? '' : d >= 0 ? 'delta-up' : 'delta-down'), text: r === first ? '–' : (d >= 0 ? '+' : '') + num(d) + ' Pkt.' }),
+        el('td', { class: 'n', text: pct(r.s.avgProgress, 0) }), el('td', { class: 'n', text: num(r.s.avgWinSumHp) }), el('td', { class: 'n', text: num(r.s.avgWinMinHp) }),
+        el('td', { class: 'n', text: r.s.wins ? pct(r.s.closeWins / r.s.wins, 0) : '–' }), el('td', { class: 'n', text: num(r.s.counters.flees, 2) }),
+      ]));
+    }
+    tbl.appendChild(tb);
+    card.appendChild(el('div', { style: 'overflow-x:auto' }, [tbl]));
+    out.appendChild(card);
+  }
+
   // ------------------------------------------------------------------ sweep
   function fillSweepParams() {
     const sel = $('swParam');
@@ -566,6 +794,7 @@ self.onmessage = function (e) {
     if (!xs.length || xs.length > 60) { alert('Bitte 1 bis 60 Messpunkte wählen.'); return; }
     const label = $('swParam').selectedOptions[0].textContent;
     $('swRun').disabled = true; $('swStop').hidden = false;
+    const t0 = performance.now();
     swToken = { cancelled: false };
     const tok = swToken;
     const pts = [];
@@ -575,13 +804,18 @@ self.onmessage = function (e) {
         const cfg = clone(state.cfg);
         applySweep(cfg, param, xs[i]);
         C.normalize(cfg);
-        const res = await runBatch(cfg, policy, seed, games, (f) => { $('swBar').style.width = (((i + f) / xs.length) * 100).toFixed(1) + '%'; }, tok);
+        const res = await runBatch(cfg, policy, seed, games, (f) => {
+          const tf = (i + f) / xs.length;
+          $('swBar').style.width = (tf * 100).toFixed(1) + '%';
+          $('swInfo').textContent = etaText(t0, tf, 'Punkt ' + (i + 1) + '/' + xs.length + ' (' + xs[i] + ')');
+        }, tok);
         const s = E.stats.aggregate(res, cfg.hp);
         pts.push({ x: xs[i], s });
         renderSweep(out, label, pts, games);
       }
+      $('swInfo').textContent = 'fertig in ' + fmtTime((performance.now() - t0) / 1000);
     } catch (e) {
-      if (e.message !== 'abgebrochen') alert('Fehler: ' + e.message);
+      $('swInfo').textContent = e.message === 'abgebrochen' ? 'abgebrochen' : 'Fehler: ' + e.message;
     } finally {
       $('swRun').disabled = false; $('swStop').hidden = true;
     }
@@ -612,63 +846,84 @@ self.onmessage = function (e) {
   }
 
   // ------------------------------------------------------------------ single game
-  function showGame(index) {
-    let policy;
-    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return null; }
-    const seed = Math.floor(Number($('gSeed').value) || 0);
-    const g = E.engine.runGame(clone(state.cfg), policy, E.engine.gameSeed(seed, index), { log: true });
-    $('gIndex').value = index;
-    const log = $('gLog'), chips = $('gChips');
-    log.textContent = ''; chips.textContent = '';
-    log.appendChild(el('div', { class: 'hint', text: 'Seed ' + seed + ' · Spiel ' + index + ' · ' + cfgLabel(state.cfg) + ' · KI: ' + policyLabel() }));
-    g.log.forEach((line) => {
+  function renderLog(log, seed, index) {
+    const out = $('gLog'), chips = $('gChips');
+    out.textContent = ''; chips.textContent = '';
+    out.appendChild(el('div', { class: 'hint', text: 'Seed ' + seed + ' · Spiel ' + index + ' · ' + cfgLabel(state.cfg) + ' · KI: ' + policyLabel() }));
+    log.forEach((line) => {
       let cls = null;
       if (line.startsWith('──')) cls = 'round';
       else if (line.startsWith('★')) cls = 'win';
       else if (line.startsWith('✗')) cls = 'loss';
       const d = el('div', cls ? { class: cls, text: line } : { text: line || ' ' });
-      log.appendChild(d);
+      out.appendChild(d);
       if (cls === 'round') {
         const m = line.match(/Runde (\d+)/);
-        chips.appendChild(el('button', { text: 'R' + (m ? m[1] : '?'), onclick: () => { log.scrollTop = d.offsetTop - log.offsetTop - 4; } }));
+        chips.appendChild(el('button', { text: 'R' + (m ? m[1] : '?'), onclick: () => { out.scrollTop = d.offsetTop - out.offsetTop - 4; } }));
       }
     });
-    return g.result;
   }
-  function findGame(wantWin) {
+
+  let gBusy = false;
+  async function showGame(index) {
+    if (gBusy) return;
+    let policy;
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return; }
+    const seed = Math.floor(Number($('gSeed').value) || 0);
+    gBusy = true;
+    $('gInfo').textContent = 'rechnet …';
+    try {
+      const r = await runOne(clone(state.cfg), policy, seed, index, true);
+      $('gIndex').value = index;
+      renderLog(r.log, seed, index);
+      $('gInfo').textContent = r.result.win ? 'Sieg' : 'Niederlage';
+    } catch (e) { $('gInfo').textContent = 'Fehler: ' + e.message; }
+    gBusy = false;
+  }
+
+  async function findGame(wantWin) {
+    if (gBusy) return;
+    let policy;
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return; }
+    const seed = Math.floor(Number($('gSeed').value) || 0);
+    gBusy = true;
     let i = Number($('gIndex').value) + 1;
-    for (let k = 0; k < 400; k++, i++) {
-      let policy;
-      try { policy = currentPolicy(); } catch (e) { alert(e.message); return; }
-      const g = E.engine.runGame(clone(state.cfg), policy, E.engine.gameSeed(Math.floor(Number($('gSeed').value) || 0), i));
-      if (g.result.win === wantWin) { showGame(i); return; }
-    }
-    alert('In den nächsten 400 Spielen nicht gefunden.');
+    try {
+      for (let k = 0; k < 200; k++, i++) {
+        $('gInfo').textContent = 'suche … Spiel ' + i;
+        const r = await runOne(clone(state.cfg), policy, seed, i, false);
+        if (r.result.win === wantWin) { gBusy = false; return showGame(i); }
+      }
+      $('gInfo').textContent = 'In den nächsten 200 Spielen nicht gefunden.';
+    } catch (e) { $('gInfo').textContent = 'Fehler: ' + e.message; }
+    gBusy = false;
   }
 
   // ------------------------------------------------------------------ help
   function renderHelp() {
     const h = $('helpText');
     const P = (t) => el('p', { text: t });
+    const tunedNote = E.tuned ? 'Trainingsstand: ' + Object.keys(E.tuned).length + ' trainierte Parameter (siehe src/tuned.js).' : '';
     h.append(
       el('h2', { text: 'Umgesetzte Regeln' }),
       el('ul', null, [
         'Alle Karten bilden ein gemeinsames Deck. Gewonnen ist, wenn alle Karten durchgespielt sind. Fällt ein Spieler auf 0 oder weniger Leben, verlieren alle.',
-        '2 Spieler: 4 Handkarten, 3 Spieler: 3 Handkarten. Nach jeder Runde wird aufgefüllt.',
+        '2 Spieler: 4 Handkarten, 3 Spieler: 3 Handkarten. Nach jeder Runde wird aufgefüllt. Zusatzkarten für 3 Spieler kommen nur bei 3 Spielern ins Deck.',
         'Vor dem ersten Ausspielen kann das Team fliehen: alle Handkarten offen, gemischt unter das Deck. Nicht zweimal in Folge und nicht mehr bei wenigen Karten im Deck.',
         'Reihum legt jeder 1 Karte pro Zug an einen beliebigen Spieler (auch sich selbst). Mit nur 1 Karte darf man passen und hält sie bis zur nächsten Runde. In der letzten Hand muss alles gespielt werden.',
         'Gegner und Diebe müssen an einen Spieler mit den bisher wenigsten Gegnern dieser Runde.',
         'Am Rundenende handelt jeder seine Karten in frei gewählter Reihenfolge ab.',
-        'Gegner: Faust (voller Schaden), Waffe (Schaden = Gegner − Waffe, nur Gegner kleiner als der zuletzt geblockte) oder Magie (einmalig, wie eine Waffe).',
+        'Gegner: Faust (voller Schaden), Waffe (Schaden = Gegner − Waffe, nur Gegner kleiner als der zuletzt geblockte) oder Magie (einmalig, wie eine Waffe, eigener Platz neben der Waffe).',
         'Heilung: max. eine pro Runde, nicht über das Maximum. Schmied: entfernt den obersten Gegner von der Waffe. Dieb: nimmt die Waffe oder macht Diebschaden.',
       ].map((t) => el('li', { text: t }))),
       el('h2', { text: 'Wie die KI spielt' }),
-      P('Abhandeln: Für die Karten vor einem Spieler wird jede Reihenfolge und jede Wahl (Faust/Waffe/Magie, Anlegen/Verwerfen, Heilzeitpunkt, Dieb) exakt durchgerechnet. Bewertet wird das Ergebnis über Leben (mit Risikoaufschlag bei wenig Leben) plus den erwarteten Nutzen der Waffe für die noch kommenden Gegner (Kartenzählen).'),
-      P('Ausspielen: Wer am Zug ist, plant seine ganze Resthand (Ziel je Karte oder Halten) und spielt die erste Karte des besten Plans. Nach jedem Zug des Partners wird neu geplant. Die Hand des Partners ist unbekannt.'),
-      P('Fliehen und Startspieler: Jeder bewertet nur seine eigene Hand und gibt eines von vier Signalen (nicht / offen / will / unbedingt). Danach wird einmal nachjustiert. Berücksichtigt wird auch, was bereits unter dem Deck liegt.'),
-      P('Experte: Die Gewichte dieser Bewertung wurden per Evolution auf dem Standarddeck optimiert, mit Millionen simulierter Spiele. Das Orakel sieht alle Hände und zeigt, was bei perfekter Absprache möglich wäre.'),
+      P('Kommunikation: Beim Fliehen und beim Startspieler sagt jeder gleichzeitig eine von vier Stufen (will nicht / offen / will / will unbedingt). Danach gibt es bis zu zwei Reaktionsrunden, in denen jeder nachjustieren darf. Mehr darf nicht gesagt werden – kein „Morsen“.'),
+      P('Fliehen: Jeder bewertet seine Hand – wie gut passt sie jetzt im Vergleich zu einer Durchschnittshand, wie wertvoll wären die Karten am Ende des Decks, und wie positiv oder negativ ist das, was schon unter dem Deck liegt.'),
+      P('Ausspielen: Wer am Zug ist, plant seine Resthand (Ziel je Karte oder Halten) und spielt den besten Plan an. Der Experte stellt sich dabei mehrere mögliche Partnerhände vor, die zu den Signalen des Partners passen (PIMC), und wählt den Zug, der im Schnitt am besten ist. Jeder sieht nur seine eigenen Karten.'),
+      P('Abhandeln am Rundenende: Für die Karten vor einem Spieler wird die beste Reihenfolge exakt bestimmt (Faust/Waffe/Magie, Anlegen, Heilzeitpunkt, Dieb). In der vorletzten Runde wird zusätzlich geprüft, ob die letzte Hand überlebbar ist.'),
+      P('Training: Die rund 60 Gewichte dieser Bewertung wurden per Evolution auf einer Mischung aus Decks (2 und 3 Spieler, mit und ohne Magie und Schmied, verschiedene Leben) mit Millionen Spielen optimiert. ' + tunedNote),
       el('h2', { text: 'Konsole' }),
-      el('pre', { class: 'log', text: 'node cli/sim.js --games 10000\nnode cli/sim.js --log --seed 1 --game 3\nnode cli/sim.js --compare expert,planner,random\nnode cli/ab.js "base" "holdBad=1"\nnode cli/evolve.js --pop 48 --games 1000 --gens 60' }),
+      el('pre', { class: 'log', text: 'node cli/check.js --cfgs std2,std3 --set play=pimc\nnode cli/sim.js --log --seed 1 --game 3\nnode cli/ab.js "base" "holdBad=1"\nnode cli/evolve.js --cfgs train --gens 30\nnode cli/bake.js tuning/<champion>.json   (Champion als Standard übernehmen)\nnode build.js                            (diese Seite neu erzeugen)' }),
     );
   }
 
@@ -684,7 +939,9 @@ self.onmessage = function (e) {
 
   setupTabs();
   setupConfig();
+  setupVersions();
   renderConfig();
+  renderVersions();
   fillSweepParams();
   renderHelp();
   $('runBtn').addEventListener('click', runSimulation);

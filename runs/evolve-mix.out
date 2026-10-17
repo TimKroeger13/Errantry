@@ -1,0 +1,172 @@
+﻿Evolution: 48 Varianten × 1000 Spiele × 40 Generationen · Konfigurationen: std2, std2, std3, magic2, smith2, mix2, mix3, hp16
+Fitness-Gewichte: {"win":1,"progress":0.1,"lowHp":0.05,"endMin":0.05,"endHp":0.02,"overheal":0,"dmg":0}
+    … Generation 1: 12/48 Varianten getestet (25s)
+    … Generation 1: 24/48 Varianten getestet (57s)
+    … Generation 1: 36/48 Varianten getestet (91s)
+Gen   1/40: beste 83.3% (Ø über 1 Gen. 83.3%, Fitness 0.9680)  Population Ø 75.0% · 117s/Gen · vergangen 1min 56s · Rest ~1h 16min 2s
+    … Generation 2: 12/48 Varianten getestet (29s)
+    … Generation 2: 24/48 Varianten getestet (62s)
+    … Generation 2: 36/48 Varianten getestet (92s)
+Gen   2/40: beste 81.9% (Ø über 2 Gen. 82.0%, Fitness 0.9554)  Population Ø 73.1% · 121s/Gen · vergangen 3min 58s · Rest ~1h 15min 23s
+    … Generation 3: 12/48 Varianten getestet (24s)
+    … Generation 3: 24/48 Varianten getestet (67s)
+    … Generation 3: 36/48 Varianten getestet (96s)
+Gen   3/40: beste 81.7% (Ø über 3 Gen. 81.9%, Fitness 0.9533)  Population Ø 72.5% · 121s/Gen · vergangen 5min 59s · Rest ~1h 13min 51s
+    … Generation 4: 12/48 Varianten getestet (32s)
+    … Generation 4: 24/48 Varianten getestet (70s)
+    … Generation 4: 36/48 Varianten getestet (101s)
+Gen   4/40: beste 82.5% (Ø über 1 Gen. 82.5%, Fitness 0.9610)  Population Ø 75.0% · 129s/Gen · vergangen 8min 8s · Rest ~1h 13min 16s
+    … Generation 5: 12/48 Varianten getestet (32s)
+    … Generation 5: 24/48 Varianten getestet (61s)
+    … Generation 5: 36/48 Varianten getestet (89s)
+Gen   5/40: beste 82.2% (Ø über 1 Gen. 82.2%, Fitness 0.9573)  Population Ø 74.2% · 116s/Gen · vergangen 10min 4s · Rest ~1h 10min 31s
+    … Generation 6: 12/48 Varianten getestet (28s)
+    … Generation 6: 24/48 Varianten getestet (61s)
+    … Generation 6: 36/48 Varianten getestet (92s)
+Gen   6/40: beste 78.9% (Ø über 6 Gen. 81.3%, Fitness 0.9475)  Population Ø 73.1% · 122s/Gen · vergangen 12min 6s · Rest ~1h 8min 38s
+    … Generation 7: 12/48 Varianten getestet (27s)
+    … Generation 7: 24/48 Varianten getestet (66s)
+    … Generation 7: 36/48 Varianten getestet (106s)
+Gen   7/40: beste 82.4% (Ø über 3 Gen. 81.6%, Fitness 0.9499)  Population Ø 73.8% · 134s/Gen · vergangen 14min 21s · Rest ~1h 7min 40s
+    … Generation 8: 12/48 Varianten getestet (33s)
+    … Generation 8: 24/48 Varianten getestet (65s)
+    … Generation 8: 36/48 Varianten getestet (99s)
+Gen   8/40: beste 81.7% (Ø über 8 Gen. 81.6%, Fitness 0.9499)  Population Ø 73.4% · 127s/Gen · vergangen 16min 28s · Rest ~1h 5min 52s
+    … Generation 9: 12/48 Varianten getestet (30s)
+    … Generation 9: 24/48 Varianten getestet (57s)
+    … Generation 9: 36/48 Varianten getestet (84s)
+Gen   9/40: beste 81.3% (Ø über 9 Gen. 81.5%, Fitness 0.9495)  Population Ø 71.2% · 108s/Gen · vergangen 18min 15s · Rest ~1h 2min 54s
+    … Generation 10: 12/48 Varianten getestet (43s)
+    … Generation 10: 24/48 Varianten getestet (80s)
+    … Generation 10: 36/48 Varianten getestet (124s)
+Gen  10/40: beste 80.6% (Ø über 10 Gen. 81.4%, Fitness 0.9485)  Population Ø 70.8% · 157s/Gen · vergangen 20min 52s · Rest ~1h 2min 37s
+    … Generation 11: 12/48 Varianten getestet (33s)
+    … Generation 11: 24/48 Varianten getestet (68s)
+    … Generation 11: 36/48 Varianten getestet (112s)
+Gen  11/40: beste 81.9% (Ø über 11 Gen. 81.5%, Fitness 0.9489)  Population Ø 74.0% · 162s/Gen · vergangen 23min 34s · Rest ~1h 2min 8s
+    … Generation 12: 12/48 Varianten getestet (27s)
+    … Generation 12: 24/48 Varianten getestet (61s)
+    … Generation 12: 36/48 Varianten getestet (98s)
+Gen  12/40: beste 82.7% (Ø über 1 Gen. 82.7%, Fitness 0.9627)  Population Ø 72.7% · 121s/Gen · vergangen 25min 35s · Rest ~59min 42s
+    … Generation 13: 12/48 Varianten getestet (32s)
+    … Generation 13: 24/48 Varianten getestet (62s)
+    … Generation 13: 36/48 Varianten getestet (107s)
+Gen  13/40: beste 81.3% (Ø über 2 Gen. 82.0%, Fitness 0.9559)  Population Ø 73.3% · 143s/Gen · vergangen 27min 58s · Rest ~58min 5s
+    … Generation 14: 12/48 Varianten getestet (42s)
+    … Generation 14: 24/48 Varianten getestet (75s)
+    … Generation 14: 36/48 Varianten getestet (107s)
+Gen  14/40: beste 80.1% (Ø über 3 Gen. 81.4%, Fitness 0.9490)  Population Ø 71.9% · 140s/Gen · vergangen 30min 18s · Rest ~56min 16s
+    … Generation 15: 12/48 Varianten getestet (37s)
+    … Generation 15: 24/48 Varianten getestet (77s)
+    … Generation 15: 36/48 Varianten getestet (112s)
+Gen  15/40: beste 82.5% (Ø über 15 Gen. 81.4%, Fitness 0.9483)  Population Ø 71.2% · 153s/Gen · vergangen 32min 51s · Rest ~54min 46s
+    … Generation 16: 12/48 Varianten getestet (43s)
+    … Generation 16: 24/48 Varianten getestet (77s)
+    … Generation 16: 36/48 Varianten getestet (103s)
+Gen  16/40: beste 82.5% (Ø über 1 Gen. 82.5%, Fitness 0.9598)  Population Ø 73.9% · 130s/Gen · vergangen 35min 1s · Rest ~52min 32s
+    … Generation 17: 12/48 Varianten getestet (35s)
+    … Generation 17: 24/48 Varianten getestet (75s)
+    … Generation 17: 36/48 Varianten getestet (120s)
+Gen  17/40: beste 79.2% (Ø über 17 Gen. 81.3%, Fitness 0.9467)  Population Ø 73.7% · 167s/Gen · vergangen 37min 48s · Rest ~51min 9s
+    … Generation 18: 12/48 Varianten getestet (35s)
+    … Generation 18: 24/48 Varianten getestet (75s)
+    … Generation 18: 36/48 Varianten getestet (130s)
+Gen  18/40: beste 81.6% (Ø über 1 Gen. 81.6%, Fitness 0.9511)  Population Ø 74.9% · 177s/Gen · vergangen 40min 45s · Rest ~49min 48s
+    … Generation 19: 12/48 Varianten getestet (47s)
+    … Generation 19: 24/48 Varianten getestet (86s)
+    … Generation 19: 36/48 Varianten getestet (130s)
+Gen  19/40: beste 82.5% (Ø über 4 Gen. 81.4%, Fitness 0.9482)  Population Ø 72.9% · 186s/Gen · vergangen 43min 51s · Rest ~48min 28s
+    … Generation 20: 12/48 Varianten getestet (32s)
+    … Generation 20: 24/48 Varianten getestet (77s)
+    … Generation 20: 36/48 Varianten getestet (130s)
+Gen  20/40: beste 82.6% (Ø über 1 Gen. 82.6%, Fitness 0.9613)  Population Ø 73.4% · 158s/Gen · vergangen 46min 29s · Rest ~46min 29s
+    … Generation 21: 12/48 Varianten getestet (53s)
+    … Generation 21: 24/48 Varianten getestet (96s)
+    … Generation 21: 36/48 Varianten getestet (119s)
+Gen  21/40: beste 81.7% (Ø über 1 Gen. 81.7%, Fitness 0.9516)  Population Ø 75.0% · 162s/Gen · vergangen 49min 11s · Rest ~44min 30s
+    … Generation 22: 12/48 Varianten getestet (42s)
+    … Generation 22: 24/48 Varianten getestet (73s)
+    … Generation 22: 36/48 Varianten getestet (116s)
+Gen  22/40: beste 81.8% (Ø über 22 Gen. 81.4%, Fitness 0.9480)  Population Ø 75.1% · 164s/Gen · vergangen 51min 55s · Rest ~42min 29s
+    … Generation 23: 12/48 Varianten getestet (41s)
+    … Generation 23: 24/48 Varianten getestet (85s)
+    … Generation 23: 36/48 Varianten getestet (126s)
+Gen  23/40: beste 82.2% (Ø über 2 Gen. 81.5%, Fitness 0.9499)  Population Ø 74.3% · 167s/Gen · vergangen 54min 42s · Rest ~40min 26s
+    … Generation 24: 12/48 Varianten getestet (54s)
+    … Generation 24: 24/48 Varianten getestet (88s)
+    … Generation 24: 36/48 Varianten getestet (136s)
+Gen  24/40: beste 82.0% (Ø über 1 Gen. 82.0%, Fitness 0.9547)  Population Ø 75.6% · 184s/Gen · vergangen 57min 46s · Rest ~38min 30s
+    … Generation 25: 12/48 Varianten getestet (40s)
+    … Generation 25: 24/48 Varianten getestet (79s)
+    … Generation 25: 36/48 Varianten getestet (130s)
+Gen  25/40: beste 80.9% (Ø über 2 Gen. 81.5%, Fitness 0.9487)  Population Ø 74.6% · 156s/Gen · vergangen 1h 0min 22s · Rest ~36min 13s
+    … Generation 26: 12/48 Varianten getestet (36s)
+    … Generation 26: 24/48 Varianten getestet (76s)
+    … Generation 26: 36/48 Varianten getestet (113s)
+Gen  26/40: beste 81.4% (Ø über 1 Gen. 81.4%, Fitness 0.9507)  Population Ø 74.2% · 154s/Gen · vergangen 1h 2min 56s · Rest ~33min 53s
+    … Generation 27: 12/48 Varianten getestet (42s)
+    … Generation 27: 24/48 Varianten getestet (94s)
+    … Generation 27: 36/48 Varianten getestet (137s)
+Gen  27/40: beste 81.6% (Ø über 2 Gen. 81.5%, Fitness 0.9517)  Population Ø 74.9% · 162s/Gen · vergangen 1h 5min 38s · Rest ~31min 36s
+    … Generation 28: 12/48 Varianten getestet (34s)
+    … Generation 28: 24/48 Varianten getestet (72s)
+    … Generation 28: 36/48 Varianten getestet (103s)
+Gen  28/40: beste 81.2% (Ø über 3 Gen. 81.4%, Fitness 0.9504)  Population Ø 73.9% · 141s/Gen · vergangen 1h 7min 58s · Rest ~29min 8s
+    … Generation 29: 12/48 Varianten getestet (27s)
+    … Generation 29: 24/48 Varianten getestet (65s)
+    … Generation 29: 36/48 Varianten getestet (95s)
+Gen  29/40: beste 81.9% (Ø über 1 Gen. 81.9%, Fitness 0.9542)  Population Ø 73.8% · 123s/Gen · vergangen 1h 10min 2s · Rest ~26min 34s
+    … Generation 30: 12/48 Varianten getestet (35s)
+    … Generation 30: 24/48 Varianten getestet (76s)
+    … Generation 30: 36/48 Varianten getestet (101s)
+Gen  30/40: beste 81.8% (Ø über 2 Gen. 81.8%, Fitness 0.9546)  Population Ø 74.9% · 131s/Gen · vergangen 1h 12min 13s · Rest ~24min 4s
+    … Generation 31: 12/48 Varianten getestet (37s)
+    … Generation 31: 24/48 Varianten getestet (80s)
+    … Generation 31: 36/48 Varianten getestet (129s)
+Gen  31/40: beste 82.8% (Ø über 1 Gen. 82.8%, Fitness 0.9636)  Population Ø 75.9% · 170s/Gen · vergangen 1h 15min 3s · Rest ~21min 47s
+    … Generation 32: 12/48 Varianten getestet (45s)
+    … Generation 32: 24/48 Varianten getestet (86s)
+    … Generation 32: 36/48 Varianten getestet (124s)
+Gen  32/40: beste 80.7% (Ø über 4 Gen. 81.6%, Fitness 0.9513)  Population Ø 74.2% · 155s/Gen · vergangen 1h 17min 38s · Rest ~19min 24s
+    … Generation 33: 12/48 Varianten getestet (44s)
+    … Generation 33: 24/48 Varianten getestet (82s)
+    … Generation 33: 36/48 Varianten getestet (123s)
+Gen  33/40: beste 83.7% (Ø über 5 Gen. 82.0%, Fitness 0.9560)  Population Ø 75.0% · 166s/Gen · vergangen 1h 20min 24s · Rest ~17min 3s
+    … Generation 34: 12/48 Varianten getestet (33s)
+    … Generation 34: 24/48 Varianten getestet (81s)
+    … Generation 34: 36/48 Varianten getestet (111s)
+Gen  34/40: beste 83.5% (Ø über 6 Gen. 82.2%, Fitness 0.9586)  Population Ø 74.4% · 153s/Gen · vergangen 1h 22min 57s · Rest ~14min 38s
+    … Generation 35: 12/48 Varianten getestet (40s)
+    … Generation 35: 24/48 Varianten getestet (77s)
+    … Generation 35: 36/48 Varianten getestet (129s)
+Gen  35/40: beste 81.7% (Ø über 7 Gen. 82.2%, Fitness 0.9576)  Population Ø 75.0% · 182s/Gen · vergangen 1h 25min 59s · Rest ~12min 17s
+    … Generation 36: 12/48 Varianten getestet (48s)
+    … Generation 36: 24/48 Varianten getestet (78s)
+    … Generation 36: 36/48 Varianten getestet (122s)
+Gen  36/40: beste 80.7% (Ø über 8 Gen. 82.0%, Fitness 0.9557)  Population Ø 76.1% · 161s/Gen · vergangen 1h 28min 40s · Rest ~9min 51s
+    … Generation 37: 12/48 Varianten getestet (43s)
+    … Generation 37: 24/48 Varianten getestet (77s)
+    … Generation 37: 36/48 Varianten getestet (114s)
+Gen  37/40: beste 82.2% (Ø über 1 Gen. 82.2%, Fitness 0.9578)  Population Ø 76.6% · 158s/Gen · vergangen 1h 31min 18s · Rest ~7min 24s
+    … Generation 38: 12/48 Varianten getestet (44s)
+    … Generation 38: 24/48 Varianten getestet (78s)
+    … Generation 38: 36/48 Varianten getestet (120s)
+Gen  38/40: beste 80.1% (Ø über 10 Gen. 81.8%, Fitness 0.9539)  Population Ø 74.5% · 146s/Gen · vergangen 1h 33min 44s · Rest ~4min 56s
+    … Generation 39: 12/48 Varianten getestet (50s)
+    … Generation 39: 24/48 Varianten getestet (98s)
+    … Generation 39: 36/48 Varianten getestet (152s)
+Gen  39/40: beste 83.8% (Ø über 6 Gen. 82.0%, Fitness 0.9557)  Population Ø 77.1% · 192s/Gen · vergangen 1h 36min 56s · Rest ~2min 29s
+    … Generation 40: 12/48 Varianten getestet (46s)
+    … Generation 40: 24/48 Varianten getestet (90s)
+    … Generation 40: 36/48 Varianten getestet (149s)
+Gen  40/40: beste 81.2% (Ø über 7 Gen. 81.9%, Fitness 0.9543)  Population Ø 75.2% · 200s/Gen · vergangen 1h 40min 16s · Rest ~0min 0s
+
+Validierung der besten 5 auf 16000 neuen Spielen:
+  81.63%  [std2 71.3%, std2 72.5%, std3 93.3%, magic2 95.0%, smith2 83.5%, mix2 89.8%, mix3 99.8%, hp16 47.9%]  (Training Ø 81.9% über 7 Gen.)
+  80.79%  [std2 70.2%, std2 69.3%, std3 94.0%, magic2 94.4%, smith2 84.3%, mix2 88.8%, mix3 99.8%, hp16 45.5%]  (Training Ø 81.7% über 12 Gen.)
+  80.76%  [std2 70.2%, std2 69.4%, std3 92.9%, magic2 95.2%, smith2 83.7%, mix2 88.5%, mix3 99.7%, hp16 46.6%]  (Training Ø 81.6% über 4 Gen.)
+  80.87%  [std2 69.4%, std2 69.3%, std3 93.8%, magic2 95.6%, smith2 83.5%, mix2 90.1%, mix3 99.9%, hp16 45.3%]  (Training Ø 81.5% über 15 Gen.)
+  81.36%  [std2 70.3%, std2 71.5%, std3 92.0%, magic2 96.0%, smith2 83.8%, mix2 91.3%, mix3 99.9%, hp16 46.1%]  (Training Ø 81.4% über 11 Gen.)
+Champion: 81.63%
+{"riskHp":0,"riskW":4.7921,"weaponUses":2.0064,"horizonMode":"repl","replScale":0.6863,"kMax":6.9389,"wWeapon":0.6444,"wMinHp":0,"holdGood":0.9484,"holdBad":0.6741,"holdBadEnd":0.1459,"holdEndDeck":7.7732,"holdWeaponAbs":0.9876,"holdHealAbs":0.9692,"futureHeld":0.6141,"phantom":0.0816,"phantomScale":0.9567,"badMix":0.3247,"fleeT1":1.5086,"fleeT2":9.6471,"fleeBottomW":0.4034,"bottomFree":40.3711,"bottomScale":35.8979,"fleeDangerW":0.0585,"fleeDangerFrac":1.4218,"fleeRelW":1.0084,"svThief":8.367,"svHeal":0.7796,"svWeapon":0.5565,"start":"signals","startT0":5.0076,"startT1":18.3169,"startT2":26.8747,"orderPref":"bad","resolveExact":1,"catcherW":0.0592,"bigE":8,"wBig":0,"hpTopW":0.0584,"hpTop":6.5499,"fleeEarlyW":-0.0031,"wMagic":0.8762,"bottomMode":"ratio","hpEndW":0.0807,"fleePosW":0.7493,"fleeNegW":0.8215,"endLook":1,"fleeHorizon":0.8805,"fleeLatePen":0.965,"imbW":0.0144,"imbFree":27.7257,"imbScale":23.9058}
+FERTIG nach 1h 43min 39s

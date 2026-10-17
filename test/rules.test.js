@@ -218,3 +218,15 @@ test('Deck mit Magie und Schmied läuft', () => {
   const res = engine.runGames(cfg, 'planner', 5, 0, 40);
   assert.strictEqual(res.length, 40);
 });
+
+test('Zusatzkarten für 3 Spieler kommen nur bei 3 Spielern ins Deck', () => {
+  const base = config.clone(config.DEFAULT_CONFIG);
+  base.cards3 = [{ type: 'heal', value: 5, count: 2 }, { type: 'smith', value: 0, count: 1 }];
+  const two = config.normalize(Object.assign({}, base, { players: 2 }));
+  const three = config.normalize(Object.assign({}, base, { players: 3 }));
+  assert.strictEqual(config.buildDeck(two).length, 91);
+  assert.strictEqual(config.buildDeck(three).length, 94);
+  assert.strictEqual(three.deckCards.find((e) => e.type === 'heal' && e.value === 5).count, 4);
+  // normalize ist idempotent
+  assert.strictEqual(config.buildDeck(config.normalize(three)).length, 94);
+});

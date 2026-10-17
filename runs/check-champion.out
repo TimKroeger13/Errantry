@@ -1,0 +1,7 @@
+﻿Strategie: tuning/evolve3.json · 4000 Spiele je Konfiguration · Seed 99999
+  std2   Siegquote  69.83% (KI 68.4–71.2)  Fortschritt Ø 91.0%  Restleben (Sieg) Ø 22.5, schwächster Ø 9.1  Tiefpunkt Ø 1.6  Fluchten 5.52  · 6s · Rest ~0min 17s
+  std3   Siegquote  94.45% (KI 93.7–95.1)  Fortschritt Ø 98.7%  Restleben (Sieg) Ø 39.9, schwächster Ø 10.1  Tiefpunkt Ø 3.7  Fluchten 5.72  · 5s · Rest ~0min 10s
+  full2  Siegquote  93.85% (KI 93.1–94.6)  Fortschritt Ø 96.4%  Restleben (Sieg) Ø 30.2, schwächster Ø 13.4  Tiefpunkt Ø 2.9  Fluchten 6.15  · 10s · Rest ~0min 6s
+  full3  Siegquote  99.35% (KI 99.0–99.6)  Fortschritt Ø 99.7%  Restleben (Sieg) Ø 49.8, schwächster Ø 14.2  Tiefpunkt Ø 5.3  Fluchten 6.46  · 7s · Rest ~0min 0s
+
+Gesamt: 89.37% Ø über 4 Konfigurationen · 0min 27s

@@ -57,11 +57,18 @@ function createPool(n) {
   }
 
   // Runs games [0, games) and returns results sorted by game index.
-  async function run(cfg, policy, seed, games, compact) {
+  // onProgress(gamesDone, games) is called whenever a chunk finishes.
+  async function run(cfg, policy, seed, games, compact, onProgress) {
     const chunk = Math.max(20, Math.ceil(games / (n * 4)));
     const parts = [];
+    let done = 0;
     for (let from = 0; from < games; from += chunk) {
-      parts.push(runChunk({ id: nextId++, cfg, policy, seed, from, to: Math.min(games, from + chunk), compact: !!compact }));
+      const to = Math.min(games, from + chunk);
+      parts.push(runChunk({ id: nextId++, cfg, policy, seed, from, to, compact: !!compact }).then((r) => {
+        done += to - from;
+        if (onProgress) onProgress(done, games);
+        return r;
+      }));
     }
     const res = [].concat(...(await Promise.all(parts)));
     return res.sort((a, b) => (compact ? a[2] - b[2] : a.index - b.index));

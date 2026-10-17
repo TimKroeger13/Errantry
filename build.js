@@ -7,7 +7,7 @@ const path = require('path');
 
 const root = __dirname;
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
-const engine = ['rng', 'config', 'rules', 'ai', 'engine', 'stats'].map((f) => '// ---- src/' + f + '.js\n' + read('src/' + f + '.js')).join('\n;\n');
+const engine = ['rng', 'config', 'rules', 'tuned', 'ai', 'engine', 'stats'].map((f) => '// ---- src/' + f + '.js\n' + read('src/' + f + '.js')).join('\n;\n');
 if (/<\/script/i.test(engine)) throw new Error('Engine-Quelltext enthält </script>');
 const app = read('ui/app.js');
 let html = read('ui/index.html');

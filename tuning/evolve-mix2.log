@@ -1,0 +1,42 @@
+Evolution: 48 Varianten × 1000 Spiele × 30 Generationen · Konfigurationen: std2, std2, std3, magic2, smith2, mix2, mix3, hp16
+Fitness-Gewichte: {"win":1,"progress":0.1,"lowHp":0.05,"endMin":0.05,"endHp":0.02,"overheal":0,"dmg":0}
+Gen   1/30: beste 82.6% (Ø über 1 Gen. 82.6%, Fitness 0.9622)  Population Ø 71.4% · 229s/Gen · vergangen 3min 49s · Rest ~1h 50min 48s
+Gen   2/30: beste 82.8% (Ø über 2 Gen. 82.6%, Fitness 0.9621)  Population Ø 70.8% · 232s/Gen · vergangen 7min 41s · Rest ~1h 47min 36s
+Gen   3/30: beste 83.7% (Ø über 3 Gen. 82.8%, Fitness 0.9647)  Population Ø 72.0% · 253s/Gen · vergangen 11min 54s · Rest ~1h 47min 12s
+Gen   4/30: beste 83.1% (Ø über 4 Gen. 82.8%, Fitness 0.9653)  Population Ø 71.9% · 221s/Gen · vergangen 15min 35s · Rest ~1h 41min 19s
+Gen   5/30: beste 81.8% (Ø über 5 Gen. 82.6%, Fitness 0.9629)  Population Ø 68.7% · 215s/Gen · vergangen 19min 10s · Rest ~1h 35min 51s
+Gen   6/30: beste 79.7% (Ø über 6 Gen. 82.1%, Fitness 0.9576)  Population Ø 69.8% · 222s/Gen · vergangen 22min 51s · Rest ~1h 31min 27s
+Gen   7/30: beste 83.1% (Ø über 1 Gen. 83.1%, Fitness 0.9669)  Population Ø 73.2% · 259s/Gen · vergangen 27min 11s · Rest ~1h 29min 20s
+Gen   8/30: beste 81.7% (Ø über 2 Gen. 82.4%, Fitness 0.9597)  Population Ø 73.0% · 261s/Gen · vergangen 31min 32s · Rest ~1h 26min 44s
+Gen   9/30: beste 82.5% (Ø über 1 Gen. 82.5%, Fitness 0.9597)  Population Ø 72.8% · 255s/Gen · vergangen 35min 47s · Rest ~1h 23min 30s
+Gen  10/30: beste 81.9% (Ø über 2 Gen. 82.2%, Fitness 0.9572)  Population Ø 72.2% · 226s/Gen · vergangen 39min 32s · Rest ~1h 19min 5s
+Gen  11/30: beste 81.4% (Ø über 11 Gen. 82.1%, Fitness 0.9559)  Population Ø 71.2% · 216s/Gen · vergangen 43min 9s · Rest ~1h 14min 32s
+Gen  12/30: beste 83.3% (Ø über 12 Gen. 82.0%, Fitness 0.9563)  Population Ø 72.9% · 228s/Gen · vergangen 46min 56s · Rest ~1h 10min 25s
+Gen  13/30: beste 82.6% (Ø über 13 Gen. 82.1%, Fitness 0.9563)  Population Ø 73.6% · 248s/Gen · vergangen 51min 4s · Rest ~1h 6min 47s
+Gen  14/30: beste 82.2% (Ø über 1 Gen. 82.2%, Fitness 0.9592)  Population Ø 73.1% · 246s/Gen · vergangen 55min 10s · Rest ~1h 3min 3s
+Gen  15/30: beste 83.8% (Ø über 1 Gen. 83.8%, Fitness 0.9760)  Population Ø 74.1% · 256s/Gen · vergangen 59min 26s · Rest ~59min 26s
+Gen  16/30: beste 82.7% (Ø über 1 Gen. 82.7%, Fitness 0.9624)  Population Ø 72.8% · 221s/Gen · vergangen 1h 3min 8s · Rest ~55min 14s
+Gen  17/30: beste 82.5% (Ø über 3 Gen. 82.2%, Fitness 0.9578)  Population Ø 71.9% · 224s/Gen · vergangen 1h 6min 51s · Rest ~51min 7s
+Gen  18/30: beste 81.3% (Ø über 18 Gen. 82.1%, Fitness 0.9559)  Population Ø 72.2% · 233s/Gen · vergangen 1h 10min 45s · Rest ~47min 10s
+Gen  19/30: beste 81.0% (Ø über 19 Gen. 82.0%, Fitness 0.9553)  Population Ø 71.7% · 236s/Gen · vergangen 1h 14min 41s · Rest ~43min 14s
+Gen  20/30: beste 82.0% (Ø über 1 Gen. 82.0%, Fitness 0.9566)  Population Ø 72.0% · 218s/Gen · vergangen 1h 18min 18s · Rest ~39min 9s
+Gen  21/30: beste 82.8% (Ø über 21 Gen. 82.0%, Fitness 0.9555)  Population Ø 70.8% · 233s/Gen · vergangen 1h 22min 12s · Rest ~35min 13s
+Gen  22/30: beste 82.5% (Ø über 1 Gen. 82.5%, Fitness 0.9617)  Population Ø 73.9% · 239s/Gen · vergangen 1h 26min 11s · Rest ~31min 20s
+Gen  23/30: beste 83.8% (Ø über 1 Gen. 83.8%, Fitness 0.9746)  Population Ø 75.0% · 216s/Gen · vergangen 1h 29min 47s · Rest ~27min 19s
+Gen  24/30: beste 83.4% (Ø über 2 Gen. 82.7%, Fitness 0.9635)  Population Ø 74.2% · 204s/Gen · vergangen 1h 33min 11s · Rest ~23min 17s
+Gen  25/30: beste 83.4% (Ø über 1 Gen. 83.4%, Fitness 0.9697)  Population Ø 74.9% · 203s/Gen · vergangen 1h 36min 34s · Rest ~19min 18s
+Gen  26/30: beste 81.6% (Ø über 4 Gen. 82.3%, Fitness 0.9594)  Population Ø 73.6% · 230s/Gen · vergangen 1h 40min 24s · Rest ~15min 26s
+Gen  27/30: beste 80.8% (Ø über 27 Gen. 82.0%, Fitness 0.9559)  Population Ø 73.8% · 213s/Gen · vergangen 1h 43min 57s · Rest ~11min 33s
+Gen  28/30: beste 82.4% (Ø über 28 Gen. 82.1%, Fitness 0.9560)  Population Ø 74.3% · 213s/Gen · vergangen 1h 47min 30s · Rest ~7min 40s
+Gen  29/30: beste 83.3% (Ø über 29 Gen. 82.1%, Fitness 0.9565)  Population Ø 74.3% · 194s/Gen · vergangen 1h 50min 44s · Rest ~3min 49s
+Gen  30/30: beste 82.3% (Ø über 30 Gen. 82.1%, Fitness 0.9566)  Population Ø 72.3% · 220s/Gen · vergangen 1h 54min 23s · Rest ~0min 0s
+
+Validierung der besten 5 auf 16000 neuen Spielen:
+  81.58%  [std2 73.4%, std2 72.5%, std3 93.4%, magic2 95.2%, smith2 85.3%, mix2 89.3%, mix3 99.7%, hp16 43.9%]  (Training Ø 82.1% über 30 Gen.)
+  81.16%  [std2 71.0%, std2 71.2%, std3 92.3%, magic2 95.1%, smith2 84.0%, mix2 89.1%, mix3 99.6%, hp16 47.0%]  (Training Ø 81.9% über 4 Gen.)
+  81.08%  [std2 71.4%, std2 71.5%, std3 92.3%, magic2 94.5%, smith2 84.0%, mix2 89.3%, mix3 99.5%, hp16 46.2%]  (Training Ø 81.9% über 4 Gen.)
+  81.72%  [std2 72.4%, std2 71.1%, std3 93.2%, magic2 95.6%, smith2 84.7%, mix2 90.5%, mix3 99.8%, hp16 46.5%]  (Training Ø 81.8% über 25 Gen.)
+  81.41%  [std2 72.2%, std2 72.1%, std3 93.0%, magic2 95.0%, smith2 84.3%, mix2 89.1%, mix3 99.9%, hp16 45.9%]  (Training Ø 81.8% über 9 Gen.)
+Champion: 81.72%
+{"riskHp":0,"riskW":4.7921,"weaponUses":2.0064,"horizonMode":"repl","replScale":0.6863,"kMax":6.9389,"wWeapon":0.6444,"wMinHp":0,"holdGood":0.9484,"holdBad":0.6741,"holdBadEnd":0.1459,"holdEndDeck":7.7732,"holdWeaponAbs":0.9876,"holdHealAbs":0.9692,"futureHeld":0.6141,"phantom":0.0816,"phantomScale":0.9567,"badMix":0.1232,"fleeT1":1.5086,"fleeT2":9.6471,"fleeBottomW":0.4034,"bottomFree":51.0327,"bottomScale":35.8979,"fleeDangerW":0.0585,"fleeDangerFrac":1.4218,"fleeRelW":1.0084,"svThief":7.9654,"svHeal":0.7796,"svWeapon":0.5565,"start":"signals","startT0":5.0076,"startT1":18.3169,"startT2":26.8747,"orderPref":"bad","resolveExact":1,"catcherW":0.0592,"bigE":8,"wBig":0,"hpTopW":0.0584,"hpTop":6.5499,"fleeEarlyW":-0.0031,"wMagic":0.8576,"bottomMode":"ratio","hpEndW":0.0807,"fleeRounds":2,"startRounds":0,"startEsc":18.45,"fleePosW":0.7493,"fleeNegW":0.8215,"endLook":1,"fleeHorizon":0.8805,"fleeLatePen":1.5237,"imbW":0.0144,"imbFree":27.7257,"imbScale":23.9058}
+FERTIG nach 2h 3min 0s

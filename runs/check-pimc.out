@@ -1,0 +1,2 @@
+﻿Strategie: tuning/robust-champion.json + play=pimc,pimcSamples=4 · 1000 Spiele je Konfiguration · Seed 99999
+  std2   Siegquote  87.30% (KI 85.1–89.2)  Fortschritt Ø 94.9%  Restleben (Sieg) Ø 26.6, schwächster Ø 11.3  Tiefpunkt Ø 3.0  Fluchten 5.88  · 77s · Rest ~3min 50s

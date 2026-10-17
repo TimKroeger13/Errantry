@@ -105,7 +105,7 @@ details summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
 .tile .l { font-size: 12px; color: var(--text-2); }
 .tile .v { font-size: 20px; font-weight: 650; margin-top: 2px; }
 .tile .d { font-size: 12px; color: var(--muted); }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; margin-top: 12px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 12px; }
 .grid2 .card { margin-top: 0; }
 .chart { position: relative; width: 100%; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
@@ -118,7 +118,7 @@ details summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
 table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.data th, table.data td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--grid); }
 table.data th { color: var(--text-2); font-weight: 600; font-size: 12px; }
-table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
+table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .runs .run { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--grid); font-size: 13px; }
 .runs .run .w { font-weight: 650; min-width: 58px; font-variant-numeric: tabular-nums; }
 .runs .run .lbl { flex: 1; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -135,15 +135,23 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 .delta-up { color: var(--good); }
 .delta-down { color: var(--critical); }
 .mono { font-family: var(--mono); }
+.subhead { font-size: 12px; font-weight: 600; color: var(--text-2); margin: 12px 0 4px; }
+.eta { font-variant-numeric: tabular-nums; }
+.versions .v { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--grid); }
+.versions .v .name { font-weight: 600; }
+.versions .v .meta { color: var(--text-2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.versions .v .acts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
 </style>
 </head>
 <body>
 <header class="top">
   <h1>Errantry · Balancing-Simulator</h1>
-  <span class="sub">Kartenmix, Leben und Spieleranzahl einstellen und tausende Partien simulieren</span>
+  <span class="sub">Decks und Versionen definieren, tausende Partien von einer trainierten KI spielen lassen, vergleichen</span>
 </header>
 <nav class="tabs" role="tablist">
   <button role="tab" data-tab="sim" aria-selected="true">Simulation</button>
+  <button role="tab" data-tab="versions" aria-selected="false">Versionen</button>
   <button role="tab" data-tab="sweep" aria-selected="false">Parameter-Sweep</button>
   <button role="tab" data-tab="game" aria-selected="false">Einzelspiel</button>
   <button role="tab" data-tab="help" aria-selected="false">Regeln &amp; KI</button>
@@ -169,38 +177,52 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       <h2>Karten</h2>
       <div class="row">
         <button class="btn" id="presetStd">Standarddeck</button>
-        <button class="btn" id="presetEmpty">Leeren</button>
+        <button class="btn" id="presetEmpty">Alles leeren</button>
         <button class="btn" id="exportCfg">Export</button>
         <label class="btn" style="cursor:pointer">Import<input type="file" id="importCfg" accept=".json,application/json" hidden></label>
       </div>
       <div class="row" style="margin-top:10px">
-        <select id="genType"></select>
+        <label class="f">Liste<select id="genList"><option value="cards">Grunddeck</option><option value="cards3">Zusatz bei 3 Spielern</option></select></label>
+        <label class="f">Typ<select id="genType"></select></label>
         <label class="f">von<input type="number" id="genFrom" value="2" min="1" max="63"></label>
         <label class="f">bis<input type="number" id="genTo" value="10" min="1" max="63"></label>
         <label class="f">je Anzahl<input type="number" id="genCount" value="2" min="0" max="99"></label>
         <button class="btn" id="genAdd" style="align-self:flex-end">Setzen</button>
       </div>
-      <p class="hint">„Setzen“ legt für jeden Wert im Bereich die Anzahl fest (0 entfernt).</p>
+      <p class="hint">„Setzen“ legt für jeden Wert im Bereich die Anzahl fest (0 entfernt). Typen ohne Wert (Dieb, Schmied) nutzen nur die Anzahl.</p>
+      <div class="subhead">Grunddeck (immer im Spiel)</div>
       <div class="scroll"><table class="cards"><thead><tr><th>Typ</th><th>Wert</th><th>Anzahl</th><th></th></tr></thead><tbody id="cardRows"></tbody></table></div>
-      <div class="row" style="margin-top:8px"><button class="btn" id="addRow">+ Karte</button></div>
+      <div class="row" style="margin-top:6px"><button class="btn" id="addRow">+ Karte</button></div>
+      <div class="subhead">Zusatzkarten nur bei 3 Spielern</div>
+      <div class="scroll" style="max-height:180px"><table class="cards"><thead><tr><th>Typ</th><th>Wert</th><th>Anzahl</th><th></th></tr></thead><tbody id="cardRows3"></tbody></table></div>
+      <div class="row" style="margin-top:6px"><button class="btn" id="addRow3">+ Zusatzkarte</button></div>
       <div class="summary" id="deckSummary"></div>
     </section>
 
     <section class="card">
       <h2>Spieler-KI</h2>
       <div class="row">
-        <select id="policy">
-          <option value="expert">Experte (evolutionär trainiert)</option>
-          <option value="planner">Planer (untrainiert)</option>
-          <option value="greedy">Gierig (1 Zug voraus)</option>
-          <option value="random">Zufall</option>
-          <option value="oracle">Orakel (sieht alle Hände, langsam)</option>
+        <select id="policy" style="max-width:100%">
+          <option value="expert">Experte (stark, langsamer)</option>
+          <option value="fast">Schnell (ca. 100× schneller)</option>
+          <option value="untrained">Untrainiert (Vergleich)</option>
+          <option value="random">Zufall (Vergleich)</option>
         </select>
       </div>
-      <details style="margin-top:10px"><summary>KI-Parameter anpassen (JSON)</summary>
-        <p class="hint">Überschreibt einzelne Parameter der gewählten KI, z. B. <span class="mono">{"flee":"never"}</span>.</p>
+      <p class="hint" id="policyHint"></p>
+      <details style="margin-top:6px"><summary>KI-Parameter anpassen (JSON)</summary>
+        <p class="hint">Überschreibt einzelne Parameter der gewählten KI, z. B. <span class="mono">{"flee":"never"}</span> (nie fliehen) oder <span class="mono">{"pimcSamples":8}</span>.</p>
         <textarea id="policyJson" rows="4" placeholder="{}"></textarea>
       </details>
+    </section>
+
+    <section class="card">
+      <h2>Als Version speichern</h2>
+      <div class="row">
+        <input type="text" id="verName" placeholder="z. B. v2 – mit Magie 3–8" style="flex:1;min-width:160px">
+        <button class="btn" id="verSave">Speichern</button>
+      </div>
+      <p class="hint">Gespeicherte Versionen findest du im Reiter „Versionen“ – dort lassen sie sich laden und gegeneinander simulieren.</p>
     </section>
   </aside>
 
@@ -210,11 +232,11 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     <div data-panel="sim">
       <div class="card">
         <div class="row">
-          <label class="f">Spiele<input type="number" id="games" value="5000" min="10" max="1000000" step="1000"></label>
+          <label class="f">Spiele<input type="number" id="games" value="1000" min="10" max="1000000" step="500"></label>
           <label class="f">Seed<input type="number" id="seed" value="1" min="0"></label>
           <button class="primary btn" id="runBtn" style="align-self:flex-end">Simulieren</button>
           <button class="btn" id="stopBtn" style="align-self:flex-end" hidden>Abbrechen</button>
-          <span class="hint" id="runInfo" style="align-self:flex-end"></span>
+          <span class="hint eta" id="runInfo" style="align-self:flex-end"></span>
         </div>
         <div class="progress"><div id="bar"></div></div>
       </div>
@@ -224,6 +246,33 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
         <div id="runs"></div>
         <p class="hint">Ein Lauf als Referenz wird in den Diagrammen orange mit angezeigt.</p>
       </div>
+    </div>
+
+    <!-- versions -->
+    <div data-panel="versions" hidden>
+      <div class="card versions">
+        <h2>Versionen</h2>
+        <div class="row">
+          <button class="btn" id="verExport">Alle exportieren</button>
+          <label class="btn" style="cursor:pointer">Importieren<input type="file" id="verImport" accept=".json,application/json" hidden></label>
+          <span class="hint">Versionen werden im Browser gespeichert. Zum Sichern oder Weitergeben exportieren.</span>
+        </div>
+        <div id="verList" style="margin-top:8px"></div>
+      </div>
+      <div class="card">
+        <h2>Ausgewählte Versionen vergleichen</h2>
+        <div class="row">
+          <label class="f">Spieleranzahl<select id="cmpPlayers">
+            <option value="saved">wie gespeichert</option><option value="2">immer 2</option><option value="3">immer 3</option><option value="both">2 und 3</option></select></label>
+          <label class="f">Spiele je Version<input type="number" id="cmpGames" value="1000" min="50" step="500"></label>
+          <button class="primary btn" id="cmpRun" style="align-self:flex-end">Vergleich starten</button>
+          <button class="btn" id="cmpStop" style="align-self:flex-end" hidden>Abbrechen</button>
+          <span class="hint eta" id="cmpInfo" style="align-self:flex-end"></span>
+        </div>
+        <div class="progress"><div id="cmpBar"></div></div>
+        <p class="hint">Alle Versionen nutzen denselben Seed. Unterschiede kommen damit vom Deck und nicht vom Zufall der Mischung.</p>
+      </div>
+      <div id="cmpResults"></div>
     </div>
 
     <!-- sweep -->
@@ -236,9 +285,10 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
           <label class="f">von<input type="number" id="swFrom" value="14"></label>
           <label class="f">bis<input type="number" id="swTo" value="30"></label>
           <label class="f">Schritt<input type="number" id="swStep" value="2" min="1"></label>
-          <label class="f">Spiele je Punkt<input type="number" id="swGames" value="2000" min="50" step="500"></label>
+          <label class="f">Spiele je Punkt<input type="number" id="swGames" value="1000" min="50" step="500"></label>
           <button class="primary btn" id="swRun" style="align-self:flex-end">Sweep starten</button>
           <button class="btn" id="swStop" style="align-self:flex-end" hidden>Abbrechen</button>
+          <span class="hint eta" id="swInfo" style="align-self:flex-end"></span>
         </div>
         <div class="progress"><div id="swBar"></div></div>
       </div>
@@ -255,8 +305,9 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
           <button class="primary btn" id="gRun" style="align-self:flex-end">Spiel zeigen</button>
           <button class="btn" id="gNextLoss" style="align-self:flex-end">Nächste Niederlage</button>
           <button class="btn" id="gNextWin" style="align-self:flex-end">Nächster Sieg</button>
+          <span class="hint" id="gInfo" style="align-self:flex-end"></span>
         </div>
-        <p class="hint">Gleicher Seed und gleiche Spielnummer ergeben dasselbe Spiel wie in der Massensimulation. Legende: G = Gegner, D = Dieb, H = Heilung, W = Waffe, M = Magie, S = Schmied. „W8&lt;12“ = Waffe 8, blockt nur noch Gegner unter 12.</p>
+        <p class="hint">Gleicher Seed und gleiche Spielnummer ergeben dasselbe Spiel wie in der Massensimulation. Legende: G = Gegner, D = Dieb, H = Heilung, W = Waffe, M = Magie, S = Schmied. „W8&lt;12“ = Waffe 8, blockt nur noch Gegner unter 12. „Hand +12/−25“ = Positiv- und Negativwert der Hand.</p>
         <div class="chips" id="gChips"></div>
         <div class="log" id="gLog">–</div>
       </div>
@@ -373,6 +424,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     hp: 20,
     thiefDamage: 10,
     fleeBlockDeck: 5, // with <= this many cards in the deck, fleeing is no longer allowed
+    cards3: [], // extra cards that are only shuffled in when playing with 3 players
     cards: [
       ...series('enemy', 2, 14, 4),
       ...series('heal', 2, 10, 2),
@@ -398,23 +450,35 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     cfg.fleeBlockDeck = Number(cfg.fleeBlockDeck);
     handSize(cfg.players);
     if (!(cfg.hp >= 1)) throw new Error('Leben muss >= 1 sein');
-    const cards = [];
-    for (const e of cfg.cards) {
-      const ti = TYPE_BY_KEY[e.type];
-      if (!ti) throw new Error('Unbekannter Kartentyp: ' + e.type);
-      const count = Math.max(0, Math.floor(Number(e.count) || 0));
-      const value = ti.hasValue ? Math.floor(Number(e.value)) : 0;
-      if (ti.hasValue && !(value >= 1 && value <= 63)) throw new Error('Kartenwert muss zwischen 1 und 63 liegen: ' + e.type + ' ' + e.value);
-      if (count > 0) cards.push({ type: e.type, value, count });
+    const clean = (list) => {
+      const out = [];
+      for (const e of list || []) {
+        const ti = TYPE_BY_KEY[e.type];
+        if (!ti) throw new Error('Unbekannter Kartentyp: ' + e.type);
+        const count = Math.max(0, Math.floor(Number(e.count) || 0));
+        const value = ti.hasValue ? Math.floor(Number(e.value)) : 0;
+        if (ti.hasValue && !(value >= 1 && value <= 63)) throw new Error('Kartenwert muss zwischen 1 und 63 liegen: ' + e.type + ' ' + e.value);
+        if (count > 0) out.push({ type: e.type, value, count });
+      }
+      return out;
+    };
+    cfg.cards = clean(cfg.cards);
+    cfg.cards3 = clean(cfg.cards3); // extra cards that are only added with 3 players
+    // effective deck list for this player count (same type+value merged)
+    const merged = new Map();
+    for (const e of cfg.players === 3 ? cfg.cards.concat(cfg.cards3) : cfg.cards) {
+      const k = e.type + ':' + e.value;
+      const m = merged.get(k);
+      if (m) m.count += e.count; else merged.set(k, { type: e.type, value: e.value, count: e.count });
     }
-    cfg.cards = cards;
+    cfg.deckCards = [...merged.values()];
     return cfg;
   }
 
   function buildDeck(cfg) {
     const deck = [];
     let id = 0;
-    for (const e of cfg.cards) {
+    for (const e of cfg.deckCards || cfg.cards) {
       const t = TYPE_BY_KEY[e.type].t;
       for (let i = 0; i < e.count; i++) deck.push({ id: id++, t, v: e.value });
     }
@@ -425,14 +489,338 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 });
 
 ;
+// ---- src/rules.js
+// Regel-Spieler ("Hybrid"): lesbare Wenn-dann-Regeln für Fliehen, Startspieler,
+// Ausspielen und Halten. Grundlage ist nur der Jetzt-Zustand (Leben, Waffen, die schon
+// gelegten Karten dieser Runde, die eigene Hand) und eine Zahl für die Schieflage der
+// unter das Deck gemischten Karten. Alle Zahlen mit "r_" sind Hebel, die die Evolution
+// optimiert. Nur das Abhandeln am Rundenende (beste Reihenfolge) rechnet exakt.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./config'));
+  else (root.Errantry = root.Errantry || {}).rules = factory(root.Errantry.config);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (config) {
+  'use strict';
+
+  const { T, isBad } = config;
+
+  const RULE_DEFAULTS = {
+    // --- Kosten eines Gegners bei einem Spieler
+    r_range: 0.35, // Waffe benutzen kostet Reichweite: Anteil verlorener Reichweite × Waffenwert × r_range
+    r_magicKeep: 0.5, // Magie verbrauchen kostet r_magicKeep × Magiewert
+    r_thiefWeapon: 0.6, // Dieb nimmt Waffe: kostet r_thiefWeapon × Waffenwert
+    r_hpRisk: 1, // Schaden wiegt schwerer, je weniger Leben der Spieler hat
+    r_deathCost: 100, // ein Gegner, der den Spieler töten würde, kostet zusätzlich so viel
+    // --- Wert guter Karten
+    r_weaponGain: 1, // Gewicht der Waffen-Verbesserung
+    r_healGain: 1, // Gewicht der Heilung
+    r_lowHpBonus: 0.3, // Heilung lieber zum Spieler mit weniger Leben
+    // --- Reihenfolge
+    r_badFirstWhenFree: 1, // 1 = bei freier Zielwahl zuerst den größten eigenen Gegner legen
+    r_goodBeforeBad: 1, // 1 = sonst gute Karten vor schlechten legen (informiert den Partner)
+    // --- Halten (letzte Karte)
+    r_holdBadRatio: 0.7, // Gegner halten, wenn er jetzt mehr als diesen Anteil seines Werts kostet
+    r_holdGoodMin: 1.5, // gute Karte halten, wenn sie jetzt weniger als das bringt
+    r_holdEndDeck: 6, // bei so wenigen Karten im Deck nichts Schlechtes mehr halten
+    // --- Fliehen
+    r_fleeDanger: 1, // Gewicht: Schaden der eigenen Gegner (gegenüber Durchschnitt)
+    r_fleeHelp: 1, // Gewicht: Nutzen der eigenen guten Karten (gegenüber Durchschnitt)
+    r_stockGood: 0, // gute Karten fürs Endspiel einlagern: Fluchtwunsch steigt mit dem Positivwert der Hand
+    r_fleeT1: 4, // ab hier "will fliehen" (bzw. unter -T1 "will nicht")
+    r_fleeT2: 10, // ab hier "will unbedingt fliehen"
+    r_bottomLimit: 20, // ab dieser Schieflage des Deckbodens wird gegengesteuert
+    r_bottomW: 0.3, // so stark zählt die eigene Hand gegen/für die Schieflage
+    r_fleeLateDeck: 12, // bei weniger Karten im Deck ...
+    r_fleeLatePen: 6, // ... wird der Fluchtwunsch um so viel gesenkt
+    r_followGive: 4, // "offen" schließt sich einem "will" an; "will nicht" gibt bei "unbedingt" nach, wenn eigener Wert > -r_followGive
+    // --- Startspieler
+    r_startBig: 11, // ein Gegner ab dieser Stärke ...
+    r_startWeapon: 7, // ... oder eine Waffe ab dieser Stärke gibt Grund anzufangen
+  };
+
+  function create(h) {
+    // h: helpers from ai.js (stateOf, resolveCached, legalMoves, posNeg, bottomPosNeg, averagePosNeg)
+
+    // Projektion: Zustand eines Spielers nach den Karten, die schon vor ihm liegen.
+    function projected(g, t) {
+      return h.resolveCached(g, t, g.piles[t]).end;
+    }
+
+    // Wie viel kostet Gegner/Dieb c, wenn er bei Spieler-Zustand s landet?
+    function badCost(g, s, c) {
+      const P = g.policy;
+      let dmg, extra = 0;
+      if (c.t === T.THIEF) {
+        if (s.wv && P.r_thiefWeapon * s.wv < g.cfg.thiefDamage) { dmg = 0; extra = P.r_thiefWeapon * s.wv; } else dmg = g.cfg.thiefDamage;
+      } else {
+        const e = c.v;
+        dmg = e; // Faust
+        if (s.wv && (s.lim === 0 || e < s.lim)) {
+          const limEff = s.lim || 15;
+          const d = Math.max(0, e - s.wv), x = P.r_range * ((limEff - e) / limEff) * s.wv;
+          if (d + x < dmg + extra) { dmg = d; extra = x; }
+        }
+        if (s.mg) {
+          const d = Math.max(0, e - s.mg), x = P.r_magicKeep * s.mg;
+          if (d + x < dmg + extra) { dmg = d; extra = x; }
+        }
+      }
+      let cost = dmg * (1 + P.r_hpRisk * (1 - s.hp / s.maxHp)) + extra;
+      if (dmg >= s.hp) cost += P.r_deathCost;
+      return cost;
+    }
+
+    // Wie viel bringt die gute Karte c Spieler t (mit dem, was schon vor ihm liegt)?
+    function goodGain(g, t, c) {
+      const P = g.policy, s = projected(g, t);
+      if (c.t === T.HEAL) {
+        if (g.piles[t].some((x) => x.t === T.HEAL && x.v >= c.v)) return 0; // nur eine Heilung pro Runde
+        const missing = s.maxHp - s.hp;
+        return P.r_healGain * Math.min(c.v, missing) + P.r_lowHpBonus * missing * 0.1;
+      }
+      if (c.t === T.WEAPON) {
+        const cur = s.wv ? s.wv * (s.lim ? Math.min(1, (s.lim - 1) / 13) : 1) : 0;
+        return P.r_weaponGain * (c.v - cur);
+      }
+      if (c.t === T.MAGIC) return s.mg >= c.v ? 0 : P.r_weaponGain * 0.5 * (c.v - s.mg);
+      if (c.t === T.SMITH) return s.wv && s.kills.length ? 2 : 0;
+      return 0;
+    }
+
+    // ------------------------------------------------------------ Ausspielen
+    function play(g, p) {
+      const P = g.policy, hand = g.players[p].hand;
+      const moves = h.legalMoves(g, p);
+      const n = g.nP;
+      let minBad = Infinity;
+      for (const b of g.badCount) if (b < minBad) minBad = b;
+      const free = g.badCount.every((b) => b === minBad); // nächste schlechte Karte frei verteilbar
+
+      const bestTargetBad = (c) => {
+        let bt = -1, bc = Infinity;
+        for (let t = 0; t < n; t++) {
+          if (g.badCount[t] !== minBad) continue;
+          const cost = badCost(g, projected(g, t), c);
+          if (cost < bc) { bc = cost; bt = t; }
+        }
+        return { t: bt, cost: bc };
+      };
+      const bestTargetGood = (c) => {
+        let bt = p, bg = -Infinity;
+        for (let t = 0; t < n; t++) {
+          const gain = goodGain(g, t, c);
+          if (gain > bg) { bg = gain; bt = t; }
+        }
+        return { t: bt, gain: bg };
+      };
+
+      const bads = hand.filter(isBad), goods = hand.filter((c) => !isBad(c));
+
+      // Letzte Karte: halten oder spielen?
+      if (hand.length === 1 && !g.lastHand) {
+        const c = hand[0];
+        if (isBad(c)) {
+          const b = bestTargetBad(c);
+          const value = c.t === T.THIEF ? g.cfg.thiefDamage : c.v;
+          if (g.deck.length > P.r_holdEndDeck && b.cost > P.r_holdBadRatio * value) return { pass: true };
+          return { card: c, target: b.t };
+        }
+        const gd = bestTargetGood(c);
+        if (gd.gain < P.r_holdGoodMin) return { pass: true };
+        return { card: c, target: gd.t };
+      }
+
+      // Regel 1: freie Zielwahl -> größten eigenen Gegner jetzt legen, dorthin wo er am wenigsten kostet
+      if (P.r_badFirstWhenFree && free && bads.length) {
+        const c = bads.reduce((a, b) => ((b.t === T.THIEF ? 8 : b.v) > (a.t === T.THIEF ? 8 : a.v) ? b : a));
+        return { card: c, target: bestTargetBad(c).t };
+      }
+      // Regel 2: gute Karte mit echtem Nutzen zuerst (zeigt dem Partner, wohin Gegner sollen)
+      if (P.r_goodBeforeBad && goods.length) {
+        let best = null;
+        for (const c of goods) { const gd = bestTargetGood(c); if (!best || gd.gain > best.gain) best = { c, t: gd.t, gain: gd.gain }; }
+        if (best.gain > 0) return { card: best.c, target: best.t };
+      }
+      // Regel 3: schlechte Karte, die am wenigsten kostet (Ziel ist evtl. vorgegeben)
+      if (bads.length) {
+        let best = null;
+        for (const c of bads) { const b = bestTargetBad(c); if (!best || b.cost < best.cost) best = { c, t: b.t, cost: b.cost }; }
+        return { card: best.c, target: best.t };
+      }
+      // Regel 4: sonst die nützlichste gute Karte (oder eine nutzlose zum Verwerfen)
+      let best = null;
+      for (const c of goods) { const gd = bestTargetGood(c); if (!best || gd.gain > best.gain) best = { c, t: gd.t, gain: gd.gain }; }
+      if (best) return { card: best.c, target: best.t };
+      return moves[0];
+    }
+
+    // ------------------------------------------------------------ Fliehen
+    // Fluchtwert einer Hand: wie schlimm sind die Gegner jetzt und wie viel helfen die
+    // guten Karten jetzt – jeweils gegenüber einer Durchschnittshand – plus Deckboden.
+    function fleeScore(g, hand) {
+      const P = g.policy, ctx = g.ctx;
+      const states = ctx.states;
+      const cost = (c) => Math.min(...states.map((s) => badCost(g, s, c)));
+      const gain = (c) => {
+        let m = 0;
+        for (let t = 0; t < g.nP; t++) {
+          const s = states[t];
+          let v = 0;
+          if (c.t === T.HEAL) v = Math.min(c.v, s.maxHp - s.hp);
+          else if (c.t === T.WEAPON) v = Math.max(0, c.v - (s.wv ? s.wv * (s.lim ? Math.min(1, (s.lim - 1) / 13) : 1) : 0));
+          else if (c.t === T.MAGIC) v = Math.max(0, c.v - s.mg) * 0.5;
+          else if (c.t === T.SMITH) v = s.wv && s.kills.length ? 2 : 0;
+          if (v > m) m = v;
+        }
+        return m;
+      };
+      // Durchschnitt über die noch unbekannten Karten
+      if (!ctx.ruleAvg) {
+        let n = 0, dSum = 0, hSum = 0;
+        for (let cd = 0; cd < ctx.rem.length; cd++) {
+          const k = ctx.rem[cd];
+          if (k <= 0) continue;
+          const c = { t: cd >> 6, v: cd & 63 };
+          n += k;
+          if (isBad(c)) dSum += k * cost(c); else hSum += k * gain(c);
+        }
+        ctx.ruleAvg = { danger: n ? (dSum / n) * g.handSize : 0, help: n ? (hSum / n) * g.handSize : 0 };
+      }
+      let danger = 0, help = 0;
+      for (const c of hand) if (isBad(c)) danger += cost(c); else help += gain(c);
+      let score = P.r_fleeDanger * (danger - ctx.ruleAvg.danger) - P.r_fleeHelp * (help - ctx.ruleAvg.help);
+      // Deckboden: eine Zahl für die Schieflage (negativ minus gewichtet positiv)
+      const avg = h.averagePosNeg(g), ratio = avg.pos > 0 ? avg.neg / avg.pos : 1;
+      const bot = h.bottomPosNeg(g), pn = h.posNeg(g, hand);
+      const bottomTilt = bot.neg - ratio * bot.pos;
+      const handTilt = pn.neg - ratio * pn.pos;
+      if (bottomTilt > P.r_bottomLimit) score -= P.r_bottomW * handTilt; // unten schon zu schlecht: schlechte Hand nicht drunter, gute schon
+      if (P.r_stockGood) score += P.r_stockGood * (pn.pos - g.handSize * avg.pos);
+      if (g.deck.length < P.r_fleeLateDeck) score -= P.r_fleeLatePen;
+      return score;
+    }
+
+    function fleeFlag(P, score) { return score >= P.r_fleeT2 ? 3 : score >= P.r_fleeT1 ? 2 : score > -P.r_fleeT1 ? 1 : 0; }
+
+    function flee(g) {
+      const P = g.policy;
+      const scores = g.players.map((pl) => fleeScore(g, pl.hand));
+      const first = scores.map((s) => fleeFlag(P, s));
+      // Reaktion auf die Flags der anderen
+      const final = first.map((l, i) => {
+        const others = first.filter((_, j) => j !== i);
+        const maxOther = Math.max(...others);
+        if (l === 1 && maxOther >= 2) return 2; // offen + jemand will -> mitgehen
+        if (l === 0 && maxOther === 3 && scores[i] > -P.r_followGive) return 1; // will nicht, aber anderer unbedingt -> nachgeben
+        if (l === 2 && others.every((o) => o === 0)) return 1; // will, aber alle anderen wollen nicht -> offen
+        return l;
+      });
+      const NUM = [-1, 0, 1, 2];
+      const sum = final.reduce((a, l) => a + NUM[l], 0);
+      return { flee: sum > 0, deltas: scores, first, final };
+    }
+
+    // ------------------------------------------------------------ Startspieler
+    function startFlag(g, hand) {
+      const P = g.policy;
+      const big = hand.some((c) => c.t === T.ENEMY && c.v >= P.r_startBig);
+      const weapon = hand.some((c) => c.t === T.WEAPON && c.v >= P.r_startWeapon);
+      if (big && weapon) return 3;
+      if (big || weapon) return 2;
+      if (hand.some(isBad)) return 1;
+      return 0;
+    }
+
+    function start(g) {
+      const n = g.nP;
+      const levels = g.players.map((pl) => startFlag(g, pl.hand));
+      let best = -1, s = 0;
+      for (let k = 1; k <= n; k++) {
+        const p = (g.lastStart + k + n) % n;
+        if (levels[p] > best) { best = levels[p]; s = p; }
+      }
+      return { start: s, levels };
+    }
+
+    return { play, flee, start, fleeScore, startFlag };
+  }
+
+  return { RULE_DEFAULTS, create };
+});
+
+;
+// ---- src/tuned.js
+// Trained AI parameters (generated by cli/bake.js – do not edit by hand).
+// Champion aus robust-champion.json, validiert 81.6% Ø (std2 72.5%, std3 93.3%, magic2 95.0%, smith2 83.5%, mix2 89.8%, mix3 99.8%, hp16 47.9%)
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else (root.Errantry = root.Errantry || {}).tuned = factory();
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  return {
+    "riskHp": 0,
+    "riskW": 4.7921,
+    "weaponUses": 2.0064,
+    "horizonMode": "repl",
+    "replScale": 0.6863,
+    "kMax": 6.9389,
+    "wWeapon": 0.6444,
+    "wMinHp": 0,
+    "holdGood": 0.9484,
+    "holdBad": 0.6741,
+    "holdBadEnd": 0.1459,
+    "holdEndDeck": 7.7732,
+    "holdWeaponAbs": 0.9876,
+    "holdHealAbs": 0.9692,
+    "futureHeld": 0.6141,
+    "phantom": 0.0816,
+    "phantomScale": 0.9567,
+    "badMix": 0.3247,
+    "fleeT1": 1.5086,
+    "fleeT2": 9.6471,
+    "fleeBottomW": 0.4034,
+    "bottomFree": 40.3711,
+    "bottomScale": 35.8979,
+    "fleeDangerW": 0.0585,
+    "fleeDangerFrac": 1.4218,
+    "fleeRelW": 1.0084,
+    "svThief": 8.367,
+    "svHeal": 0.7796,
+    "svWeapon": 0.5565,
+    "start": "signals",
+    "startT0": 5.0076,
+    "startT1": 18.3169,
+    "startT2": 26.8747,
+    "orderPref": "bad",
+    "resolveExact": 1,
+    "catcherW": 0.0592,
+    "bigE": 8,
+    "wBig": 0,
+    "hpTopW": 0.0584,
+    "hpTop": 6.5499,
+    "fleeEarlyW": -0.0031,
+    "wMagic": 0.8762,
+    "bottomMode": "ratio",
+    "hpEndW": 0.0807,
+    "fleePosW": 0.7493,
+    "fleeNegW": 0.8215,
+    "endLook": 1,
+    "fleeHorizon": 0.8805,
+    "fleeLatePen": 0.965,
+    "imbW": 0.0144,
+    "imbFree": 27.7257,
+    "imbScale": 23.9058
+  };
+});
+
+;
 // ---- src/ai.js
 // Player AI: exact pile resolver, play planner, flee/start negotiation.
 // The AI only reads public information plus the acting player's own hand
 // (exception: flee mode 'fullInfo', which deliberately models a team that sees all hands).
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./config'));
-  else (root.Errantry = root.Errantry || {}).ai = factory(root.Errantry.config);
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (config) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./config'), require('./rules'), require('./tuned'));
+  else (root.Errantry = root.Errantry || {}).ai = factory(root.Errantry.config, root.Errantry.rules, root.Errantry.tuned);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (config, rulesMod, tuned) {
   'use strict';
 
   const { T, code, isBad } = config;
@@ -449,7 +837,14 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
   })();
 
   const DEFAULT_POLICY = {
-    play: 'planner', // planner | greedy | random
+    play: 'planner', // planner | pimc | greedy | random | oracle
+    pimcSamples: 6, // pimc: imagined partner hands per decision
+    pimcSignals: 1, // pimc: imagined hands must match the partner's flee/start signals
+    pimcDecisions: 99, // pimc only for the first N own plays of a round, then the plain planner
+    pimcMargin: 0, // pimc only if the planner's best two moves are closer than this (0 = always)
+    pimcMaxItems: 8, // pimc: max. cards in the joint plan (own + imagined); with 3 players only the next player's hand fits
+    pimcTries: 30, // pimc: rejection-sampling attempts per imagined hand
+    pimcUseFinal: 1, // pimc: also match the adjusted (second) flee signal
     flee: 'signals', // signals | never | fullInfo
     start: 'signals', // signals | rotate | random | strongest
     // value function
@@ -462,6 +857,12 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     wWeapon: 1,
     wMagic: 1,
     wMinHp: 0.5, // team bonus on the weakest player's HP
+    catcherW: 0, // team bonus for the best weapon that can still block big enemies
+    wBig: 0, // per player: extra value of a weapon that can still block big enemies
+    hpEndW: 0, // HP is worth more towards the end of the deck (fewer heals still to come)
+    hpTopW: 0, // HP close to the maximum is worth less (future heals would be capped)
+    hpTop: 5, // ... within this many HP of the maximum
+    bigE: 11, // "big" enemy threshold for the catcher bonus
     // held (passed) last card
     holdGood: 0.6,
     holdBad: 1.0,
@@ -477,6 +878,19 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     fleeDangerW: 0,
     fleeDangerFrac: 1,
     fleeRelW: 0, // flee is judged relative: a hand that is equally bad later is no reason to flee
+    fleeEarlyW: 0, // extra flee urge early in the deck (fled cards return late)
+    fleePosW: -1, // value of own GOOD cards at the end of the deck (stock them by fleeing); -1 = use fleeRelW
+    fleeNegW: -1, // cost of own BAD cards at the end of the deck; -1 = use fleeRelW
+    heldResW: 0, // resolution keeps the own held card in mind (cost of facing it next round)
+    endLook: 0, // 1 = in the second-to-last round, judge plans by whether the last hand is survivable
+    endLookRes: 1, // ... and also use it when resolving the cards at the end of that round
+    fleeHorizon: 0, // fleeing with fewer deck cards than this is scaled down (cards return soon)
+    fleeLatePen: 0, // ... and penalised by up to this much
+    // bottom of the deck as positive/negative balance relative to the deck's average mix
+    bottomMode: 'net', // 'net' (old) | 'ratio'
+    imbW: 0, // weight of the bottom imbalance cost ('ratio' mode)
+    imbFree: 10, // imbalance that is still fine
+    imbScale: 30,
     resolveExact: 1, // resolution uses the exact public remainder (cards on the table are known)
     orderPref: 'none', // tie-break between equally good plans: 'good' cards first (inform partner) | 'bad' first | 'none'
     // card impact for flee/start: bad cards = mix of best and average target
@@ -494,19 +908,35 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     svWeapon: 1.0,
     svMagic: 0.6,
     svSmith: 3,
+    // negotiation: everyone states one of 4 levels at the same time (no fixed first
+    // speaker), then up to 2 reaction rounds in which everyone may adjust after
+    // hearing the others. Fixed levels + few rounds = no room for "Morse code".
+    fleeRounds: 1, // reaction rounds when deciding to flee (0–2)
+    startRounds: 0, // reaction rounds when deciding who starts (0–2)
+    startEsc: 30, // start impact from which a player escalates a tie ("will" -> "will unbedingt")
     // start signals
     startT0: 10,
     startT1: 20,
     startT2: 30,
   };
 
+  Object.assign(DEFAULT_POLICY, rulesMod.RULE_DEFAULTS);
+  // hand-set defaults above are the untrained starting point; the trained values win
+  const UNTRAINED = Object.assign({}, DEFAULT_POLICY);
+  Object.assign(DEFAULT_POLICY, tuned || {});
+
   const PRESETS = {
+    expert: { play: 'pimc', pimcSamples: 4 }, // trained values + partner-hand inference (strongest, slower)
+    fast: {}, // trained values, plain planner (about 100x faster)
+    untrained: Object.assign({}, UNTRAINED),
     planner: {},
     greedy: { play: 'greedy' },
     random: { play: 'random', flee: 'never', start: 'random' },
     noflee: { flee: 'never' },
     fullinfo: { flee: 'fullInfo' },
     oracle: { play: 'oracle', flee: 'fullInfo' },
+    pimc: { play: 'pimc' },
+    rules: { play: 'rules', flee: 'rules', start: 'rules' },
   };
 
   function makePolicy(p) {
@@ -528,7 +958,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     const exact = mode === 'resolve' && P.resolveExact && g.piles;
     if (exact) for (const pile of g.piles) for (const c of pile) rem[code(c)]--;
     let maxV = 1;
-    for (const e of cfg.cards) if (e.value > maxV) maxV = e.value;
+    for (const e of cfg.deckCards || cfg.cards) if (e.value > maxV) maxV = e.value;
     const W = maxV + 1;
     let totE = 0;
     const ev = [], ec = [];
@@ -566,7 +996,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       const wvals = [];
       for (let wv = 1; wv <= maxV; wv++) {
         let present = 0;
-        for (const e of cfg.cards) if ((e.type === 'weapon') && e.value === wv) present = 1;
+        for (const e of cfg.deckCards || cfg.cards) if ((e.type === 'weapon') && e.value === wv) present = 1;
         if (present) wvals.push(wv);
       }
       for (let j = 1; j <= Math.floor(kTop) + 1; j++) {
@@ -609,14 +1039,29 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
         mw[m] = k > 0 ? s * Math.min(1, k) : 0;
       }
     }
+    // catcher: expected prevention of the weapon against one big remaining enemy
+    const bw = new Float64Array((maxV + 1) * W);
+    let nBig = 0;
+    for (let i = 0; i < ev.length; i++) if (ev[i] >= P.bigE) nBig += ec[i];
+    if (nBig > 0 && (P.catcherW || P.wBig)) {
+      const scale = Math.min(1, nBig / g.nP);
+      for (let wv = 1; wv <= maxV; wv++) for (let lim = 0; lim <= maxV; lim++) {
+        let s2 = 0;
+        for (let i = 0; i < ev.length; i++) if (ev[i] >= P.bigE && (lim === 0 || ev[i] < lim)) s2 += ec[i] * Math.min(ev[i], wv);
+        bw[wv * W + lim] = (s2 / nBig) * scale;
+      }
+    }
     let meanE = 0;
     for (let i = 0; i < ev.length; i++) meanE += ev[i] * ec[i];
     meanE = totE ? meanE / totE : 0;
     let remCards = 0, remBad = 0;
     for (let i = 0; i < rem.length; i++) { remCards += rem[i]; if ((i >> 6) <= T.THIEF) remBad += rem[i]; }
     return {
-      P, maxHp: cfg.hp, thiefDmg: cfg.thiefDamage, W, ww, mw, rem, meanE, badFrac: remCards ? remBad / remCards : 0,
+      P, maxHp: cfg.hp, thiefDmg: cfg.thiefDamage, W, ww, mw, bw, rem, meanE, badFrac: remCards ? remBad / remCards : 0,
+      deckFrac: g.deck.length / Math.max(1, g.total),
       deckLeft: g.deck.length,
+      endLook: mode !== 'resolve' && P.endLook && !g.lastHand && g.deck.length > 0 && g.deck.length <= g.nP * (g.handSize - 1),
+      viewer: 0,
       numericKeys: cfg.hp < 128 && maxV < 64,
       pileCache: [], impactCache: new Map(), states: g.players.map(stateOf), phantomCard: null, nPh: 0,
     };
@@ -624,14 +1069,19 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 
   function hpTerm(P, hp) {
     const d = P.riskHp - hp;
-    return d > 0 ? hp - (P.riskW * d * d) / P.riskHp : hp;
+    return d > 0 && P.riskHp > 0 ? hp - (P.riskW * d * d) / P.riskHp : hp;
   }
 
   // Value of a player state; tolerates hp <= 0 (used for estimates of future rounds).
   function evalSoft(ctx, hp, wv, lim, mg) {
     const P = ctx.P;
     let v = hpTerm(P, hp);
-    if (wv > 0) v += P.wWeapon * ctx.ww[wv * ctx.W + lim];
+    if (P.hpEndW) v *= 1 + P.hpEndW * (1 - ctx.deckFrac);
+    if (P.hpTopW) { const over = hp - (ctx.maxHp - P.hpTop); if (over > 0) v -= P.hpTopW * over; }
+    if (wv > 0) {
+      v += P.wWeapon * ctx.ww[wv * ctx.W + lim];
+      if (P.wBig) v += P.wBig * ctx.bw[wv * ctx.W + lim];
+    }
     if (mg > 0) v += P.wMagic * ctx.mw[mg];
     return v;
   }
@@ -656,9 +1106,63 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
   //   enemy: 0 fist, 1 weapon, 2 magic | thief: 0 take damage, 1 give weapon
   //   heal/weapon/magic/smith: 0 use/equip, 1 discard
 
+  // Fast memo for the resolver's numeric state keys: open addressing in typed arrays,
+  // shared between calls (a generation stamp marks the valid slots). A resolve that
+  // runs inside another resolve (last-hand lookahead) uses a plain Map instead.
+  let memoCap = 1 << 15, memoMask = memoCap - 1;
+  let memoKeys = new Float64Array(memoCap), memoVals = new Float64Array(memoCap), memoStamp = new Int32Array(memoCap);
+  let memoGen = 0, memoCount = 0, memoBusy = false;
+  function memoSlot(k) {
+    const lo = k % 4294967296, hi = (k - lo) / 4294967296;
+    let h = Math.imul((lo | 0) ^ Math.imul(hi | 0, 0x9e3779b1), 0x85ebca6b);
+    h ^= h >>> 15;
+    return h & memoMask;
+  }
+  function memoGet(k) {
+    let i = memoSlot(k);
+    while (memoStamp[i] === memoGen) {
+      if (memoKeys[i] === k) return memoVals[i];
+      i = (i + 1) & memoMask;
+    }
+    return undefined;
+  }
+  function memoSet(k, v) {
+    if (memoCount * 2 > memoCap) memoGrow();
+    let i = memoSlot(k);
+    while (memoStamp[i] === memoGen && memoKeys[i] !== k) i = (i + 1) & memoMask;
+    if (memoStamp[i] !== memoGen) memoCount++;
+    memoStamp[i] = memoGen; memoKeys[i] = k; memoVals[i] = v;
+  }
+  function memoGrow() {
+    const ok = memoKeys, ov = memoVals, os = memoStamp, gen = memoGen;
+    memoCap *= 2; memoMask = memoCap - 1;
+    memoKeys = new Float64Array(memoCap); memoVals = new Float64Array(memoCap); memoStamp = new Int32Array(memoCap);
+    memoGen = 1; memoCount = 0;
+    for (let i = 0; i < os.length; i++) if (os[i] === gen) memoSet(ok[i], ov[i]);
+  }
+
   // soft = true: ignore death (hp may go negative) – used to grade hopeless plans.
-  function resolvePile(ctx, st, cards, soft) {
+  function resolvePile(ctx, st, allCards, soft, held, leafFn) {
+    // Only one heal per round can be used, and the largest heal is never worse than a
+    // smaller one at the same moment: all other heals are discarded up front.
+    let cards = allCards, inert = null;
+    let nHeal = 0, bestHeal = null;
+    for (const c of allCards) if (c.t === T.HEAL) { nHeal++; if (!bestHeal || c.v > bestHeal.v) bestHeal = c; }
+    if (nHeal > 1) {
+      cards = []; inert = [];
+      for (const c of allCards) (c.t === T.HEAL && c !== bestHeal ? inert : cards).push(c);
+    }
     const n = cards.length;
+    const heldW = held && held.length && ctx.P.heldResW ? ctx.P.heldResW : 0;
+    const leaf = (hp, wv, lim, mg) => {
+      if (leafFn && !soft) return hp <= 0 ? DEATH : leafFn(hp, wv, lim, mg);
+      let v = soft ? evalSoft(ctx, hp, wv, lim, mg) : evalEnd(ctx, hp, wv, lim, mg);
+      if (heldW && v > DEATH / 2) {
+        const s = { hp, maxHp: st.maxHp, wv, lim, mg, kills: lim ? [lim] : [] };
+        for (const h of held) if (isBad(h)) v += heldW * marginal(ctx, s, h);
+      }
+      return v;
+    };
     const maxHp = st.maxHp, thiefDmg = ctx.thiefDmg;
     const ts = new Array(n), vs = new Array(n), same = new Array(n);
     let hasSmith = false;
@@ -670,19 +1174,30 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       if (ts[i] === T.SMITH) hasSmith = true;
     }
     const full = (1 << n) - 1;
-    const memo = new Map(), choice = new Map();
     const numeric = ctx.numericKeys && n <= 20 && !hasSmith;
+    const fast = numeric && !memoBusy;
+    const memo = fast ? null : new Map();
+    if (fast) {
+      memoBusy = true;
+      if (++memoGen > 2000000000) { memoStamp.fill(0); memoGen = 1; }
+      memoCount = 0;
+    }
+    try {
 
     function key(mask, hp, wv, lim, mg, hu, stk) {
       if (numeric) return ((((mask * 1024 + hp + 512) * 64 + wv) * 64 + lim) * 64 + mg) * 2 + hu;
       return mask + ',' + hp + ',' + wv + ',' + (stk ? stk.join('.') : lim) + ',' + mg + ',' + hu;
     }
 
-    function dfs(mask, hp, wv, lim, mg, hu, stk) {
-      if (mask === full) return soft ? evalSoft(ctx, hp, wv, lim, mg) : evalEnd(ctx, hp, wv, lim, mg);
-      const k = key(mask, hp, wv, lim, mg, hu, stk);
-      const m = memo.get(k);
-      if (m !== undefined) return m;
+    // wantChoice: return the best option code instead of the value (used for replay;
+    // the children are memoized, so this is cheap).
+    function dfs(mask, hp, wv, lim, mg, hu, stk, wantChoice) {
+      if (mask === full) return leaf(hp, wv, lim, mg);
+      const k = wantChoice ? 0 : key(mask, hp, wv, lim, mg, hu, stk);
+      if (!wantChoice) {
+        const m = fast ? memoGet(k) : memo.get(k);
+        if (m !== undefined) return m;
+      }
       let best = -Infinity, bc = -1, r;
       for (let i = 0; i < n; i++) {
         const bit = 1 << i;
@@ -748,8 +1263,11 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
           }
         }
       }
-      memo.set(k, best);
-      choice.set(k, bc);
+      if (bc < 0) { // every option evaluated to -Infinity: take the first legal card
+        for (let i = 0; i < n; i++) if (!(mask & (1 << i)) && !(same[i] & ~mask)) { bc = i * 4 + (ts[i] >= T.HEAL ? 1 : 0); break; }
+      }
+      if (wantChoice) return bc;
+      if (fast) memoSet(k, best); else memo.set(k, best);
       return best;
     }
 
@@ -761,7 +1279,8 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     const actions = [];
     while (mask !== full && (soft || hp > 0)) {
       const lim = kills.length ? kills[kills.length - 1] : 0;
-      const bc = choice.get(key(mask, hp, wv, lim, mg, hu, hasSmith ? kills : null));
+      const bc = dfs(mask, hp, wv, lim, mg, hu, hasSmith ? kills.slice() : null, true);
+      if (bc === undefined || bc < 0) throw new Error('Resolver: keine Entscheidung gefunden');
       const i = bc >> 2, opt = bc & 3, v = vs[i];
       actions.push({ card: cards[i], opt });
       mask |= 1 << i;
@@ -789,10 +1308,14 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       }
     }
     for (let i = 0; i < n; i++) if (!(mask & (1 << i))) actions.push({ card: cards[i], opt: -1 });
+    if (inert) for (const c of inert) actions.unshift({ card: c, opt: 1 });
     return {
       value, dead: hp <= 0, actions,
       end: { hp, maxHp, wv, lim: kills.length ? kills[kills.length - 1] : 0, mg, kills },
     };
+    } finally {
+      if (fast) memoBusy = false;
+    }
   }
 
   // Value of a state after one more card next round (heal allowed again).
@@ -831,10 +1354,15 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 
   // ---------------------------------------------------------------- play phase
 
-  function resolveCached(g, t, pile) {
-    const ctx = g.ctx;
+  function pileKey(pile) {
     let h = 0;
     for (let i = 0; i < pile.length; i++) h += ZOB[pile[i].t * 64 + pile[i].v];
+    return h;
+  }
+
+  function resolveCached(g, t, pile) {
+    const ctx = g.ctx;
+    const h = pileKey(pile);
     const cache = ctx.pileCache[t] || (ctx.pileCache[t] = new Map());
     let r = cache.get(h);
     if (!r) {
@@ -844,6 +1372,81 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       cache.set(h, r);
     }
     return r;
+  }
+
+  // ---------------------------------------------------------------- last-hand lookahead
+  // Evaluation for the very last hand: nothing comes afterwards, only survival counts.
+  function finalCtx(g) {
+    const base = g.ctx;
+    if (base.finalCtx) return base.finalCtx;
+    const fc = Object.assign({}, base, {
+      ww: new Float64Array(base.ww.length), mw: new Float64Array(base.mw.length), bw: new Float64Array(base.bw.length),
+      P: Object.assign({}, base.P, { hpTopW: 0, wBig: 0, riskHp: 0 }), pileCache: [], frCache: new Map(), resCache: new Map(),
+    });
+    base.finalCtx = fc;
+    return fc;
+  }
+
+  // Cards that will make up the last hand besides the held ones: the rest of the deck,
+  // as far as public (known bottom cards), the unknown rest imagined from the pool.
+  function futureCards(g, p) {
+    const ctx = g.ctx;
+    ctx.future = ctx.future || [];
+    if (ctx.future[p]) return ctx.future[p];
+    const known = [], pool = Int32Array.from(ctx.rem);
+    for (const c of g.players[p].hand) pool[code(c)]--;
+    for (const id of g.known) { const c = g.cards[id]; known.push(c); pool[code(c)]--; }
+    const bag = [];
+    for (let cd = 0; cd < pool.length; cd++) for (let k = 0; k < pool[cd]; k++) bag.push({ id: -1000 - bag.length, t: cd >> 6, v: cd & 63 });
+    const need = Math.max(0, g.deck.length - known.length);
+    for (let i = 0; i < need && bag.length; i++) { const j = g.aiRng.int(bag.length); known.push(bag[j]); bag[j] = bag[bag.length - 1]; bag.pop(); }
+    ctx.future[p] = known;
+    return known;
+  }
+
+  function stateKey(e) { return e.hp + ',' + e.wv + ',' + e.lim + ',' + e.mg + ',' + (e.kills ? e.kills.join('.') : ''); }
+
+  // Best joint split of the last-hand cards between the players (all must be played).
+  function finalRoundValue(g, ends, cards) {
+    const fc = finalCtx(g), P = g.policy, n = ends.length;
+    const key = ends.map(stateKey).join('|') + '#' + pileKey(cards) + '#' + cards.length;
+    const hit = fc.frCache.get(key);
+    if (hit !== undefined) return hit;
+    const piles = ends.map(() => []), bc = new Array(n).fill(0);
+    let best = -Infinity;
+    const res = (t) => {
+      const k = stateKey(ends[t]) + '#' + pileKey(piles[t]) + '#' + piles[t].length;
+      let r = fc.resCache.get(k);
+      if (!r) {
+        r = resolvePile(fc, ends[t], piles[t]);
+        if (r.dead) r.softHp = resolvePile(fc, ends[t], piles[t], true).end.hp;
+        fc.resCache.set(k, r);
+      }
+      return r;
+    };
+    (function rec(i) {
+      if (i === cards.length) {
+        let mn = Infinity, mx = -Infinity;
+        for (const b of bc) { if (b < mn) mn = b; if (b > mx) mx = b; }
+        if (mx - mn > 1) return;
+        let v = 0, minHp = Infinity, dead = false;
+        for (let t = 0; t < n; t++) {
+          const r = res(t);
+          if (r.dead) { dead = true; v += 1000 * Math.min(0, r.softHp - 1); } else { v += r.end.hp; if (r.end.hp < minHp) minHp = r.end.hp; }
+        }
+        v = dead ? DEATH_STEP / 2 + v : 100000 + v + P.wMinHp * minHp;
+        if (v > best) best = v;
+        return;
+      }
+      const c = cards[i], bad = isBad(c);
+      for (let t = 0; t < n; t++) {
+        piles[t].push(c); if (bad) bc[t]++;
+        rec(i + 1);
+        piles[t].pop(); if (bad) bc[t]--;
+      }
+    })(0);
+    fc.frCache.set(key, best);
+    return best;
   }
 
   function holdValue(g, c, ends) {
@@ -867,7 +1470,8 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
   function teamValue(g, piles, held) {
     const P = g.policy;
     let sum = 0, minHp = Infinity, dead = 0;
-    const ends = held ? [] : null;
+    const endLook = g.ctx.endLook;
+    const ends = held || endLook ? [] : null;
     for (let t = 0; t < piles.length; t++) {
       const r = resolveCached(g, t, piles[t]);
       if (r.dead) {
@@ -881,7 +1485,20 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       if (ends) ends.push(r.end);
     }
     if (dead) return sum;
+    if (endLook) {
+      const cards = futureCards(g, g.ctx.viewer).slice();
+      if (held) { if (Array.isArray(held)) cards.push(...held); else cards.push(held); }
+      return finalRoundValue(g, ends, cards);
+    }
     sum += P.wMinHp * minHp;
+    if (P.catcherW) {
+      let c = 0;
+      for (let t = 0; t < piles.length; t++) {
+        const e = g.ctx.pileCache[t].get(pileKey(piles[t])).end;
+        if (e.wv > 0) { const v = g.ctx.bw[e.wv * g.ctx.W + e.lim]; if (v > c) c = v; }
+      }
+      sum += P.catcherW * c;
+    }
     if (held) sum += holdValue(g, held, ends);
     return sum;
   }
@@ -945,6 +1562,103 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     return moves;
   }
 
+  // Enumerates all joint assignments of items ({c, o}: card and owner) to a target
+  // or "hold" (max. one per owner); calls onLeaf(assign, value) for every plan that
+  // keeps the bad-card counts within 1.
+  function jointEnumerate(g, items, onLeaf) {
+    const piles = g.piles.map((x) => x.slice());
+    const bc = g.badCount.slice();
+    const held = new Array(g.nP).fill(null);
+    const assign = new Array(items.length);
+    const canHold = !g.lastHand;
+    (function rec(k) {
+      if (k === items.length) {
+        let mn = Infinity, mx = -Infinity;
+        for (const b of bc) { if (b < mn) mn = b; if (b > mx) mx = b; }
+        if (mx - mn > 1) return;
+        let v;
+        if (g.ctx.endLook) v = teamValue(g, piles, held.filter(Boolean));
+        else {
+          v = teamValue(g, piles, null);
+          if (v > DEATH_STEP / 2) {
+            let ends = null;
+            for (const h of held) if (h) {
+              if (!ends) ends = piles.map((pl, t) => resolveCached(g, t, pl).end);
+              v += holdValue(g, h, ends);
+            }
+          }
+        }
+        onLeaf(assign, v);
+        return;
+      }
+      const { c, o } = items[k], bad = isBad(c);
+      for (let t = 0; t < g.nP; t++) {
+        piles[t].push(c); if (bad) bc[t]++;
+        assign[k] = t;
+        rec(k + 1);
+        piles[t].pop(); if (bad) bc[t]--;
+      }
+      if (canHold && !held[o]) {
+        held[o] = c; assign[k] = -1;
+        rec(k + 1);
+        held[o] = null;
+      }
+    })(0);
+  }
+
+  // PIMC: imagine partner hands drawn from the unknown cards, plan the round jointly
+  // for each, and pick the own move that is best on average.
+  function pimcMove(g, p, moves) {
+    const P = g.policy, ctx = g.ctx;
+    const pool = Int32Array.from(ctx.rem);
+    for (const c of g.players[p].hand) pool[code(c)]--;
+    for (const pile of g.piles) for (const c of pile) pool[code(c)]--;
+    for (const id of g.known) pool[code(g.cards[id])]--;
+    const bag = [];
+    for (let cd = 0; cd < pool.length; cd++) for (let k = 0; k < pool[cd]; k++) bag.push({ id: -2 - bag.length, t: cd >> 6, v: cd & 63 });
+    const mine = g.players[p].hand;
+    const score = new Map(); // move index -> summed value
+    const moveIdx = new Map();
+    moves.forEach((mv, i) => { moveIdx.set(mv.pass ? 'pass' : code(mv.card) + ':' + mv.target, i); score.set(i, 0); });
+    // shuffles only the not yet handed-out part of the bag (from position "from" on)
+    const shuffle = (from) => { for (let i = bag.length - 1; i > from; i--) { const j = from + g.aiRng.int(i - from + 1); const tmp = bag[i]; bag[i] = bag[j]; bag[j] = tmp; } };
+    for (let s = 0; s < P.pimcSamples; s++) {
+      // draw partner hands, preferably consistent with their signals this round
+      const items = mine.map((c) => ({ c, o: p }));
+      let off = 0;
+      // other players in turn order after me; hands that do not fit the cap are left out
+      for (let k2 = 1; k2 < g.nP; k2++) {
+        const q = (p + k2) % g.nP, pl = g.players[q];
+        if (g.passed[q] || !pl.hand.length) continue;
+        const h = pl.hand.length;
+        if (items.length + h > Math.max(P.pimcMaxItems, mine.length + 1)) break;
+        let tries = 0;
+        for (;;) {
+          shuffle(off);
+          if (off + h > bag.length) break;
+          if (!P.pimcSignals || tries++ >= P.pimcTries) break;
+          const startHand = g.played ? g.played[q].concat(bag.slice(off, off + h)) : bag.slice(off, off + h);
+          if (consistentWithSignals(g, q, startHand)) break;
+        }
+        for (let k = 0; k < h && off < bag.length; k++) items.push({ c: bag[off++], o: q });
+      }
+      const best = new Array(moves.length).fill(-Infinity);
+      jointEnumerate(g, items, (assign, v) => {
+        for (let k = 0; k < mine.length; k++) {
+          const key = assign[k] < 0 ? (mine.length === 1 ? 'pass' : null) : code(mine[k]) + ':' + assign[k];
+          if (key === null) continue;
+          const i = moveIdx.get(key);
+          if (i !== undefined && v > best[i]) best[i] = v;
+        }
+      });
+      for (let i = 0; i < moves.length; i++) score.set(i, score.get(i) + (best[i] === -Infinity ? -1e12 : best[i]));
+    }
+    let bi = 0;
+    for (let i = 1; i < moves.length; i++) if (score.get(i) > score.get(bi)) bi = i;
+    moves.forEach((mv, i) => { mv.v = score.get(i); });
+    return moves[bi];
+  }
+
   // Oracle: plans the rest of the round with ALL hands visible (upper bound / ideal team).
   function jointPlan(g) {
     const items = [];
@@ -1003,12 +1717,16 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 
   function choosePlay(g, p) {
     const P = g.policy, hand = g.players[p].hand;
+    g.ctx.viewer = p;
     const moves = legalMoves(g, p);
     if (P.play === 'random') return moves[g.aiRng.int(moves.length)];
     if (P.play === 'oracle') {
       const mv = oracleMove(g, p);
       if (mv) return mv;
     }
+    const wantPimc = P.play === 'pimc' && (!g.played || g.played[p].length < P.pimcDecisions);
+    if (wantPimc && !(P.pimcMargin > 0)) return pimcMove(g, p, moves);
+    if (P.play === 'rules') return rules.play(g, p);
     const piles = g.piles.map((x) => x.slice());
     const bc = g.badCount.slice();
     // expected bad cards the other players will still play this round
@@ -1040,6 +1758,12 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       mv.v = v;
       if (v > bestV || best === null) { bestV = v; best = mv; }
     }
+    if (wantPimc) {
+      // the planner is unsure (two moves close together): imagine the partner's hand
+      let second = -Infinity;
+      for (const mv of moves) if (mv !== best && mv.v > second) second = mv.v;
+      if (bestV - second < P.pimcMargin) return pimcMove(g, p, moves);
+    }
     if (P.orderPref !== 'none') {
       // equally good plans differ only in order: reveal information / secure routing first
       const prio = (mv) => {
@@ -1061,7 +1785,26 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       g.resolveCtx = makeCtx(g, 'resolve');
       g.resolveCtx.round = g.round;
     }
-    return resolvePile(g.resolveCtx, stateOf(g.players[p]), g.piles[p]).actions;
+    const P = g.policy;
+    if (P.endLook && P.endLookRes && g.ctx.endLook) {
+      // the others resolve their piles in the usual way; my end state is judged by
+      // whether the last hand (my held card + rest of the deck) is survivable
+      const others = g.players.map((pl, t) => (t === p ? null : resolvePile(g.resolveCtx, stateOf(pl), g.piles[t]).end));
+      const cards = futureCards(g, p).concat(g.players[p].hand);
+      const memo = new Map();
+      const leafFn = (hp, wv, lim, mg) => {
+        const k = hp + ',' + wv + ',' + lim + ',' + mg;
+        let v = memo.get(k);
+        if (v === undefined) {
+          const ends = others.map((e) => e || { hp, maxHp: g.players[p].maxHp, wv, lim, mg, kills: lim ? [lim] : [] });
+          v = finalRoundValue(g, ends, cards);
+          memo.set(k, v);
+        }
+        return v;
+      };
+      return resolvePile(g.resolveCtx, stateOf(g.players[p]), g.piles[p], false, null, leafFn).actions;
+    }
+    return resolvePile(g.resolveCtx, stateOf(g.players[p]), g.piles[p], false, g.players[p].hand).actions;
   }
 
   // ---------------------------------------------------------------- flee & start
@@ -1101,7 +1844,11 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 
   // Positive = this player would like to flee (from its own hand + public info).
   function fleeDelta(g, p) {
-    const P = g.policy, ctx = g.ctx, hand = g.players[p].hand;
+    return fleeDeltaHand(g, g.players[p].hand);
+  }
+
+  function fleeDeltaHand(g, hand) {
+    const P = g.policy, ctx = g.ctx;
     const pool = Int32Array.from(ctx.rem);
     for (const c of hand) pool[code(c)]--;
     let B = 0;
@@ -1130,9 +1877,53 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       d += P.fleeDangerW * Math.max(0, danger - P.fleeDangerFrac * minHp);
     }
     const others = (g.nP - 1) * g.handSize * (sSv / cnt);
-    if (P.fleeRelW) d -= P.fleeRelW * ((g.handSize * sSv) / cnt - svOwn);
-    d -= P.fleeBottomW * (bottomCost(P, B + svOwn + others) - bottomCost(P, B));
+    if (P.fleePosW >= 0 || P.fleeNegW >= 0) {
+      // fleeing moves own cards to the end of the deck and brings an average hand now
+      const pnOwn = posNeg(g, hand), avg = poolPosNegAvg(g, pool, cnt);
+      const wp = P.fleePosW >= 0 ? P.fleePosW : P.fleeRelW, wn = P.fleeNegW >= 0 ? P.fleeNegW : P.fleeRelW;
+      d += wp * (pnOwn.pos - g.handSize * avg.pos) - wn * (pnOwn.neg - g.handSize * avg.neg);
+    } else if (P.fleeRelW) d -= P.fleeRelW * ((g.handSize * sSv) / cnt - svOwn);
+    if (P.fleeEarlyW) d += P.fleeEarlyW * (ctx.deckFrac - 0.5) * 10;
+    if (P.fleeHorizon > 0 && g.deck.length < P.fleeHorizon) {
+      const f = g.deck.length / P.fleeHorizon; // 1 = far away, 0 = cards come right back
+      d = (d > 0 ? d * f : d) - P.fleeLatePen * (1 - f);
+    }
+    if (P.bottomMode === 'ratio') {
+      // imbalance = negative minus ratio-weighted positive (0 for an average mix)
+      const pn = posNeg(g, hand), bot = bottomPosNeg(g), avg = ctx.avgPosNeg || (ctx.avgPosNeg = averagePosNeg(g));
+      const r = avg.pos > 0 ? avg.neg / avg.pos : 1;
+      const before = bot.neg - r * bot.pos;
+      const after = before + (pn.neg - r * pn.pos); // partners' hands: average mix, adds ~0
+      const cost = (x) => { const y = x - P.imbFree; return y > 0 ? (y * y) / P.imbScale : 0; };
+      d -= P.imbW * (cost(after) - cost(before));
+    } else d -= P.fleeBottomW * (bottomCost(P, B + svOwn + others) - bottomCost(P, B));
     return d;
+  }
+
+  // Positive value (good cards) and negative value (bad cards) of a set of cards.
+  function posNeg(g, cards) {
+    let pos = 0, neg = 0;
+    for (const c of cards) { const v = staticValue(g, c); if (v >= 0) pos += v; else neg -= v; }
+    return { pos, neg };
+  }
+  function poolPosNegAvg(g, pool, cnt) {
+    let pos = 0, neg = 0;
+    for (let cd = 0; cd < pool.length; cd++) {
+      const k = pool[cd];
+      if (k <= 0) continue;
+      const v = staticValue(g, { t: cd >> 6, v: cd & 63 });
+      if (v >= 0) pos += k * v; else neg -= k * v;
+    }
+    return { pos: pos / cnt, neg: neg / cnt };
+  }
+  function bottomPosNeg(g) {
+    const cs = [];
+    for (const id of g.known) cs.push(g.cards[id]);
+    return posNeg(g, cs);
+  }
+  function averagePosNeg(g) {
+    const pn = posNeg(g, g.cards);
+    return { pos: pn.pos / g.cards.length, neg: pn.neg / g.cards.length };
   }
 
   const SIGNAL_NUM = [-1, 0, 1, 2]; // nicht, offen, will, unbedingt
@@ -1140,27 +1931,83 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
   function decideFlee(g) {
     const P = g.policy;
     if (P.flee === 'never') return { flee: false };
+    if (P.flee === 'rules') return rules.flee(g);
     const deltas = g.players.map((_, p) => fleeDelta(g, p));
     if (P.flee === 'fullInfo') {
       const s = deltas.reduce((a, b) => a + b, 0);
       return { flee: s > P.fleeFullT, deltas };
     }
-    const q = (d) => (d >= P.fleeT2 ? 3 : d >= P.fleeT1 ? 2 : d > -P.fleeT1 ? 1 : 0);
-    const mid = [-(P.fleeT1 + 3), 0, (P.fleeT1 + P.fleeT2) / 2, P.fleeT2 + 4];
-    const first = deltas.map(q);
-    const final = deltas.map((d, i) => {
-      let u = d;
-      for (let j = 0; j < first.length; j++) if (j !== i) u += mid[first[j]];
-      return q(u);
-    });
+    const rounds = [deltas.map((d) => fleeLevel(P, d))];
+    const R = Math.max(0, Math.min(2, Math.round(P.fleeRounds)));
+    for (let r = 1; r <= R; r++) rounds.push(deltas.map((d, i) => fleeLevelFinal(P, d, rounds[r - 1], i)));
+    const final = rounds[rounds.length - 1];
     const score = final.reduce((a, l) => a + SIGNAL_NUM[l], 0);
-    return { flee: score > 0, deltas, first, final };
+    return { flee: score > 0, deltas, first: rounds[0], final, rounds };
+  }
+
+  function fleeLevel(P, d) { return d >= P.fleeT2 ? 3 : d >= P.fleeT1 ? 2 : d > -P.fleeT1 ? 1 : 0; }
+  // Reaction: own value plus what the others' last statements typically mean.
+  function fleeLevelFinal(P, d, heard, i) {
+    const mid = [-(P.fleeT1 + 3), 0, (P.fleeT1 + P.fleeT2) / 2, P.fleeT2 + 4];
+    let u = d;
+    for (let j = 0; j < heard.length; j++) if (j !== i) u += mid[heard[j]];
+    return fleeLevel(P, u);
+  }
+
+  // Start negotiation rounds: a player tied for the highest level may escalate once
+  // per round if its hand is strong enough; everyone else keeps the statement.
+  function startRoundsFor(P, imps) {
+    const rounds = [imps.map((d) => startLevel(P, d))];
+    const R = Math.max(0, Math.min(2, Math.round(P.startRounds)));
+    for (let r = 1; r <= R; r++) {
+      const prev = rounds[r - 1];
+      rounds.push(prev.map((l, i) => {
+        let m = -1;
+        for (let j = 0; j < prev.length; j++) if (j !== i && prev[j] > m) m = prev[j];
+        return l === m && l < 3 && imps[i] >= P.startEsc ? l + 1 : l;
+      }));
+    }
+    return rounds;
+  }
+
+  function startImpact(g, hand) {
+    let imp = 0;
+    for (const c of hand) imp += Math.abs(impact(g, c));
+    return imp;
+  }
+  function startLevel(P, imp) { return imp >= P.startT2 ? 3 : imp >= P.startT1 ? 2 : imp >= P.startT0 ? 1 : 0; }
+
+  // Is a hypothetical round-start hand of player q consistent with what q signalled?
+  function consistentWithSignals(g, q, hand) {
+    const P = g.policy, sig = g.signals;
+    if (!sig) return true;
+    if (sig.flee && sig.flee.first) {
+      const d = fleeDeltaHand(g, hand);
+      if (fleeLevel(P, d) !== sig.flee.first[q]) return false;
+      if (P.pimcUseFinal) {
+        const rs = sig.flee.rounds || [sig.flee.first, sig.flee.final];
+        for (let r = 1; r < rs.length; r++) if (fleeLevelFinal(P, d, rs[r - 1], q) !== rs[r][q]) return false;
+      }
+    }
+    if (sig.start && sig.start.rounds) {
+      // q's statements must follow from the hypothetical hand and what q heard
+      const imp = startImpact(g, hand), rs = sig.start.rounds;
+      if (startLevel(P, imp) !== rs[0][q]) return false;
+      for (let r = 1; r < rs.length; r++) {
+        let m = -1;
+        for (let j = 0; j < rs[r - 1].length; j++) if (j !== q && rs[r - 1][j] > m) m = rs[r - 1][j];
+        const l = rs[r - 1][q];
+        if ((l === m && l < 3 && imp >= P.startEsc ? l + 1 : l) !== rs[r][q]) return false;
+      }
+    }
+    return true;
   }
 
   function decideStart(g) {
     const P = g.policy, n = g.nP;
     if (P.start === 'random') return { start: g.aiRng.int(n) };
     if (P.start === 'rotate') return { start: (g.lastStart + 1 + n) % n };
+    if (P.start === 'rules') return rules.start(g);
     if (P.start === 'strongest') {
       let best = -Infinity, start = 0;
       g.players.forEach((pl, p) => {
@@ -1170,23 +2017,22 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       });
       return { start };
     }
-    const levels = g.players.map((pl) => {
-      let imp = 0;
-      for (const c of pl.hand) imp += Math.abs(impact(g, c));
-      return imp >= P.startT2 ? 3 : imp >= P.startT1 ? 2 : imp >= P.startT0 ? 1 : 0;
-    });
+    const rounds = startRoundsFor(P, g.players.map((pl) => startImpact(g, pl.hand)));
+    const levels = rounds[rounds.length - 1];
     let best = -1, start = 0;
     for (let k = 1; k <= n; k++) {
       const p = (g.lastStart + k + n) % n;
       if (levels[p] > best) { best = levels[p]; start = p; }
     }
-    return { start, levels };
+    return { start, levels, rounds };
   }
+
+  const rules = rulesMod.create({ stateOf, resolveCached, legalMoves, posNeg, bottomPosNeg, averagePosNeg });
 
   return {
     DEATH, DEFAULT_POLICY, PRESETS, makePolicy,
     makeCtx, evalSoft, evalEnd, stateOf, resolvePile, marginal,
-    legalMoves, choosePlay, resolveActions, decideFlee, decideStart, fleeDelta, impact,
+    legalMoves, choosePlay, resolveActions, decideFlee, decideStart, fleeDelta, impact, posNeg, bottomPosNeg,
   };
 });
 
@@ -1239,7 +2085,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       totalCodes, resolvedCodes: new Int32Array(config.CODE_SPACE),
       resolvedCount: 0, totalEnemySum, resolvedEnemySum: 0,
       piles: null, badCount: null, passed: null, lastHand: false, ctx: null,
-      deathInfo: null, deadSeats: [],
+      deathInfo: null, deadSeats: [], lowHp: Infinity,
       log: opts.log ? [] : null,
       st: newCounters(nP),
       result: null,
@@ -1290,6 +2136,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 
   function beginPlay(g) {
     g.piles = g.players.map(() => []);
+    g.played = g.players.map(() => []);
     g.badCount = new Array(g.nP).fill(0);
     g.passed = new Array(g.nP).fill(false);
   }
@@ -1319,6 +2166,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     }
     pl.hand.splice(idx, 1);
     g.piles[t].push(mv.card);
+    g.played[p].push(mv.card);
     if (g.log) g.log.push('  ' + SEAT[p] + ': ' + label(mv.card) + ' → ' + SEAT[t]);
   }
 
@@ -1358,6 +2206,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
             parts.push(label(c) + ' Magie −' + dmg);
           } else throw new Error('Ungültige Aktion für Gegner');
           pl.hp -= dmg;
+          if (pl.hp < g.lowHp) g.lowHp = pl.hp;
           g.resolvedEnemySum += v;
           break;
         }
@@ -1368,6 +2217,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
             pl.weapon = null; st.thiefSteal++; st.weaponStolen++;
           } else if (a.opt === 0) {
             pl.hp -= g.cfg.thiefDamage; st.dmgThief += g.cfg.thiefDamage; st.thiefDamage++;
+            if (pl.hp < g.lowHp) g.lowHp = pl.hp;
             parts.push('D −' + g.cfg.thiefDamage);
           } else throw new Error('Ungültige Aktion für Dieb');
           break;
@@ -1432,9 +2282,13 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     if (!d.first && !d.deltas) return '  Flucht? (deaktiviert)';
     const fmt = (x) => (x >= 0 ? '+' : '') + x.toFixed(1);
     if (!d.first) return '  Flucht? (volle Info) Δ ' + d.deltas.map((x, i) => SEAT[i] + fmt(x)).join(' ') + ' → ' + (d.flee ? 'fliehen' : 'kämpfen');
-    const a = d.first.map((l, i) => SEAT[i] + ' ' + FLEE_WORDS[l] + ' (Δ' + fmt(d.deltas[i]) + ')').join(', ');
-    const changed = d.final.some((l, i) => l !== d.first[i]);
-    const b = changed ? ' ⇒ nachjustiert: ' + d.final.map((l, i) => SEAT[i] + ' ' + FLEE_WORDS[l]).join(', ') : '';
+    const pn = g.players.map((pl) => ai.posNeg(g, pl.hand));
+    const a = d.first.map((l, i) => SEAT[i] + ' ' + FLEE_WORDS[l] + ' (Hand +' + Math.round(pn[i].pos) + '/−' + Math.round(pn[i].neg) + ', Δ' + fmt(d.deltas[i]) + ')').join(', ');
+    const rs = d.rounds || [d.first, d.final];
+    let b = '';
+    for (let r = 1; r < rs.length; r++) {
+      if (rs[r].some((l, i) => l !== rs[r - 1][i])) b += ' ⇒ Reaktion ' + r + ': ' + rs[r].map((l, i) => SEAT[i] + ' ' + FLEE_WORDS[l]).join(', ');
+    }
     return '  Flucht? ' + a + b + ' → ' + (d.flee ? 'FLIEHEN' : 'kämpfen');
   }
 
@@ -1447,11 +2301,13 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     g.ctx = ai.makeCtx(g);
     if (L) {
       L.push('');
-      L.push('── Runde ' + g.round + ' · Deck ' + g.deck.length + (g.lastHand ? ' · letzte Hand' : '') + (g.known.size ? ' · davon unten bekannt ' + g.known.size : '') + ' ──');
+      const bot = g.known.size ? ai.bottomPosNeg(g) : null;
+      L.push('── Runde ' + g.round + ' · Deck ' + g.deck.length + (g.lastHand ? ' · letzte Hand' : '') + (bot ? ' · unten bekannt ' + g.known.size + ' Karten (+' + Math.round(bot.pos) + '/−' + Math.round(bot.neg) + ')' : '') + ' ──');
       for (const pl of g.players) L.push('  ' + fmtPlayer(pl) + ' · Hand: ' + fmtCards(pl.hand));
     }
     if (canFlee(g)) {
       const d = ai.decideFlee(g);
+      g.signals = { flee: d.flee ? null : d, start: null, round: g.round };
       if (L) L.push(fleeText(g, d));
       if (d.flee) { doFlee(g); return; }
     } else if (L) {
@@ -1460,10 +2316,18 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
     g.fledLast = false;
     g.st.fights++;
 
+    if (!g.signals || g.signals.round !== g.round) g.signals = { flee: null, start: null };
     const s = ai.decideStart(g);
+    g.signals.start = s;
+    g.signals.round = g.round;
     g.lastStart = s.start;
     g.st.startSeat[s.start]++;
-    if (L) L.push('  Start: ' + (s.levels ? s.levels.map((l, i) => SEAT[i] + ' ' + START_WORDS[l]).join(', ') + ' → ' : '') + SEAT[s.start] + ' beginnt');
+    if (L) {
+      const rs = s.rounds || (s.levels ? [s.levels] : []);
+      const txt = rs.map((lv, r) => (r ? 'Reaktion ' + r + ': ' : '') + lv.map((l, i) => SEAT[i] + ' ' + START_WORDS[l]).join(', '))
+        .filter((t, r) => r === 0 || rs[r].some((l, i) => l !== rs[r - 1][i]));
+      L.push('  Start: ' + (txt.length ? txt.join(' ⇒ ') + ' → ' : '') + SEAT[s.start] + ' beginnt');
+    }
 
     beginPlay(g);
     let turn = s.start;
@@ -1495,6 +2359,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
       score: win ? sumHp : -(g.totalEnemySum - g.resolvedEnemySum),
       death: win ? null : g.deathInfo,
       deadSeats: g.deadSeats.slice(),
+      lowHp: Math.min(g.lowHp, ...hp), // lowest HP any player had during the game
       st: g.st,
     };
     if (g.log) {
@@ -1678,14 +2543,15 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 
 </script>
 <script>
-/* Errantry simulator UI. Engine: window.Errantry (rng, config, ai, engine, stats). */
+/* Errantry simulator UI. Engine: window.Errantry (rng, config, rules, tuned, ai, engine, stats). */
 (function () {
   'use strict';
   const E = window.Errantry;
   const C = E.config;
   const $ = (id) => document.getElementById(id);
   const SEAT = 'ABC';
-  const STORE_KEY = 'errantry.ui.v1';
+  const STORE_KEY = 'errantry.ui.v2';
+  const VERSIONS_KEY = 'errantry.versions.v1';
 
   // ------------------------------------------------------------------ helpers
   function el(tag, attrs, children) {
@@ -1709,33 +2575,47 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
   const num = (x, d) => x.toFixed(d === undefined ? 1 : d).replace('.', ',');
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  function fmtTime(s) {
+    s = Math.max(0, Math.round(s));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
+    return (h ? h + ' h ' : '') + (h || m ? m + ' min ' : '') + r + ' s';
+  }
+  // progress text with elapsed time and remaining-time estimate
+  function etaText(t0, f, what) {
+    const el2 = (performance.now() - t0) / 1000;
+    const rest = f > 0.01 ? (el2 / f) * (1 - f) : null;
+    return Math.round(f * 100) + ' %' + (what ? ' · ' + what : '') + ' · vergangen ' + fmtTime(el2) + (rest !== null ? ' · Rest ca. ' + fmtTime(rest) : ' · Restzeit wird berechnet …');
+  }
+  function download(name, obj) {
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    const a = el('a', { href: URL.createObjectURL(blob), download: name });
+    document.body.appendChild(a); a.click(); a.remove();
+  }
 
   // ------------------------------------------------------------------ state
-  const state = {
-    cfg: clone(C.DEFAULT_CONFIG),
-    policy: E.ai.PRESETS.expert ? 'expert' : 'planner',
-    policyJson: '',
-    runs: [],
-    refIdx: -1,
-  };
+  const state = { cfg: clone(C.DEFAULT_CONFIG), policy: 'expert', policyJson: '', runs: [], refIdx: -1, versions: [], selected: new Set() };
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
     if (saved && saved.cfg) Object.assign(state, { cfg: saved.cfg, policy: saved.policy || state.policy, policyJson: saved.policyJson || '' });
+    state.versions = JSON.parse(localStorage.getItem(VERSIONS_KEY) || '[]');
   } catch (e) { /* storage unavailable */ }
+  if (!state.cfg.cards3) state.cfg.cards3 = [];
+  if (!E.ai.PRESETS[state.policy]) state.policy = 'expert';
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify({ cfg: state.cfg, policy: state.policy, policyJson: state.policyJson })); } catch (e) { /* ignore */ }
+  }
+  function saveVersions() {
+    try { localStorage.setItem(VERSIONS_KEY, JSON.stringify(state.versions)); } catch (e) { /* ignore */ }
   }
 
   function currentPolicy() {
     let over = {};
-    if (state.policyJson.trim()) {
-      over = JSON.parse(state.policyJson); // throws on invalid JSON – caught by callers
-    }
+    if (state.policyJson.trim()) over = JSON.parse(state.policyJson); // throws on invalid JSON – caught by callers
     return Object.assign({}, E.ai.PRESETS[state.policy] || {}, over);
   }
   function policyLabel() {
-    const o = $('policy').selectedOptions[0];
-    return (o ? o.textContent.split(' (')[0] : state.policy) + (state.policyJson.trim() ? ' + Anpassung' : '');
+    const names = { expert: 'Experte', fast: 'Schnell', untrained: 'Untrainiert', random: 'Zufall' };
+    return (names[state.policy] || state.policy) + (state.policyJson.trim() ? ' + Anpassung' : '');
   }
 
   // ------------------------------------------------------------------ worker pool
@@ -1743,8 +2623,13 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
 self.onmessage = function (e) {
   var m = e.data;
   try {
-    var res = Errantry.engine.runGames(m.cfg, m.policy, m.seed, m.from, m.to);
-    self.postMessage({ id: m.id, res: res });
+    if (m.kind === 'log') {
+      var g = Errantry.engine.runGame(m.cfg, m.policy, Errantry.engine.gameSeed(m.seed, m.index), { log: !m.quiet });
+      self.postMessage({ id: m.id, log: g.log, result: g.result });
+    } else {
+      var res = Errantry.engine.runGames(m.cfg, m.policy, m.seed, m.from, m.to);
+      self.postMessage({ id: m.id, res: res });
+    }
   } catch (err) { self.postMessage({ id: m.id, error: String(err && err.message || err) }); }
 };`;
   let pool = null;
@@ -1766,9 +2651,11 @@ self.onmessage = function (e) {
   }
 
   // Runs games [0, games) – in workers if possible, else chunked on the main thread.
+  // onProgress(fraction) is called after every finished chunk.
   function runBatch(cfg, policy, seed, games, onProgress, token) {
     const p = getPool();
-    const chunk = Math.max(25, Math.ceil(games / Math.max(1, p.workers.length * 8)));
+    const slow = policy.play === 'pimc';
+    const chunk = Math.max(slow ? 2 : 25, Math.ceil(games / Math.max(1, p.workers.length * (slow ? 24 : 8))));
     const jobs = [];
     for (let from = 0; from < games; from += chunk) jobs.push({ from, to: Math.min(games, from + chunk) });
     const out = [];
@@ -1805,28 +2692,37 @@ self.onmessage = function (e) {
           feed(w);
         };
         w.onerror = (ev) => { failed = true; killPool(); reject(new Error(ev.message || 'Worker-Fehler')); };
-        w.postMessage({ id: next, cfg, policy, seed, from: job.from, to: job.to });
+        w.postMessage({ kind: 'games', cfg, policy, seed, from: job.from, to: job.to });
       };
       for (const w of p.workers) feed(w);
     });
   }
 
-  // ------------------------------------------------------------------ config editor
-  function renderConfig() {
-    const cfg = state.cfg;
-    for (const b of $('players').querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.v) === Number(cfg.players)));
-    $('hp').value = cfg.hp;
-    $('thiefDamage').value = cfg.thiefDamage;
-    $('fleeBlockDeck').value = cfg.fleeBlockDeck;
-    $('handInfo').textContent = 'Handkarten je Spieler: ' + C.handSize(Number(cfg.players)) + ' (fest durch die Spieleranzahl)';
-    $('policy').value = state.policy;
-    $('policyJson').value = state.policyJson;
+  // One game (optionally with log) in a worker, so slow AIs do not freeze the page.
+  function runOne(cfg, policy, seed, index, withLog) {
+    const p = getPool();
+    if (!p.workers.length) {
+      const g = E.engine.runGame(cfg, policy, E.engine.gameSeed(seed, index), { log: withLog });
+      return Promise.resolve({ log: g.log, result: g.result });
+    }
+    const w = p.workers[0];
+    return new Promise((resolve, reject) => {
+      w.onmessage = (ev) => (ev.data.error ? reject(new Error(ev.data.error)) : resolve(ev.data));
+      w.onerror = (ev) => reject(new Error(ev.message || 'Worker-Fehler'));
+      w.postMessage({ kind: 'log', cfg, policy, seed, index, quiet: !withLog });
+    });
+  }
 
+  // ------------------------------------------------------------------ config editor
+  function renderCardList(listKey, tbodyId) {
+    const cfg = state.cfg;
+    const list = cfg[listKey];
     const order = (e) => C.TYPE_BY_KEY[e.type].t * 100 + (Number(e.value) || 0);
-    cfg.cards.sort((a, b) => order(a) - order(b));
-    const tb = $('cardRows');
+    list.sort((a, b) => order(a) - order(b));
+    const tb = $(tbodyId);
     tb.textContent = '';
-    cfg.cards.forEach((e, i) => {
+    if (!list.length) tb.appendChild(el('tr', null, [el('td', { colspan: '4', class: 'hint', text: listKey === 'cards3' ? 'Keine Zusatzkarten – bei 3 Spielern wird das Grunddeck gespielt.' : 'Keine Karten.' })]));
+    list.forEach((e, i) => {
       const ti = C.TYPE_BY_KEY[e.type];
       const typeSel = el('select', { 'aria-label': 'Typ' }, C.TYPES.map((t) => el('option', { value: t.key, text: t.name })));
       typeSel.value = e.type;
@@ -1836,27 +2732,61 @@ self.onmessage = function (e) {
       val.addEventListener('change', () => { e.value = Math.max(1, Math.min(63, Number(val.value) || 1)); changed(true); });
       const cnt = el('input', { type: 'number', min: '0', max: '99', value: String(e.count), 'aria-label': 'Anzahl' });
       cnt.addEventListener('change', () => { e.count = Math.max(0, Number(cnt.value) || 0); changed(false); });
-      const del = el('button', { class: 'ghost', title: 'Entfernen', 'aria-label': 'Entfernen', text: '✕', onclick: () => { cfg.cards.splice(i, 1); changed(true); } });
+      const del = el('button', { class: 'ghost', title: 'Entfernen', 'aria-label': 'Entfernen', text: '✕', onclick: () => { list.splice(i, 1); changed(true); } });
       tb.appendChild(el('tr', null, [el('td', null, [typeSel]), el('td', null, [val]), el('td', null, [cnt]), el('td', null, [del])]));
     });
+  }
+
+  function renderConfig() {
+    const cfg = state.cfg;
+    if (!cfg.cards3) cfg.cards3 = [];
+    for (const b of $('players').querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.v) === Number(cfg.players)));
+    $('hp').value = cfg.hp;
+    $('thiefDamage').value = cfg.thiefDamage;
+    $('fleeBlockDeck').value = cfg.fleeBlockDeck;
+    $('handInfo').textContent = 'Handkarten je Spieler: ' + C.handSize(Number(cfg.players)) + ' (fest durch die Spieleranzahl)';
+    $('policy').value = state.policy;
+    $('policyJson').value = state.policyJson;
+    renderCardList('cards', 'cardRows');
+    renderCardList('cards3', 'cardRows3');
     renderSummary();
+    renderPolicyHint();
+  }
+
+  function deckStats(cfg, players) {
+    const n = C.normalize(Object.assign(clone(cfg), { players }));
+    const by = {};
+    let total = 0;
+    for (const e of n.deckCards) {
+      const b = by[e.type] || (by[e.type] = { n: 0, sum: 0 });
+      b.n += e.count; b.sum += e.count * (e.value || 0); total += e.count;
+    }
+    return { by, total };
   }
 
   function renderSummary() {
-    const cfg = state.cfg;
-    const by = {};
-    let total = 0;
-    for (const e of cfg.cards) {
-      const b = by[e.type] || (by[e.type] = { n: 0, sum: 0 });
-      b.n += Number(e.count) || 0; b.sum += (Number(e.count) || 0) * (Number(e.value) || 0);
-      total += Number(e.count) || 0;
-    }
-    const s = $('deckSummary');
+    const cfg = state.cfg, s = $('deckSummary');
     s.textContent = '';
-    s.appendChild(el('div', null, [el('b', { text: total + ' Karten' }), ' · ' + C.TYPES.filter((t) => by[t.key] && by[t.key].n).map((t) => t.name + ' ' + by[t.key].n).join(' · ')]));
-    const enemy = by.enemy ? by.enemy.sum : 0, heal = by.heal ? by.heal.sum : 0, weap = by.weapon ? by.weapon.sum : 0;
-    s.appendChild(el('div', null, ['Gegnerstärke gesamt ', el('b', { text: String(enemy) }), ' · Heilung gesamt ', el('b', { text: String(heal) }),
-      ' · Waffenstärke gesamt ', el('b', { text: String(weap) }), ' · Leben gesamt ', el('b', { text: String(cfg.players * cfg.hp) })]));
+    try {
+      for (const players of [2, 3]) {
+        const { by, total } = deckStats(cfg, players);
+        const active = Number(cfg.players) === players;
+        s.appendChild(el('div', { style: active ? '' : 'opacity:.65' }, [
+          el('b', { text: players + ' Spieler: ' + total + ' Karten' }), ' · ' + C.TYPES.filter((t) => by[t.key] && by[t.key].n).map((t) => t.name + ' ' + by[t.key].n).join(' · ') +
+          ' · Gegnerstärke ' + (by.enemy ? by.enemy.sum : 0) + ' · Heilung ' + (by.heal ? by.heal.sum : 0) + ' · Leben gesamt ' + players * cfg.hp,
+        ]));
+      }
+    } catch (e) { s.appendChild(el('div', { text: 'Fehler: ' + e.message })); }
+  }
+
+  function renderPolicyHint() {
+    const hints = {
+      expert: 'Schließt aus den Flucht- und Startsignalen auf die Partnerhand (PIMC). Ca. 0,4 s je Spiel und Prozessorkern, mit 3 Spielern ca. 2 s – 1000 Spiele dauern je nach Rechner etwa 1–4 Minuten.',
+      fast: 'Gleiche trainierte Bewertung, aber ohne Partnerhand-Schluss: einige tausend Spiele pro Sekunde, ideal für große Sweeps. Spielt etwas schwächer als der Experte.',
+      untrained: 'Die Bewertung vor der Evolution – zeigt, wie viel das Training gebracht hat.',
+      random: 'Spielt zufällige erlaubte Züge – untere Grenze zum Vergleich.',
+    };
+    $('policyHint').textContent = hints[state.policy] || '';
   }
 
   function changed(rerender) {
@@ -1869,27 +2799,25 @@ self.onmessage = function (e) {
     for (const b of $('players').querySelectorAll('button')) b.addEventListener('click', () => { state.cfg.players = Number(b.dataset.v); changed(true); });
     for (const id of ['hp', 'thiefDamage', 'fleeBlockDeck']) $(id).addEventListener('change', () => { state.cfg[id] = Math.max(0, Number($(id).value) || 0); if (id === 'hp') state.cfg.hp = Math.max(1, state.cfg.hp); changed(true); });
     $('presetStd').addEventListener('click', () => { state.cfg = clone(C.DEFAULT_CONFIG); changed(true); });
-    $('presetEmpty').addEventListener('click', () => { state.cfg.cards = []; changed(true); });
+    $('presetEmpty').addEventListener('click', () => { state.cfg.cards = []; state.cfg.cards3 = []; changed(true); });
     $('addRow').addEventListener('click', () => { state.cfg.cards.push({ type: 'enemy', value: 2, count: 1 }); changed(true); });
+    $('addRow3').addEventListener('click', () => { state.cfg.cards3.push({ type: 'heal', value: 5, count: 1 }); changed(true); });
     const gt = $('genType');
     for (const t of C.TYPES) gt.appendChild(el('option', { value: t.key, text: t.name }));
     $('genAdd').addEventListener('click', () => {
+      const list = state.cfg[$('genList').value];
       const type = gt.value, ti = C.TYPE_BY_KEY[type], count = Math.max(0, Number($('genCount').value) || 0);
       const from = ti.hasValue ? Math.max(1, Number($('genFrom').value) || 1) : 0, to = ti.hasValue ? Math.min(63, Number($('genTo').value) || from) : 0;
       for (let v = from; v <= to; v++) {
-        const idx = state.cfg.cards.findIndex((e) => e.type === type && Number(e.value) === v);
-        if (idx >= 0) { if (count) state.cfg.cards[idx].count = count; else state.cfg.cards.splice(idx, 1); }
-        else if (count) state.cfg.cards.push({ type, value: v, count });
+        const idx = list.findIndex((e) => e.type === type && Number(e.value) === v);
+        if (idx >= 0) { if (count) list[idx].count = count; else list.splice(idx, 1); }
+        else if (count) list.push({ type, value: v, count });
       }
       changed(true);
     });
-    $('policy').addEventListener('change', () => { state.policy = $('policy').value; save(); });
+    $('policy').addEventListener('change', () => { state.policy = $('policy').value; save(); renderPolicyHint(); });
     $('policyJson').addEventListener('change', () => { state.policyJson = $('policyJson').value; save(); });
-    $('exportCfg').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(state.cfg, null, 2)], { type: 'application/json' });
-      const a = el('a', { href: URL.createObjectURL(blob), download: 'errantry-deck.json' });
-      document.body.appendChild(a); a.click(); a.remove();
-    });
+    $('exportCfg').addEventListener('click', () => download('errantry-deck.json', state.cfg));
     $('importCfg').addEventListener('change', (ev) => {
       const f = ev.target.files[0];
       if (!f) return;
@@ -2029,7 +2957,7 @@ self.onmessage = function (e) {
 
   // horizontal bars: rows [{label, value, tip}]
   function barChart(box, o) {
-    const rowH = 26, m = { l: 54, r: 56, t: 4, b: 4 };
+    const rowH = 26, m = { l: o.labelW || 54, r: 56, t: 4, b: 4 };
     const W = Math.max(300, box.wrap.clientWidth || 600), H = m.t + m.b + rowH * o.rows.length;
     const vMax = Math.max(1e-9, ...o.rows.map((r) => r.value));
     const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': o.aria || '' });
@@ -2061,15 +2989,19 @@ self.onmessage = function (e) {
     const t0 = performance.now();
     runToken = { cancelled: false };
     const tok = runToken;
-    $('runInfo').textContent = 'läuft …';
+    $('bar').style.width = '0%';
+    $('runInfo').textContent = 'startet …';
     try {
-      const res = await runBatch(cfg, policy, seed, games, (f) => { $('bar').style.width = (f * 100).toFixed(1) + '%'; $('runInfo').textContent = Math.round(f * games) + ' / ' + games + ' Spiele'; }, tok);
+      const res = await runBatch(cfg, policy, seed, games, (f) => {
+        $('bar').style.width = (f * 100).toFixed(1) + '%';
+        $('runInfo').textContent = etaText(t0, f, Math.round(f * games) + ' / ' + games + ' Spiele');
+      }, tok);
       const ms = performance.now() - t0;
       const s = E.stats.aggregate(res, cfg.hp);
       const run = { s, cfg, policy, policyLabel: policyLabel(), seed, games, ms, label: cfgLabel(cfg), when: new Date() };
       state.runs.unshift(run);
       if (state.refIdx >= 0) state.refIdx++;
-      $('runInfo').textContent = games + ' Spiele in ' + num(ms / 1000) + ' s';
+      $('runInfo').textContent = games + ' Spiele in ' + fmtTime(ms / 1000);
       renderResults();
       renderRuns();
     } catch (e) {
@@ -2080,9 +3012,12 @@ self.onmessage = function (e) {
   }
 
   function cfgLabel(cfg) {
+    const n = C.normalize(clone(cfg));
     const by = {};
-    for (const e of cfg.cards) by[e.type] = (by[e.type] || 0) + Number(e.count);
-    return cfg.players + ' Sp. · ' + cfg.hp + ' LP · ' + C.TYPES.filter((t) => by[t.key]).map((t) => t.short + by[t.key]).join(' ');
+    for (const e of n.deckCards) by[e.type] = (by[e.type] || 0) + Number(e.count);
+    const extra = n.cards3.reduce((x, e) => x + e.count, 0);
+    return cfg.players + ' Sp. · ' + cfg.hp + ' LP · ' + C.TYPES.filter((t) => by[t.key]).map((t) => t.short + by[t.key]).join(' ') +
+      (extra ? (Number(cfg.players) === 3 ? ' (inkl. ' + extra + ' Zusatzkarten)' : ' · +' + extra + ' Zusatzkarten bei 3 Sp.') : '');
   }
 
   function tile(l, v, d) { return el('div', { class: 'tile' }, [el('div', { class: 'l', text: l }), el('div', { class: 'v', text: v }), d ? el('div', { class: 'd', text: d }) : null]); }
@@ -2204,6 +3139,164 @@ self.onmessage = function (e) {
     });
   }
 
+  // ------------------------------------------------------------------ versions
+  function flash(btn, txt) {
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+    btn.textContent = txt;
+    clearTimeout(btn._flash);
+    btn._flash = setTimeout(() => { btn.textContent = btn.dataset.label; }, 1500);
+  }
+
+  function renderVersions() {
+    const box = $('verList');
+    box.textContent = '';
+    if (!state.versions.length) {
+      box.appendChild(el('p', { class: 'hint', text: 'Noch keine Versionen. Links unter „Als Version speichern“ den aktuellen Stand sichern.' }));
+      return;
+    }
+    state.versions.forEach((v, i) => {
+      const cb = el('input', { type: 'checkbox', 'aria-label': 'Für den Vergleich auswählen' });
+      cb.checked = state.selected.has(v.id);
+      cb.addEventListener('change', () => { if (cb.checked) state.selected.add(v.id); else state.selected.delete(v.id); });
+      let label;
+      try { label = cfgLabel(v.cfg); } catch (e) { label = 'ungültig: ' + e.message; }
+      const meta = label + ' · gespeichert ' + new Date(v.saved).toLocaleString('de-DE') + (v.lastResult !== undefined ? ' · zuletzt ' + pct(v.lastResult) : '');
+      box.appendChild(el('div', { class: 'v' }, [
+        cb,
+        el('div', null, [el('div', { class: 'name', text: v.name }), el('div', { class: 'meta', title: meta, text: meta })]),
+        el('div', { class: 'acts' }, [
+          el('button', { class: 'btn', text: 'Laden', onclick: () => { state.cfg = clone(v.cfg); if (!state.cfg.cards3) state.cfg.cards3 = []; changed(true); } }),
+          el('button', { class: 'btn', text: 'Überschreiben', title: 'Mit dem aktuellen Stand links überschreiben', onclick: () => {
+            if (confirm('Version „' + v.name + '“ mit dem aktuellen Stand überschreiben?')) { v.cfg = clone(state.cfg); v.saved = Date.now(); delete v.lastResult; saveVersions(); renderVersions(); }
+          } }),
+          el('button', { class: 'ghost', text: '✕', title: 'Löschen', 'aria-label': 'Löschen', onclick: () => {
+            if (confirm('Version „' + v.name + '“ löschen?')) { state.versions.splice(i, 1); state.selected.delete(v.id); saveVersions(); renderVersions(); }
+          } }),
+        ]),
+      ]));
+    });
+  }
+
+  function saveVersion() {
+    try { C.normalize(state.cfg); } catch (e) { alert('Konfiguration ungültig: ' + e.message); return; }
+    const name = $('verName').value.trim() || 'Version ' + (state.versions.length + 1);
+    const v = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, cfg: clone(state.cfg), saved: Date.now() };
+    state.versions.push(v);
+    state.selected.add(v.id);
+    saveVersions();
+    renderVersions();
+    $('verName').value = '';
+    flash($('verSave'), 'Gespeichert ✓');
+  }
+
+  function setupVersions() {
+    $('verSave').addEventListener('click', saveVersion);
+    $('verName').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') saveVersion(); });
+    $('verExport').addEventListener('click', () => download('errantry-versionen.json', state.versions));
+    $('verImport').addEventListener('change', (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const list = JSON.parse(r.result);
+          if (!Array.isArray(list)) throw new Error('Datei enthält keine Versionsliste');
+          for (const v of list) {
+            if (!v || !v.cfg || !v.name) continue;
+            C.normalize(v.cfg);
+            state.versions.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: String(v.name), cfg: v.cfg, saved: v.saved || Date.now() });
+          }
+          saveVersions();
+          renderVersions();
+        } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
+      };
+      r.readAsText(f);
+      ev.target.value = '';
+    });
+    $('cmpRun').addEventListener('click', runCompare);
+    $('cmpStop').addEventListener('click', () => { if (cmpToken) { cmpToken.cancelled = true; if (cmpToken.cancel) cmpToken.cancel(); } });
+  }
+
+  let cmpToken = null;
+  async function runCompare() {
+    const vs = state.versions.filter((v) => state.selected.has(v.id));
+    if (!vs.length) { alert('Bitte mindestens eine Version auswählen.'); return; }
+    let policy;
+    try { policy = currentPolicy(); } catch (e) { alert('KI-Parameter ungültig: ' + e.message); return; }
+    const mode = $('cmpPlayers').value;
+    const games = Math.max(50, Number($('cmpGames').value) || 1000), seed = Math.floor(Number($('seed').value) || 0);
+    const jobs = [];
+    for (const v of vs) {
+      const ps = mode === 'saved' ? [Number(v.cfg.players)] : mode === 'both' ? [2, 3] : [Number(mode)];
+      for (const p of ps) jobs.push({ v, cfg: Object.assign(clone(v.cfg), { players: p }) });
+    }
+    // the expert needs about 5x as long with 3 players – weight the progress accordingly
+    const weight = (j) => (policy.play === 'pimc' && j.cfg.players === 3 ? 5 : 1);
+    const totalW = jobs.reduce((s, j) => s + weight(j), 0);
+    $('cmpRun').disabled = true; $('cmpStop').hidden = false;
+    cmpToken = { cancelled: false };
+    const tok = cmpToken;
+    const t0 = performance.now();
+    let doneW = 0;
+    const rows = [];
+    $('cmpBar').style.width = '0%';
+    try {
+      for (const j of jobs) {
+        C.normalize(j.cfg);
+        const res = await runBatch(j.cfg, policy, seed, games, (f) => {
+          const tf = (doneW + f * weight(j)) / totalW;
+          $('cmpBar').style.width = (tf * 100).toFixed(1) + '%';
+          $('cmpInfo').textContent = etaText(t0, tf, j.v.name + ' (' + j.cfg.players + ' Sp.)');
+        }, tok);
+        doneW += weight(j);
+        const s = E.stats.aggregate(res, j.cfg.hp);
+        rows.push({ v: j.v, players: j.cfg.players, s });
+        if (j.cfg.players === Number(j.v.cfg.players)) { j.v.lastResult = s.winRate; saveVersions(); }
+        renderCompare(rows, games);
+      }
+      $('cmpInfo').textContent = 'fertig in ' + fmtTime((performance.now() - t0) / 1000);
+      renderVersions();
+    } catch (e) {
+      $('cmpInfo').textContent = e.message === 'abgebrochen' ? 'abgebrochen' : 'Fehler: ' + e.message;
+    } finally {
+      $('cmpRun').disabled = false; $('cmpStop').hidden = true;
+    }
+  }
+
+  function renderCompare(rows, games) {
+    const out = $('cmpResults');
+    out.textContent = '';
+    const c1 = cssVar('--series-1');
+    const box = chartBox('Siegquote je Version', games + ' Spiele je Version · KI: ' + policyLabel() + ' · Linie = 95 %-Konfidenzintervall im Tooltip');
+    out.appendChild(box.card);
+    barChart(box, {
+      labelW: 170,
+      rows: rows.map((r) => ({ label: (r.v.name.length > 20 ? r.v.name.slice(0, 19) + '…' : r.v.name) + ' · ' + r.players + ' Sp.', value: r.s.winRate, tip: r.v.name + ', ' + r.players + ' Spieler · 95 %-KI ' + pct(r.s.winCI[0]) + ' – ' + pct(r.s.winCI[1]) })),
+      color: c1, fmt: (v) => pct(v), aria: 'Siegquote je Version',
+    });
+    const card = el('div', { class: 'card' });
+    card.appendChild(el('h2', { text: 'Kennzahlen im Vergleich' }));
+    const heads = ['Version', 'Spieler', 'Karten', 'Siegquote', '95 %-KI', 'Δ zur ersten', 'Ø Fortschritt', 'Restleben (Sieg)', 'schwächster (Sieg)', 'knappe Siege', 'Fluchten'];
+    const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, heads.map((x) => el('th', { text: x })))])]);
+    const tb = el('tbody');
+    for (const r of rows) {
+      const first = rows.find((q) => q.players === r.players);
+      const d = (r.s.winRate - first.s.winRate) * 100;
+      const n = C.normalize(Object.assign(clone(r.v.cfg), { players: r.players }));
+      const cards = n.deckCards.reduce((s, e) => s + e.count, 0);
+      tb.appendChild(el('tr', null, [
+        el('td', { text: r.v.name }), el('td', { class: 'n', text: String(r.players) }), el('td', { class: 'n', text: String(cards) }),
+        el('td', { class: 'n', text: pct(r.s.winRate) }), el('td', { class: 'n', text: pct(r.s.winCI[0]) + ' – ' + pct(r.s.winCI[1]) }),
+        el('td', { class: 'n ' + (r === first ? '' : d >= 0 ? 'delta-up' : 'delta-down'), text: r === first ? '–' : (d >= 0 ? '+' : '') + num(d) + ' Pkt.' }),
+        el('td', { class: 'n', text: pct(r.s.avgProgress, 0) }), el('td', { class: 'n', text: num(r.s.avgWinSumHp) }), el('td', { class: 'n', text: num(r.s.avgWinMinHp) }),
+        el('td', { class: 'n', text: r.s.wins ? pct(r.s.closeWins / r.s.wins, 0) : '–' }), el('td', { class: 'n', text: num(r.s.counters.flees, 2) }),
+      ]));
+    }
+    tbl.appendChild(tb);
+    card.appendChild(el('div', { style: 'overflow-x:auto' }, [tbl]));
+    out.appendChild(card);
+  }
+
   // ------------------------------------------------------------------ sweep
   function fillSweepParams() {
     const sel = $('swParam');
@@ -2246,6 +3339,7 @@ self.onmessage = function (e) {
     if (!xs.length || xs.length > 60) { alert('Bitte 1 bis 60 Messpunkte wählen.'); return; }
     const label = $('swParam').selectedOptions[0].textContent;
     $('swRun').disabled = true; $('swStop').hidden = false;
+    const t0 = performance.now();
     swToken = { cancelled: false };
     const tok = swToken;
     const pts = [];
@@ -2255,13 +3349,18 @@ self.onmessage = function (e) {
         const cfg = clone(state.cfg);
         applySweep(cfg, param, xs[i]);
         C.normalize(cfg);
-        const res = await runBatch(cfg, policy, seed, games, (f) => { $('swBar').style.width = (((i + f) / xs.length) * 100).toFixed(1) + '%'; }, tok);
+        const res = await runBatch(cfg, policy, seed, games, (f) => {
+          const tf = (i + f) / xs.length;
+          $('swBar').style.width = (tf * 100).toFixed(1) + '%';
+          $('swInfo').textContent = etaText(t0, tf, 'Punkt ' + (i + 1) + '/' + xs.length + ' (' + xs[i] + ')');
+        }, tok);
         const s = E.stats.aggregate(res, cfg.hp);
         pts.push({ x: xs[i], s });
         renderSweep(out, label, pts, games);
       }
+      $('swInfo').textContent = 'fertig in ' + fmtTime((performance.now() - t0) / 1000);
     } catch (e) {
-      if (e.message !== 'abgebrochen') alert('Fehler: ' + e.message);
+      $('swInfo').textContent = e.message === 'abgebrochen' ? 'abgebrochen' : 'Fehler: ' + e.message;
     } finally {
       $('swRun').disabled = false; $('swStop').hidden = true;
     }
@@ -2292,63 +3391,84 @@ self.onmessage = function (e) {
   }
 
   // ------------------------------------------------------------------ single game
-  function showGame(index) {
-    let policy;
-    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return null; }
-    const seed = Math.floor(Number($('gSeed').value) || 0);
-    const g = E.engine.runGame(clone(state.cfg), policy, E.engine.gameSeed(seed, index), { log: true });
-    $('gIndex').value = index;
-    const log = $('gLog'), chips = $('gChips');
-    log.textContent = ''; chips.textContent = '';
-    log.appendChild(el('div', { class: 'hint', text: 'Seed ' + seed + ' · Spiel ' + index + ' · ' + cfgLabel(state.cfg) + ' · KI: ' + policyLabel() }));
-    g.log.forEach((line) => {
+  function renderLog(log, seed, index) {
+    const out = $('gLog'), chips = $('gChips');
+    out.textContent = ''; chips.textContent = '';
+    out.appendChild(el('div', { class: 'hint', text: 'Seed ' + seed + ' · Spiel ' + index + ' · ' + cfgLabel(state.cfg) + ' · KI: ' + policyLabel() }));
+    log.forEach((line) => {
       let cls = null;
       if (line.startsWith('──')) cls = 'round';
       else if (line.startsWith('★')) cls = 'win';
       else if (line.startsWith('✗')) cls = 'loss';
       const d = el('div', cls ? { class: cls, text: line } : { text: line || ' ' });
-      log.appendChild(d);
+      out.appendChild(d);
       if (cls === 'round') {
         const m = line.match(/Runde (\d+)/);
-        chips.appendChild(el('button', { text: 'R' + (m ? m[1] : '?'), onclick: () => { log.scrollTop = d.offsetTop - log.offsetTop - 4; } }));
+        chips.appendChild(el('button', { text: 'R' + (m ? m[1] : '?'), onclick: () => { out.scrollTop = d.offsetTop - out.offsetTop - 4; } }));
       }
     });
-    return g.result;
   }
-  function findGame(wantWin) {
+
+  let gBusy = false;
+  async function showGame(index) {
+    if (gBusy) return;
+    let policy;
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return; }
+    const seed = Math.floor(Number($('gSeed').value) || 0);
+    gBusy = true;
+    $('gInfo').textContent = 'rechnet …';
+    try {
+      const r = await runOne(clone(state.cfg), policy, seed, index, true);
+      $('gIndex').value = index;
+      renderLog(r.log, seed, index);
+      $('gInfo').textContent = r.result.win ? 'Sieg' : 'Niederlage';
+    } catch (e) { $('gInfo').textContent = 'Fehler: ' + e.message; }
+    gBusy = false;
+  }
+
+  async function findGame(wantWin) {
+    if (gBusy) return;
+    let policy;
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return; }
+    const seed = Math.floor(Number($('gSeed').value) || 0);
+    gBusy = true;
     let i = Number($('gIndex').value) + 1;
-    for (let k = 0; k < 400; k++, i++) {
-      let policy;
-      try { policy = currentPolicy(); } catch (e) { alert(e.message); return; }
-      const g = E.engine.runGame(clone(state.cfg), policy, E.engine.gameSeed(Math.floor(Number($('gSeed').value) || 0), i));
-      if (g.result.win === wantWin) { showGame(i); return; }
-    }
-    alert('In den nächsten 400 Spielen nicht gefunden.');
+    try {
+      for (let k = 0; k < 200; k++, i++) {
+        $('gInfo').textContent = 'suche … Spiel ' + i;
+        const r = await runOne(clone(state.cfg), policy, seed, i, false);
+        if (r.result.win === wantWin) { gBusy = false; return showGame(i); }
+      }
+      $('gInfo').textContent = 'In den nächsten 200 Spielen nicht gefunden.';
+    } catch (e) { $('gInfo').textContent = 'Fehler: ' + e.message; }
+    gBusy = false;
   }
 
   // ------------------------------------------------------------------ help
   function renderHelp() {
     const h = $('helpText');
     const P = (t) => el('p', { text: t });
+    const tunedNote = E.tuned ? 'Trainingsstand: ' + Object.keys(E.tuned).length + ' trainierte Parameter (siehe src/tuned.js).' : '';
     h.append(
       el('h2', { text: 'Umgesetzte Regeln' }),
       el('ul', null, [
         'Alle Karten bilden ein gemeinsames Deck. Gewonnen ist, wenn alle Karten durchgespielt sind. Fällt ein Spieler auf 0 oder weniger Leben, verlieren alle.',
-        '2 Spieler: 4 Handkarten, 3 Spieler: 3 Handkarten. Nach jeder Runde wird aufgefüllt.',
+        '2 Spieler: 4 Handkarten, 3 Spieler: 3 Handkarten. Nach jeder Runde wird aufgefüllt. Zusatzkarten für 3 Spieler kommen nur bei 3 Spielern ins Deck.',
         'Vor dem ersten Ausspielen kann das Team fliehen: alle Handkarten offen, gemischt unter das Deck. Nicht zweimal in Folge und nicht mehr bei wenigen Karten im Deck.',
         'Reihum legt jeder 1 Karte pro Zug an einen beliebigen Spieler (auch sich selbst). Mit nur 1 Karte darf man passen und hält sie bis zur nächsten Runde. In der letzten Hand muss alles gespielt werden.',
         'Gegner und Diebe müssen an einen Spieler mit den bisher wenigsten Gegnern dieser Runde.',
         'Am Rundenende handelt jeder seine Karten in frei gewählter Reihenfolge ab.',
-        'Gegner: Faust (voller Schaden), Waffe (Schaden = Gegner − Waffe, nur Gegner kleiner als der zuletzt geblockte) oder Magie (einmalig, wie eine Waffe).',
+        'Gegner: Faust (voller Schaden), Waffe (Schaden = Gegner − Waffe, nur Gegner kleiner als der zuletzt geblockte) oder Magie (einmalig, wie eine Waffe, eigener Platz neben der Waffe).',
         'Heilung: max. eine pro Runde, nicht über das Maximum. Schmied: entfernt den obersten Gegner von der Waffe. Dieb: nimmt die Waffe oder macht Diebschaden.',
       ].map((t) => el('li', { text: t }))),
       el('h2', { text: 'Wie die KI spielt' }),
-      P('Abhandeln: Für die Karten vor einem Spieler wird jede Reihenfolge und jede Wahl (Faust/Waffe/Magie, Anlegen/Verwerfen, Heilzeitpunkt, Dieb) exakt durchgerechnet. Bewertet wird das Ergebnis über Leben (mit Risikoaufschlag bei wenig Leben) plus den erwarteten Nutzen der Waffe für die noch kommenden Gegner (Kartenzählen).'),
-      P('Ausspielen: Wer am Zug ist, plant seine ganze Resthand (Ziel je Karte oder Halten) und spielt die erste Karte des besten Plans. Nach jedem Zug des Partners wird neu geplant. Die Hand des Partners ist unbekannt.'),
-      P('Fliehen und Startspieler: Jeder bewertet nur seine eigene Hand und gibt eines von vier Signalen (nicht / offen / will / unbedingt). Danach wird einmal nachjustiert. Berücksichtigt wird auch, was bereits unter dem Deck liegt.'),
-      P('Experte: Die Gewichte dieser Bewertung wurden per Evolution auf dem Standarddeck optimiert, mit Millionen simulierter Spiele. Das Orakel sieht alle Hände und zeigt, was bei perfekter Absprache möglich wäre.'),
+      P('Kommunikation: Beim Fliehen und beim Startspieler sagt jeder gleichzeitig eine von vier Stufen (will nicht / offen / will / will unbedingt). Danach gibt es bis zu zwei Reaktionsrunden, in denen jeder nachjustieren darf. Mehr darf nicht gesagt werden – kein „Morsen“.'),
+      P('Fliehen: Jeder bewertet seine Hand – wie gut passt sie jetzt im Vergleich zu einer Durchschnittshand, wie wertvoll wären die Karten am Ende des Decks, und wie positiv oder negativ ist das, was schon unter dem Deck liegt.'),
+      P('Ausspielen: Wer am Zug ist, plant seine Resthand (Ziel je Karte oder Halten) und spielt den besten Plan an. Der Experte stellt sich dabei mehrere mögliche Partnerhände vor, die zu den Signalen des Partners passen (PIMC), und wählt den Zug, der im Schnitt am besten ist. Jeder sieht nur seine eigenen Karten.'),
+      P('Abhandeln am Rundenende: Für die Karten vor einem Spieler wird die beste Reihenfolge exakt bestimmt (Faust/Waffe/Magie, Anlegen, Heilzeitpunkt, Dieb). In der vorletzten Runde wird zusätzlich geprüft, ob die letzte Hand überlebbar ist.'),
+      P('Training: Die rund 60 Gewichte dieser Bewertung wurden per Evolution auf einer Mischung aus Decks (2 und 3 Spieler, mit und ohne Magie und Schmied, verschiedene Leben) mit Millionen Spielen optimiert. ' + tunedNote),
       el('h2', { text: 'Konsole' }),
-      el('pre', { class: 'log', text: 'node cli/sim.js --games 10000\nnode cli/sim.js --log --seed 1 --game 3\nnode cli/sim.js --compare expert,planner,random\nnode cli/ab.js "base" "holdBad=1"\nnode cli/evolve.js --pop 48 --games 1000 --gens 60' }),
+      el('pre', { class: 'log', text: 'node cli/check.js --cfgs std2,std3 --set play=pimc\nnode cli/sim.js --log --seed 1 --game 3\nnode cli/ab.js "base" "holdBad=1"\nnode cli/evolve.js --cfgs train --gens 30\nnode cli/bake.js tuning/<champion>.json   (Champion als Standard übernehmen)\nnode build.js                            (diese Seite neu erzeugen)' }),
     );
   }
 
@@ -2364,7 +3484,9 @@ self.onmessage = function (e) {
 
   setupTabs();
   setupConfig();
+  setupVersions();
   renderConfig();
+  renderVersions();
   fillSweepParams();
   renderHelp();
   $('runBtn').addEventListener('click', runSimulation);

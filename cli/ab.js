@@ -6,6 +6,7 @@ const fs = require('fs');
 const config = require('../src/config');
 const ai = require('../src/ai');
 const { createPool } = require('./pool');
+const progress = require('./progress');
 
 function parseVal(v) { return isNaN(Number(v)) ? v : Number(v); }
 
@@ -29,7 +30,10 @@ async function main() {
 
   const pool = createPool();
   const rows = [];
+  const bar = progress.tracker('Errantry A/B-Vergleich');
+  let vi = 0;
   for (const v of a.variants) {
+    vi++;
     let pol = Object.assign({}, base);
     let spec = v;
     if (v.startsWith('@')) { // "@file.json[,k=v...]": policy from a file
@@ -39,7 +43,8 @@ async function main() {
     }
     if (spec !== 'base') for (const kv of spec.split(',')) { const [k, val] = kv.split('='); if (!(k in ai.DEFAULT_POLICY)) throw new Error('Unbekannter Parameter ' + k); pol[k] = parseVal(val); }
     const t0 = Date.now();
-    const res = await pool.run(cfg, ai.makePolicy(pol), a.seed, a.games, true);
+    const res = await pool.run(cfg, ai.makePolicy(pol), a.seed, a.games, true,
+      (d) => bar.update((vi - 1 + d / a.games) / a.variants.length, 'Variante ' + vi + '/' + a.variants.length + ': ' + v.slice(0, 60)));
     const ms = Date.now() - t0;
     const win = res.reduce((s, r) => s + r[0], 0) / res.length;
     const prog = res.reduce((s, r) => s + r[1], 0) / res.length;

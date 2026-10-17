@@ -39,6 +39,7 @@
     hp: 20,
     thiefDamage: 10,
     fleeBlockDeck: 5, // with <= this many cards in the deck, fleeing is no longer allowed
+    cards3: [], // extra cards that are only shuffled in when playing with 3 players
     cards: [
       ...series('enemy', 2, 14, 4),
       ...series('heal', 2, 10, 2),
@@ -64,23 +65,35 @@
     cfg.fleeBlockDeck = Number(cfg.fleeBlockDeck);
     handSize(cfg.players);
     if (!(cfg.hp >= 1)) throw new Error('Leben muss >= 1 sein');
-    const cards = [];
-    for (const e of cfg.cards) {
-      const ti = TYPE_BY_KEY[e.type];
-      if (!ti) throw new Error('Unbekannter Kartentyp: ' + e.type);
-      const count = Math.max(0, Math.floor(Number(e.count) || 0));
-      const value = ti.hasValue ? Math.floor(Number(e.value)) : 0;
-      if (ti.hasValue && !(value >= 1 && value <= 63)) throw new Error('Kartenwert muss zwischen 1 und 63 liegen: ' + e.type + ' ' + e.value);
-      if (count > 0) cards.push({ type: e.type, value, count });
+    const clean = (list) => {
+      const out = [];
+      for (const e of list || []) {
+        const ti = TYPE_BY_KEY[e.type];
+        if (!ti) throw new Error('Unbekannter Kartentyp: ' + e.type);
+        const count = Math.max(0, Math.floor(Number(e.count) || 0));
+        const value = ti.hasValue ? Math.floor(Number(e.value)) : 0;
+        if (ti.hasValue && !(value >= 1 && value <= 63)) throw new Error('Kartenwert muss zwischen 1 und 63 liegen: ' + e.type + ' ' + e.value);
+        if (count > 0) out.push({ type: e.type, value, count });
+      }
+      return out;
+    };
+    cfg.cards = clean(cfg.cards);
+    cfg.cards3 = clean(cfg.cards3); // extra cards that are only added with 3 players
+    // effective deck list for this player count (same type+value merged)
+    const merged = new Map();
+    for (const e of cfg.players === 3 ? cfg.cards.concat(cfg.cards3) : cfg.cards) {
+      const k = e.type + ':' + e.value;
+      const m = merged.get(k);
+      if (m) m.count += e.count; else merged.set(k, { type: e.type, value: e.value, count: e.count });
     }
-    cfg.cards = cards;
+    cfg.deckCards = [...merged.values()];
     return cfg;
   }
 
   function buildDeck(cfg) {
     const deck = [];
     let id = 0;
-    for (const e of cfg.cards) {
+    for (const e of cfg.deckCards || cfg.cards) {
       const t = TYPE_BY_KEY[e.type].t;
       for (let i = 0; i < e.count; i++) deck.push({ id: id++, t, v: e.value });
     }

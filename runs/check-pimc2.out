@@ -1,0 +1,5 @@
+﻿Strategie: tuning/robust-champion.json + play=pimc,pimcSamples=4 · 1000 Spiele je Konfiguration · Seed 99999
+  magic2 Siegquote  96.00% (KI 94.6–97.0)  Fortschritt Ø 96.9%  Restleben (Sieg) Ø 34.1, schwächster Ø 15.9  Tiefpunkt Ø 4.3  Fluchten 6.40  · 207s · Rest ~3min 27s
+  smith2 Siegquote  88.70% (KI 86.6–90.5)  Fortschritt Ø 93.5%  Restleben (Sieg) Ø 30.8, schwächster Ø 13.8  Tiefpunkt Ø 3.6  Fluchten 5.88  · 154s · Rest ~0min 0s
+
+Gesamt: 92.35% Ø über 2 Konfigurationen · 6min 1s

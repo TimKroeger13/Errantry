@@ -244,8 +244,11 @@
     if (!d.first) return '  Flucht? (volle Info) Δ ' + d.deltas.map((x, i) => SEAT[i] + fmt(x)).join(' ') + ' → ' + (d.flee ? 'fliehen' : 'kämpfen');
     const pn = g.players.map((pl) => ai.posNeg(g, pl.hand));
     const a = d.first.map((l, i) => SEAT[i] + ' ' + FLEE_WORDS[l] + ' (Hand +' + Math.round(pn[i].pos) + '/−' + Math.round(pn[i].neg) + ', Δ' + fmt(d.deltas[i]) + ')').join(', ');
-    const changed = d.final.some((l, i) => l !== d.first[i]);
-    const b = changed ? ' ⇒ nachjustiert: ' + d.final.map((l, i) => SEAT[i] + ' ' + FLEE_WORDS[l]).join(', ') : '';
+    const rs = d.rounds || [d.first, d.final];
+    let b = '';
+    for (let r = 1; r < rs.length; r++) {
+      if (rs[r].some((l, i) => l !== rs[r - 1][i])) b += ' ⇒ Reaktion ' + r + ': ' + rs[r].map((l, i) => SEAT[i] + ' ' + FLEE_WORDS[l]).join(', ');
+    }
     return '  Flucht? ' + a + b + ' → ' + (d.flee ? 'FLIEHEN' : 'kämpfen');
   }
 
@@ -279,7 +282,12 @@
     g.signals.round = g.round;
     g.lastStart = s.start;
     g.st.startSeat[s.start]++;
-    if (L) L.push('  Start: ' + (s.levels ? s.levels.map((l, i) => SEAT[i] + ' ' + START_WORDS[l]).join(', ') + ' → ' : '') + SEAT[s.start] + ' beginnt');
+    if (L) {
+      const rs = s.rounds || (s.levels ? [s.levels] : []);
+      const txt = rs.map((lv, r) => (r ? 'Reaktion ' + r + ': ' : '') + lv.map((l, i) => SEAT[i] + ' ' + START_WORDS[l]).join(', '))
+        .filter((t, r) => r === 0 || rs[r].some((l, i) => l !== rs[r - 1][i]));
+      L.push('  Start: ' + (txt.length ? txt.join(' ⇒ ') + ' → ' : '') + SEAT[s.start] + ' beginnt');
+    }
 
     beginPlay(g);
     let turn = s.start;
