@@ -1,0 +1,205 @@
+Ich habe ein Spiel designt und brauche zur Einschätzung wie gut das Spiel Funktioniert mehre Dimensionen, welche Aufzeigen wie Gut und oft Spieler das Spiel gewinnen.
+Dazu will ich für jede Spiel die Option haben die Karten und die Spielleben, sowie Spieleranzahl anzupassen um das Spiel richtig zu balancen.
+Das ist der Grund dieser Simulation
+Nennen wir das Spiel für den Moment "Errantry".
+Ich erkläre dir zuerst die Regeln und danach wie ich mir als geschriebenen Pseudocode vorstelle wie Spiele Ablaufen.
+
+Die Regeln:
+Bei Errantry handelt es sich um einer Multispieler Ableitung von Scaundral. Daher überlappen sich ein Teil der Regeln.
+Es gibt für das Spiel folgende Karten:
+- Gegner: Besitzen eine Stufe wie viel Damage sie gegen die Spieler dealen
+- Heilung: Besitzt eine Wert um welchen ein Spieler geheilt wird
+- Waffen: Können Gegner Damage reduzieren, aber verschleißen mit zunehmenden Gegner
+- Schmied: Können ein Monster von einer Waffe entfernen und diese damit aufwerten.
+- Magie: Funktioniert wie ein Waffe aber nur für ein Gegner. Kann neben einer Waffe co exsistieren
+- Diebe: Klauen einen Spieler eine Waffe oder dealen 10 Damage wenn dieser keine hat.
+
+Die ersten 3 sind auch aus den Normalen Scoundral bekannt und die letzten eine Erweiterung.
+
+Das Spiel kann mit 2 oder 3 Spielern gespielt werden.
+Bei 3 Spieler, zieht jeder Spieler 4 Handkarten und bei 3 Spielern jeder 3 Handkarten.
+Handkarten sind nur von den Spielern selbst einsehbar und nicht von den Mitspielern.
+
+Alle Karten aus welchen das Spiel besteht werden zu einen Deck gemischt.
+Wenn die Spieler jede Karten im Deck durchgespielt haben, haben sie das Spiel gewonnen.
+Handkarten werden immer von dem gemeinsamen Deck gezogen.
+
+Das Spiel beginnt mit zwei Entscheidungen.
+Die erste Entscheidung, welche die Spieler treffen müssen ist ob sie fliehen oder ob sie Kämpfen.
+Die Zweite ist, welcher Spieler anfängt.
+Kommunikation ist stark begrentzt (wie gleich beschrieben), aber dennoch ein sehr wichtiger Teil des Spiels.
+
+Das Fliehen.
+Die Spieler können sich, bevor einer von ihnen eine Karte gespielt hat (Aber sie ihre Karten gezogen haben und sie einsehen können), sich dazu entscheiden zu fliehen.
+So bald einer von ihnen eine Karte gespielt hat ist dies nicht mehr möglich.
+Entscheiden die Spieler sich zu fliehen, zeigen sie alle ihre Karten vor, mischen diese und legen Sie unter das Deck.
+Die Spieler können in jeden Kampf fliehen, nur nicht zwei Kämpfe in folge.
+Um auszudiskutieren ob die Spieler fliehen wollen (Das ja nur jeder für sich entscheiden kann, da jeder nur seine eigenen Karten sieht), kann jeder Spieler sagen ob er fliehen will, nicht fliehen will, oder offen ist zu fliehen (Enthaltung). Ein "ich will unbedingt fliehen" ist auch ok.
+Spieler können unter der Ansicht dieser Informationen aber auch ihre Entscheidung ändern.
+Wenn ein Spieler offen ist zu kämpfen oder zu fliehen und der andere will fliehen, so kann er z.b. gegenhalten und sagen er will dann doch nicht fliehen will.
+Dies ist immer ein kleines Ausfechten, da keine Spieler weiß warum jemand fliehen will. Es können starke Gegner sein, aber auch eine hand voller Heilung und Waffen, die man nicht vergeuden will.
+Wenn die Spieler sich gemeinsam für eine der beiden fälle entschieden haben, fliehen sie gemeinsam oder Spielen die Runde aus.
+
+Der Startspieler.
+Ganz ähnlich zu dem fliehen, diskutieren die Spieler aus welcher Spieler anfangen wird. Man kann auch hier wieder sagen das man Anfangen will, nicht anfangen will, oder man offen ist. Auch hier ist ein unbedingt Anfangen eine akzeptierte 4 Option. Auch hier können claims von Spielern die claims anderer Spieler Beeinflussen und es wird solange diskutiert bis sich die Spieler einig ist.
+Damit wird jede Runde bestimmt welcher Spieler das Spiel beginnt.
+
+Spielen bedeutet das jeder Spieler einer seine Handkarten Spielen muss, welcher er auf der Hand hat.
+gespielt wird dabei im Uhrzeigersinn.
+Alle Spieler müssen alle Karte bis auf 1 Karten Spielen. Die lezte Karte können sie optional spielen oder zurückhalten.
+Karten die nicht gespielt werden, werden in die nächste Runde mit übernommen.
+Nach jeder Runde ziehen alle Spieler Karten von Deck nach bis sie wieder eine Volle Hand haben (4 Karten bei zwei Spielern und 3 Karten bei 3 Spielern).
+
+Das Spielen von Karten:
+Genrell können Karten in zwei kategorien unterschieden werden, die Guten Karten welche den Spielern Helfen (Heilung, Waffen, Schmiede, Magie) und den schlechten Karten (Gegner, Diebe).
+Schlechte Karten müsse bekämpft werden und auf alle Spieler möglichst gleich verteilt sein. Gute Karten Hingegen können verworfen werden.
+Um dies klarer zu amcehn fangen wir mal an die einzelnen karten Durchzugehen und der Haupt mechnik der Spieles, welches die Seele des Spieles trägt.
+Wenn immer eine Karte Gespielt wird, kann der Spieler entscheiden zu welchen Spieler die Karte gespielt wird.
+Wenn du Runde ende, wählt jeder Spieler selbst in welcher reinfolge und wie er die Karten auflöst, welche zu ihm gespielt wurden.
+
+Das Verteilen von Gegnern:
+Wenn ein Spieler einen Geger spielt, muss er diesen zu einen Spieler spielen, welcher am wenigstens Spieler hat.
+Beispiel bei 2 Spielern:
+Wenn der erste Gegner gespielt wird hat der Spieler freie Auswahl zu welchen Spieler er diesen Spielt.
+Wird ein zweiter Gegner gespielt muss dieser immer zu den anderen Spieler kommen.
+Der dritte gespielte Gegner ist wieder offen zu welchen Spieler er gelegt wird.
+Das Beispiel für 3 Spieler ist ähnlich:
+Bei den Ersten Gegner kann entschieden werden zu welchen Spieler er gelegt wird.
+Der Zweite Gegner muss wiederum zu einen der beiden anderen Spieler gespielt werden und der dritte Gegner muss zu den verbleibenden Spieler gespielt werden.
+Beim spielen des vierten Gegners hat man hier wieder freie Wahl.
+Damit ist immer jeder Spieler im Kampf beteiligt und keiner kann sich komplett aus dem Kampf enthalten.
+Natürlich kann man hier Taktisch wählen welchen Gegner man zu welchen Spieler spielt, also einen schwachen Gegner zu den Spieler mit den wenigstens Leben z.b.
+
+Sind die Gegner gespielt agieren sie sehr simpel.
+Jeder Gegner hat eine Zahl, wie z.b. 7 und wenn der Spieler den Schaden des Gegner nicht durch eine Waffe oder Magie blocken kann oder will bekommt er den Schaden des Gegner.
+So für einen Spieler in dem Beispiel bei einen Gegner der Stärke 7, 7 schaden erleiden.
+
+Heilung:
+Heilung ist das genaue Gegenteil von Gegner. Mit einen Heilung kann sich ein Spieler um den Wert der Heilung heilen.
+Eine Heilung oder Heiltrank hat, aber 2 Einschränkungen.
+Die erste ist das man sich nicht Überheilen kann. Also jeder Spieler kann nur so viele Leben heilen, wie er zu Anfang des Spieles hattes, z.b. 20zig.
+Hat er als Beispiel 17 Leben und Heilt um 5, heilt er nur bis er Volle Leben / 20 Leben hat.
+Die zweite Einschränkung ist das ein Spieler nur 1 Heilung pro Runden für sich Nutzen kann.
+Das heißt, liegt vor ihm eine 3er und einer 7ner heilung muss er sich für eine entscheiden (Es ergibt eigentlich immer nur sinn die höhere zu nehmen).
+Daher kann er in diesen Beispiel maximal nur 7 leben heilen und keine 10.
+
+Waffen:
+Waffen sind eine Kernelement des Spieles.
+Mit Waffen können Gegner Geblockt werden, oder Gegnerische Angriffe abgeschwächt werden.
+Eine Waffe kann aber nur Gegner kleiner des letzen Gegner Blocken, welcher mit dieser Waffe geblockt wurde.
+Um dies zu kennzeichnen legt man alle Gegner auf der Waffe an, welche mit dieser besiegt wurden.
+Der letzte Gegner ist dabei immer die oberste Karte, da dieser als letztes auf die Waffe gelegt wurde und zeigt damit an, welche Gegner die Waffe noch bekämpfen kann.
+Das schlechter werden von Waffen können wir verschleißen nennen.
+Beispiel:
+Wenn eine Spieler eine 8ter Waffe ausgerüstet hat kann er damit einen 12 Gegner Blocken.
+Dies hat zu folge das er die Differenz zwischen Gegner und Waffe Stärke als Schaden erleidet, in diesen Fall 4 Schaden.
+Kämpft er anschließend gegen einer Gegner der Stärke 9, kann er auch diesen Block und erhält dabei 1 Schaden.
+Sollte er danach von einen Gegner der Stärke 7 bekämpfen, kann er auch diesen blocken, erhält aber kein Schaden von den Gegner, da die Stärke des Gegner kleiner gleich der Waffenstärke ist.
+Sollte er aber jetzt wieder gegen einen Gegner der Stärke 7 kämpfen, kann er diesen Nicht mit der Waffe bekämpfen das nur niedrige Gegner bekämpft werden können.
+In diesen Fall richtet der Gegner 7 Schaden an.
+Daher ist es unerlässlich Waffe zu blocken und man sollte versuchen Gegner in einer absteigenden Reihenfolge mit Waffen zu bekämpfen.   
+Waffe sind gute Karten, daher können Waffe wie alle Gute karten immer verworfen werden, wenn man z.b. zu viele Waffen bekommen würde, oder man eine Waffe doch nicht ausrüsten will und seine alte behalten will.
+Jeder Spieler kann immer nur 1 Waffe zu gleichen zeit benutzen (Hier gibt es ein wenig Trickserei, wenn wir später auf die Reihenfolge eingehen). Sollte er einer Zweite Waffe ausrüsten verliert er die letze / ersetzt sie.
+Man kann wie erwähnt auch neue Waffe verwerfen, wenn man seine letzte behalten will.
+
+Schmied:
+Ein Schmied interagiert mit Waffe und zählt eine einer Gute Karte.
+Aktiviert sich ein Schmied für ein Spieler, kann das letzte Monster von seiner Waffe entfernen.
+Dadurch wird die Waffe wieder brauchbarer.
+Im Beispiel Von der Waffe, könnte der Spieler so die zweite 7ben blocken, wenn er zwischen beiden Gegnern seine Waffe durch einen Schmied reparieren lässt.
+Ein Schmied entfernt immer nur das letzte Monster von einer Waffe und nicht alle.
+Schmiede sind eine gute Karte, daher können Schmiede wie alle Gute karten immer verworfen werden.
+
+Magie:
+Magie funktioniert fast gleich wie Waffe mit zwei unterschieden.
+Magie kann nur einen einzigen Spieler Blocken, bis sie aufgebraucht ist und kann nicht repariert werden.
+Magie Block dabei Gegnerischen Schaden genau wie eine Waffe. Gegner mit einer Höheren Stärke als die Magie richten sie die Differenz als schaden an.
+Magie kann neben einer Waffe getragen werden und streitet sich daher nicht im den gleichen slot.
+Das heißt ein Spieler kann gleichzeitig eine Waffe und eine Magie Ausgerüstet haben.
+Beides kann auch weiterhin über mehrere Runden bestehen, bis sie benutzt oder ausgewechselt werden.
+Aber wie bei der Waffe, kann jeder Spieler nur 1 Magie ausgerüstet haben und wenn eine eine neue Ausrüstet, verliert er seine letzte.
+
+Noch eine Wichtige Infos zu Gegner für Waffe und Magie:
+Wenn man von einen Gegner Angegriffen wird, muss man diesen nicht mit Magie oder Waffe blocke, sondern kann sich auch immer dafür entscheiden ihn mit seinen Fäusten zu bekämpfen.
+Das heißt man bekommt die Stärke des Gegner als Schaden. In diesen Fall ist er auch besiegt.
+Dies kann Sinn ergeben, wenn man Seine Waffe oder Magie nicht schlechter machen / verbrauchen will.
+
+Diebe:
+Diebe sind ebenfalls Gegner, welche gespielt werden und Spieler angreifen.
+Diebe können eine Waffe stehlen, was bedeutet das dies abgeworfen wird.
+Es ist dabei Egal ob die Waffe neu ist oder schon mehere Gegner mir ihr bekämpft wurden.
+Kann ein Dieb keine Waffe stehlen weil der Spieler keine Ausgerüstet hat, oder der Spieler sich weigert seine Waffe stehlen zu lassen, verliert er 10 Leben.
+
+Damit sind alle Karten des Spieles beschrieben.
+Der letzte wichtige Punkt sie die Reihenfolge, welche den Spielern zusätzliche Freiheitsgrade biete.
+
+Wenn Karten gespielt werden, werden diese Erst vor dem Spieler gelegt. Am ende Der Runde entscheidet jeder Spieler dann in welcher Reihenfolge diese abgearbeitet werden.
+Betrachten wir als Beispiel einen Spieler alleine welcher eine Waffe der Stärke 4 ohne Gegner ausgerüstet hat und die folgenden 4 karten vor sich liegen hat:
+- Waffe der Stärke 9
+- Gegner der Stärke 4
+- Gegner der Stärke 2
+- Gegner der Stärke 12
+
+Nun kann er die Reihenfolge bestimmen.
+Der könnte sofort die Waffe Wechseln und mit der 9er Waffe dann die Gegner 12,4 und 2 Blocken.
+Dies würde aber sehr uneffektiv sein da er seine letzte Waffe nicht benutzt.
+Der Spieler muss auch seine alte Waffe zuerst benutzen da er diese bereits ausgerüstet hat.
+Ein andere Option ist es die Gegner 4 und 2 mit der alten Waffe zu bekämpfen, keinen schaden zu bekommen, dann die Waffe zu der 9er zu wechseln und anschließend den starken Gegner mit der neuen Waffe zu blocken.
+Damit hat der Spieler einer 12er Waffe ausliegen mit der er noch all Gegner kleiner 12 bekämpfen kann.
+
+In einen alternativen Kampf könnte der spieler keine Karte ausgerüstet haben und folgende Erhalten:
+- Gegner Stärke 6
+- Gegner Stärke 4
+- Gegner Stärke 15
+- Waffe Stärke 2
+- Waffe Stärke 8
+- Dieb
+- Heilung 5
+
+Sagen wir der Spieler hat 20 Leben.
+Dann kann er zuerst die 2er Waffe ausrüsten, dann die Gegner 6 und 4 damit blocken. Dadurch bekommt er insgesamt 6 Schaden und hat nur noch 14 Leben.
+Dann kann er die Heilung benutzen und auf 19 Leben Heilen.
+Bevor er die Waffe kaut kann er die Change nutzen und die aufgebraucht Waffe von einen Dieb klauen lassen, damit dieser bedient ist.
+Anschließend kann der die Stärke Waffe (8) ausrüsten und den 15 Gegner damit bekämpfen, wodurch er 7 Schaden erhält und damit auf 12 Leben landet.
+Man kann also sehr Frei entscheiden wie man Karten abarbeitet die man oder die zu einen gespielt wurden.
+
+Ein letztes Beispiel:
+Man Trägt eine 7er Waffe und hat folgende 2 Karten erhalten:
+- Gegner der Stufe 9
+- Gegner der Stufe 2
+Hier kann es Sinn ergeben die 9 zu bekämpfen, aber den 2er mit Fäusten zu bekämpfen damit die Waffe noch mehr Spielraum hat Gegner zu bekämpfen.
+
+Zu Spielende:
+Sind nur noch 5 Karten im Deck kann man nicht mehr fliehen.
+Hat man die letzte Hand müssen alle Spieler alle Karten runterspielen und können keine Karte Aufheben.
+
+#######
+
+Deine Aufgabe ist es nun mir eine HTML seite zu schreiben wo ich alle karte definieren kann und das Spiel damit Simuliere.
+Das wichtigste ist dabei die Simulation an sich.
+Ich hätte dafür gerne Feste Regeln wie die Spieler das Spiel abarbeiten.
+
+Ich hab das Spiel ja schon haufenweise gespielt und würde daher mal chaotisch ein Paar regeln niederschreiben die ich häufig als Strategien im Spiel habe.
+Alle Ohne Reihenfolge und ohne Gewichtung.
+Du kannst bestimmt auch noch viel viel mehr ableiten die ich jetzt nicht alle definiere.
+
+- Man sollte nicht nur Vor guten Karten, aber auch nur nicht vor Gegner rennen.
+Da die Karte durchmischt unter das Deck kommen sollte das halbwegs ausgeglichen sein. Wenn man Zweimal schlechte reinmischt ist das noch ok, da man ja noch einmal rennen kann, aber 3 mal das gleiche ist meist nicht gut.
+- Man sollte sich Merken was man unter das Deck packt und auch wissen was die hohen Karten sind die im Spiel sind.
+- Dadurch das beide Spieler ja die karten Ausgleichen wollen, ist es warscheinlich das eine Spieler Gute Karten in der Hand hat, wenn er fliehen will, wenn Gegner unter dem Deck liegen und andersherum.
+- Es ist stark anzufangen da es auch einen die Möglichkeit gibt non verbal zu kommunizieren. So kann man z.b. einen Sehr starken Gegner zu einen Spieler spielen, was meist Aussagt, das man einen Plan dahinter hat.
+- Es ergibt meist sinn die Gegner ungleich zu verteilen. Also das einer hohe bekämpft und ein andere niedrige (Welche Spieler was machen, wechselt natürlich mit jeder Waffe). Der Grund dahinter ist das man die Karten gut verteilen will und Waffe nicht grundlos unbrauchbar machen will.
+- Es ist häufig nicht schlecht noch als Letzte Karte zu spielen, anstatt sie aufzuheben, wenn es gut passt, da man ja nur einen Spieler einmal pro zug heilen kann. Das heißt man könnte das Pech haben nächste Runde noch mehr Heilung zu ziehen, welche sich dann im weg steht.
+- Man kann Gegner relative gut aufheben. Also wenn ein Spieler mit einer Waffe einen 12 Gegner Geblockt hat und man eine 10 als letzte karte hat, muss man die nicht spielen. 
+Es kann ja sein das einer in der nächsten Runde noch eine 11 Zieht und dann wäre das noch besser. Meist verliert man nichts dabei.
+
+Als Default kann man erstmal mit den Standart Deck anfangen:
+Also Monster von 2-14, alle 4mal.
+dann Heilung und Waffen von 2-10, alle 2 mal.
+Und 3 Diebe.
+2 Spieler, beide 20 Leben.
+
+Ich weiß ziemlich genau was dort die Gewinn Wahrscheilichkeit sein sollte, aber ich verrate es dir nicht
+Bei Fragen frag gerne.
+Deine Haupt Aufgabe ist es erstmal rauszufinden wie die Simulation zu schreiben ist.
+Dafür reicht erstmal eine Console mit den Fixen Parmetern des standarts aus und dann musst du dich iterative verbessern.

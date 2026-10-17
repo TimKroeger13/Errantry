@@ -1,0 +1,1 @@
+{ "policy": { "riskHp": 4, "holdGood": 1.2, "holdBad": 0.75, "bottomFree": 20, "svWeapon": 0.5, "fleeRelW": 1, "holdWeaponAbs": 0.8, "holdHealAbs": 0.6, "horizonMode": "repl", "replScale": 0.7 } }

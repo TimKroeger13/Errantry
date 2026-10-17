@@ -1,0 +1,13 @@
+{
+  "policy": {
+    "riskHp": 4,
+    "holdGood": 1.2,
+    "holdBad": 0.75,
+    "bottomFree": 20,
+    "svWeapon": 0.5
+  },
+  "win": 0.241,
+  "games": 6000,
+  "seed": 101,
+  "tests": 89
+}

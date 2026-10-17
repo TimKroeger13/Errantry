@@ -1,0 +1,9 @@
+{
+  "policy": {
+    "riskHp": 4
+  },
+  "win": 0.133,
+  "games": 6000,
+  "seed": 101,
+  "tests": 9
+}

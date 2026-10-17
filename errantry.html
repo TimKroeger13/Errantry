@@ -1,0 +1,2386 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Errantry Simulator</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f3ef;
+  --surface: #fcfcfb;
+  --surface-2: #f0efec;
+  --border: #e2e1dc;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --muted: #84837d;
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --grid: #e8e7e2;
+  --good: #0ca30c;
+  --critical: #d03b3b;
+  --radius: 10px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #121211;
+    --surface: #1a1a19;
+    --surface-2: #232321;
+    --border: #34342f;
+    --text: #f0efec;
+    --text-2: #c3c2b7;
+    --muted: #8f8e86;
+    --accent: #3987e5;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --grid: #2c2c29;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121211;
+  --surface: #1a1a19;
+  --surface-2: #232321;
+  --border: #34342f;
+  --text: #f0efec;
+  --text-2: #c3c2b7;
+  --muted: #8f8e86;
+  --accent: #3987e5;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --grid: #2c2c29;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--text); font: 14px/1.45 var(--sans); }
+button, input, select, textarea { font: inherit; color: inherit; }
+header.top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 18px 20px 6px; }
+header.top h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+header.top .sub { color: var(--text-2); }
+nav.tabs { display: flex; gap: 4px; padding: 6px 20px 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
+nav.tabs button { border: 0; background: none; padding: 10px 12px; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+main { padding: 16px 20px 40px; }
+.layout { display: grid; grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } main { padding: 12px 16px 32px; } header.top, nav.tabs { padding-left: 16px; padding-right: 16px; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+.card + .card { margin-top: 12px; }
+.card h2 { font-size: 13px; font-weight: 650; margin: 0 0 10px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row + .row { margin-top: 8px; }
+label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-2); }
+input[type=number], input[type=text], select, textarea { background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; min-width: 0; }
+input[type=number] { width: 84px; }
+textarea { width: 100%; font-family: var(--mono); font-size: 12px; }
+button.btn { border: 1px solid var(--border); background: var(--surface-2); border-radius: 7px; padding: 6px 12px; cursor: pointer; }
+button.btn:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button.primary:disabled { opacity: 0.55; cursor: default; }
+button.ghost { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 2px 6px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface-2); padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+table.cards { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.cards th { text-align: left; font-weight: 600; color: var(--text-2); font-size: 12px; padding: 4px 4px; border-bottom: 1px solid var(--border); }
+table.cards td { padding: 3px 4px; border-bottom: 1px solid var(--grid); }
+table.cards input[type=number] { width: 64px; padding: 3px 6px; }
+table.cards select { padding: 3px 4px; }
+.scroll { max-height: 320px; overflow: auto; }
+.summary { font-size: 12px; color: var(--text-2); margin-top: 8px; }
+.summary b { color: var(--text); font-weight: 600; }
+details summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
+.progress { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-top: 10px; }
+.progress > div { height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
+.hint { color: var(--muted); font-size: 12px; }
+.hero { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; }
+.hero .big { font-size: 52px; font-weight: 650; line-height: 1; letter-spacing: -0.02em; }
+.hero .ci { color: var(--text-2); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 14px; }
+.tile { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.tile .l { font-size: 12px; color: var(--text-2); }
+.tile .v { font-size: 20px; font-weight: 650; margin-top: 2px; }
+.tile .d { font-size: 12px; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; margin-top: 12px; }
+.grid2 .card { margin-top: 0; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { fill: var(--text-2); font-size: 11px; }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-2); margin-bottom: 6px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 14px; height: 2px; vertical-align: middle; margin-right: 6px; border-radius: 1px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); white-space: nowrap; z-index: 5; display: none; }
+.tip b { font-weight: 650; }
+.tip .k { display: inline-block; width: 12px; height: 2px; vertical-align: middle; margin-right: 6px; }
+table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.data th, table.data td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--grid); }
+table.data th { color: var(--text-2); font-weight: 600; font-size: 12px; }
+table.data td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.runs .run { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--grid); font-size: 13px; }
+.runs .run .w { font-weight: 650; min-width: 58px; font-variant-numeric: tabular-nums; }
+.runs .run .lbl { flex: 1; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.badge.ref { background: var(--series-2); color: #fff; }
+.log { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; line-height: 1.5; max-height: 70vh; overflow: auto; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.log .round { color: var(--text); font-weight: 700; }
+.log .win { color: var(--good); font-weight: 700; }
+.log .loss { color: var(--critical); font-weight: 700; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+.chips button { border: 1px solid var(--border); background: var(--surface-2); border-radius: 999px; padding: 2px 9px; font-size: 12px; cursor: pointer; }
+.empty { color: var(--muted); padding: 30px 10px; text-align: center; }
+[hidden] { display: none !important; }
+.delta-up { color: var(--good); }
+.delta-down { color: var(--critical); }
+.mono { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Errantry · Balancing-Simulator</h1>
+  <span class="sub">Kartenmix, Leben und Spieleranzahl einstellen und tausende Partien simulieren</span>
+</header>
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="sim" aria-selected="true">Simulation</button>
+  <button role="tab" data-tab="sweep" aria-selected="false">Parameter-Sweep</button>
+  <button role="tab" data-tab="game" aria-selected="false">Einzelspiel</button>
+  <button role="tab" data-tab="help" aria-selected="false">Regeln &amp; KI</button>
+</nav>
+<main>
+<div class="layout">
+  <!-- ======================== configuration ======================== -->
+  <aside>
+    <section class="card">
+      <h2>Spiel</h2>
+      <div class="row">
+        <label class="f">Spieler
+          <span class="seg" id="players"><button data-v="2">2</button><button data-v="3">3</button></span>
+        </label>
+        <label class="f">Leben je Spieler<input type="number" id="hp" min="1" max="99"></label>
+        <label class="f">Diebschaden<input type="number" id="thiefDamage" min="0" max="99"></label>
+        <label class="f">Flucht gesperrt ab ≤ Karten<input type="number" id="fleeBlockDeck" min="0" max="99"></label>
+      </div>
+      <p class="hint" id="handInfo"></p>
+    </section>
+
+    <section class="card">
+      <h2>Karten</h2>
+      <div class="row">
+        <button class="btn" id="presetStd">Standarddeck</button>
+        <button class="btn" id="presetEmpty">Leeren</button>
+        <button class="btn" id="exportCfg">Export</button>
+        <label class="btn" style="cursor:pointer">Import<input type="file" id="importCfg" accept=".json,application/json" hidden></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <select id="genType"></select>
+        <label class="f">von<input type="number" id="genFrom" value="2" min="1" max="63"></label>
+        <label class="f">bis<input type="number" id="genTo" value="10" min="1" max="63"></label>
+        <label class="f">je Anzahl<input type="number" id="genCount" value="2" min="0" max="99"></label>
+        <button class="btn" id="genAdd" style="align-self:flex-end">Setzen</button>
+      </div>
+      <p class="hint">„Setzen“ legt für jeden Wert im Bereich die Anzahl fest (0 entfernt).</p>
+      <div class="scroll"><table class="cards"><thead><tr><th>Typ</th><th>Wert</th><th>Anzahl</th><th></th></tr></thead><tbody id="cardRows"></tbody></table></div>
+      <div class="row" style="margin-top:8px"><button class="btn" id="addRow">+ Karte</button></div>
+      <div class="summary" id="deckSummary"></div>
+    </section>
+
+    <section class="card">
+      <h2>Spieler-KI</h2>
+      <div class="row">
+        <select id="policy">
+          <option value="expert">Experte (evolutionär trainiert)</option>
+          <option value="planner">Planer (untrainiert)</option>
+          <option value="greedy">Gierig (1 Zug voraus)</option>
+          <option value="random">Zufall</option>
+          <option value="oracle">Orakel (sieht alle Hände, langsam)</option>
+        </select>
+      </div>
+      <details style="margin-top:10px"><summary>KI-Parameter anpassen (JSON)</summary>
+        <p class="hint">Überschreibt einzelne Parameter der gewählten KI, z. B. <span class="mono">{"flee":"never"}</span>.</p>
+        <textarea id="policyJson" rows="4" placeholder="{}"></textarea>
+      </details>
+    </section>
+  </aside>
+
+  <!-- ======================== tabs ======================== -->
+  <section>
+    <!-- simulation -->
+    <div data-panel="sim">
+      <div class="card">
+        <div class="row">
+          <label class="f">Spiele<input type="number" id="games" value="5000" min="10" max="1000000" step="1000"></label>
+          <label class="f">Seed<input type="number" id="seed" value="1" min="0"></label>
+          <button class="primary btn" id="runBtn" style="align-self:flex-end">Simulieren</button>
+          <button class="btn" id="stopBtn" style="align-self:flex-end" hidden>Abbrechen</button>
+          <span class="hint" id="runInfo" style="align-self:flex-end"></span>
+        </div>
+        <div class="progress"><div id="bar"></div></div>
+      </div>
+      <div id="results"><div class="card empty">Noch keine Simulation. Deck einstellen und „Simulieren“ drücken.</div></div>
+      <div class="card runs" id="runsCard" hidden>
+        <h2>Bisherige Läufe</h2>
+        <div id="runs"></div>
+        <p class="hint">Ein Lauf als Referenz wird in den Diagrammen orange mit angezeigt.</p>
+      </div>
+    </div>
+
+    <!-- sweep -->
+    <div data-panel="sweep" hidden>
+      <div class="card">
+        <h2>Parameter-Sweep</h2>
+        <p class="hint">Variiert einen Wert der aktuellen Konfiguration und misst die Siegquote für jeden Schritt.</p>
+        <div class="row">
+          <label class="f">Parameter<select id="swParam"></select></label>
+          <label class="f">von<input type="number" id="swFrom" value="14"></label>
+          <label class="f">bis<input type="number" id="swTo" value="30"></label>
+          <label class="f">Schritt<input type="number" id="swStep" value="2" min="1"></label>
+          <label class="f">Spiele je Punkt<input type="number" id="swGames" value="2000" min="50" step="500"></label>
+          <button class="primary btn" id="swRun" style="align-self:flex-end">Sweep starten</button>
+          <button class="btn" id="swStop" style="align-self:flex-end" hidden>Abbrechen</button>
+        </div>
+        <div class="progress"><div id="swBar"></div></div>
+      </div>
+      <div id="swResults"></div>
+    </div>
+
+    <!-- single game -->
+    <div data-panel="game" hidden>
+      <div class="card">
+        <h2>Einzelspiel nachverfolgen</h2>
+        <div class="row">
+          <label class="f">Seed<input type="number" id="gSeed" value="1" min="0"></label>
+          <label class="f">Spiel Nr.<input type="number" id="gIndex" value="0" min="0"></label>
+          <button class="primary btn" id="gRun" style="align-self:flex-end">Spiel zeigen</button>
+          <button class="btn" id="gNextLoss" style="align-self:flex-end">Nächste Niederlage</button>
+          <button class="btn" id="gNextWin" style="align-self:flex-end">Nächster Sieg</button>
+        </div>
+        <p class="hint">Gleicher Seed und gleiche Spielnummer ergeben dasselbe Spiel wie in der Massensimulation. Legende: G = Gegner, D = Dieb, H = Heilung, W = Waffe, M = Magie, S = Schmied. „W8&lt;12“ = Waffe 8, blockt nur noch Gegner unter 12.</p>
+        <div class="chips" id="gChips"></div>
+        <div class="log" id="gLog">–</div>
+      </div>
+    </div>
+
+    <!-- help -->
+    <div data-panel="help" hidden>
+      <div class="card" id="helpText"></div>
+    </div>
+  </section>
+</div>
+</main>
+<script id="engine">
+// ---- src/rng.js
+// Seeded RNG (sfc32, seeded via splitmix32) – reproducible games in Node and browser.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else (root.Errantry = root.Errantry || {}).rng = factory();
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  function splitmix32(a) {
+    return function () {
+      a = (a + 0x9e3779b9) | 0;
+      let t = a ^ (a >>> 16);
+      t = Math.imul(t, 0x21f0aaad);
+      t = t ^ (t >>> 15);
+      t = Math.imul(t, 0x735a2d97);
+      return (t ^ (t >>> 15)) >>> 0;
+    };
+  }
+
+  function makeRng(seed) {
+    const sm = splitmix32(seed >>> 0);
+    let a = sm(), b = sm(), c = sm(), d = sm();
+    function next() {
+      const t0 = (a + b) | 0;
+      a = b ^ (b >>> 9);
+      b = (c + (c << 3)) | 0;
+      c = (c << 21) | (c >>> 11);
+      d = (d + 1) | 0;
+      const t = (t0 + d) | 0;
+      c = (c + t) | 0;
+      return (t >>> 0) / 4294967296;
+    }
+    for (let i = 0; i < 12; i++) next();
+    return {
+      next,
+      int(n) { return Math.floor(next() * n); },
+      shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(next() * (i + 1));
+          const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+        }
+        return arr;
+      },
+    };
+  }
+
+  function hashSeed() {
+    let h = 0x811c9dc5;
+    for (let i = 0; i < arguments.length; i++) {
+      h = Math.imul(h ^ (arguments[i] >>> 0), 16777619);
+      h ^= h >>> 13;
+      h = Math.imul(h, 0x5bd1e995);
+      h ^= h >>> 15;
+    }
+    return h >>> 0;
+  }
+
+  return { makeRng, hashSeed };
+});
+
+;
+// ---- src/config.js
+// Card types, default deck, config normalisation.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else (root.Errantry = root.Errantry || {}).config = factory();
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  const T = { ENEMY: 0, THIEF: 1, HEAL: 2, WEAPON: 3, MAGIC: 4, SMITH: 5 };
+
+  const TYPES = [
+    { t: T.ENEMY, key: 'enemy', short: 'G', name: 'Gegner', bad: true, hasValue: true },
+    { t: T.THIEF, key: 'thief', short: 'D', name: 'Dieb', bad: true, hasValue: false },
+    { t: T.HEAL, key: 'heal', short: 'H', name: 'Heilung', bad: false, hasValue: true },
+    { t: T.WEAPON, key: 'weapon', short: 'W', name: 'Waffe', bad: false, hasValue: true },
+    { t: T.MAGIC, key: 'magic', short: 'M', name: 'Magie', bad: false, hasValue: true },
+    { t: T.SMITH, key: 'smith', short: 'S', name: 'Schmied', bad: false, hasValue: false },
+  ];
+  const TYPE_BY_KEY = {};
+  for (const ti of TYPES) TYPE_BY_KEY[ti.key] = ti;
+
+  // Card code = t * 64 + v, used for multisets / count arrays.
+  const CODE_SPACE = 6 * 64;
+  const code = (c) => c.t * 64 + c.v;
+  const isBad = (c) => c.t <= T.THIEF;
+
+  function label(c) {
+    const ti = TYPES[c.t];
+    return ti.hasValue ? ti.short + c.v : ti.short;
+  }
+
+  function series(type, from, to, count) {
+    const out = [];
+    for (let v = from; v <= to; v++) out.push({ type, value: v, count });
+    return out;
+  }
+
+  const DEFAULT_CONFIG = {
+    players: 2,
+    hp: 20,
+    thiefDamage: 10,
+    fleeBlockDeck: 5, // with <= this many cards in the deck, fleeing is no longer allowed
+    cards: [
+      ...series('enemy', 2, 14, 4),
+      ...series('heal', 2, 10, 2),
+      ...series('weapon', 2, 10, 2),
+      { type: 'thief', value: 0, count: 3 },
+    ],
+  };
+
+  // Hand size is fixed by the player count.
+  function handSize(players) {
+    if (players === 2) return 4;
+    if (players === 3) return 3;
+    throw new Error('Nur 2 oder 3 Spieler werden unterstützt');
+  }
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function normalize(cfgIn) {
+    const cfg = Object.assign(clone(DEFAULT_CONFIG), cfgIn ? clone(cfgIn) : {});
+    cfg.players = Number(cfg.players);
+    cfg.hp = Number(cfg.hp);
+    cfg.thiefDamage = Number(cfg.thiefDamage);
+    cfg.fleeBlockDeck = Number(cfg.fleeBlockDeck);
+    handSize(cfg.players);
+    if (!(cfg.hp >= 1)) throw new Error('Leben muss >= 1 sein');
+    const cards = [];
+    for (const e of cfg.cards) {
+      const ti = TYPE_BY_KEY[e.type];
+      if (!ti) throw new Error('Unbekannter Kartentyp: ' + e.type);
+      const count = Math.max(0, Math.floor(Number(e.count) || 0));
+      const value = ti.hasValue ? Math.floor(Number(e.value)) : 0;
+      if (ti.hasValue && !(value >= 1 && value <= 63)) throw new Error('Kartenwert muss zwischen 1 und 63 liegen: ' + e.type + ' ' + e.value);
+      if (count > 0) cards.push({ type: e.type, value, count });
+    }
+    cfg.cards = cards;
+    return cfg;
+  }
+
+  function buildDeck(cfg) {
+    const deck = [];
+    let id = 0;
+    for (const e of cfg.cards) {
+      const t = TYPE_BY_KEY[e.type].t;
+      for (let i = 0; i < e.count; i++) deck.push({ id: id++, t, v: e.value });
+    }
+    return deck;
+  }
+
+  return { T, TYPES, TYPE_BY_KEY, CODE_SPACE, code, isBad, label, series, DEFAULT_CONFIG, handSize, normalize, buildDeck, clone };
+});
+
+;
+// ---- src/ai.js
+// Player AI: exact pile resolver, play planner, flee/start negotiation.
+// The AI only reads public information plus the acting player's own hand
+// (exception: flee mode 'fullInfo', which deliberately models a team that sees all hands).
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./config'));
+  else (root.Errantry = root.Errantry || {}).ai = factory(root.Errantry.config);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (config) {
+  'use strict';
+
+  const { T, code, isBad } = config;
+  const DEATH = -1e9;
+  const DEATH_STEP = -1e6;
+
+  // Additive random hash per card code: a pile's multiset maps to a number.
+  const ZOB = (() => {
+    let x = 0x2545f491;
+    const next = () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 4294967296; };
+    const z = new Float64Array(config.CODE_SPACE);
+    for (let i = 0; i < z.length; i++) z[i] = Math.floor(next() * 2097152) * 33554432 + Math.floor(next() * 33554432);
+    return z;
+  })();
+
+  const DEFAULT_POLICY = {
+    play: 'planner', // planner | greedy | random
+    flee: 'signals', // signals | never | fullInfo
+    start: 'signals', // signals | rotate | random | strongest
+    // value function
+    riskHp: 8, // below this HP, losing HP costs extra (quadratic)
+    riskW: 1,
+    weaponUses: 3, // horizon: future enemies a weapon is expected to face
+    horizonMode: 'fixed', // 'fixed' | 'repl': horizon = future enemies per player / (1 + better weapons still to come)
+    replScale: 1, // 'repl' mode: horizon multiplier
+    kMax: 8, // 'repl' mode: horizon cap
+    wWeapon: 1,
+    wMagic: 1,
+    wMinHp: 0.5, // team bonus on the weakest player's HP
+    // held (passed) last card
+    holdGood: 0.6,
+    holdBad: 1.0,
+    holdWeaponAbs: 0, // a held weapon is a fresh reserve: value >= this * worth(fresh weapon)
+    holdHealAbs: 0, // a held heal is a reserve against later damage: value >= this * heal value
+    holdBadEnd: 0, // extra cost factor for holding bad cards near the end of the deck
+    holdEndDeck: 16, // "near the end" = fewer than this many cards in the deck
+    futureHeld: 1, // held cards count as future cards for weapon worth
+    // planner: expected bad cards the partner(s) will still play (phantom enemies)
+    phantom: 0, // 0 = off, 1 = expected number
+    phantomScale: 1, // phantom enemy value = scale * mean remaining enemy
+    // flee: extra urge when own bad cards threaten the weakest player's HP
+    fleeDangerW: 0,
+    fleeDangerFrac: 1,
+    fleeRelW: 0, // flee is judged relative: a hand that is equally bad later is no reason to flee
+    resolveExact: 1, // resolution uses the exact public remainder (cards on the table are known)
+    orderPref: 'none', // tie-break between equally good plans: 'good' cards first (inform partner) | 'bad' first | 'none'
+    // card impact for flee/start: bad cards = mix of best and average target
+    badMix: 0.5,
+    // flee signals
+    fleeT1: 3,
+    fleeT2: 8,
+    fleeFullT: 0,
+    fleeBottomW: 1,
+    bottomFree: 30,
+    bottomScale: 40,
+    // static "end of deck" card values for the bottom-of-deck bookkeeping
+    svThief: 6,
+    svHeal: 0.7,
+    svWeapon: 1.0,
+    svMagic: 0.6,
+    svSmith: 3,
+    // start signals
+    startT0: 10,
+    startT1: 20,
+    startT2: 30,
+  };
+
+  const PRESETS = {
+    planner: {},
+    greedy: { play: 'greedy' },
+    random: { play: 'random', flee: 'never', start: 'random' },
+    noflee: { flee: 'never' },
+    fullinfo: { flee: 'fullInfo' },
+    oracle: { play: 'oracle', flee: 'fullInfo' },
+  };
+
+  function makePolicy(p) {
+    if (typeof p === 'string') {
+      if (!PRESETS[p]) throw new Error('Unbekannte Strategie: ' + p);
+      p = PRESETS[p];
+    }
+    return Object.assign({}, DEFAULT_POLICY, p || {});
+  }
+
+  // ---------------------------------------------------------------- value function
+
+  // mode 'resolve': built after all cards of the round are on the table, so the
+  // future (deck + held cards) is known exactly as a multiset.
+  function makeCtx(g, mode) {
+    const P = g.policy, cfg = g.cfg;
+    const rem = new Int32Array(config.CODE_SPACE);
+    for (let i = 0; i < rem.length; i++) rem[i] = g.totalCodes[i] - g.resolvedCodes[i];
+    const exact = mode === 'resolve' && P.resolveExact && g.piles;
+    if (exact) for (const pile of g.piles) for (const c of pile) rem[code(c)]--;
+    let maxV = 1;
+    for (const e of cfg.cards) if (e.value > maxV) maxV = e.value;
+    const W = maxV + 1;
+    let totE = 0;
+    const ev = [], ec = [];
+    for (let v = 1; v < 64; v++) {
+      const k = rem[T.ENEMY * 64 + v];
+      if (k > 0) { ev.push(v); ec.push(k); totE += k; }
+    }
+    // Weapon worth = expected damage the weapon still prevents over the next k
+    // enemies its owner faces (DP over block/fist decisions, respecting the
+    // descending-chain rule). k shrinks when few cards are left after this round.
+    const ww = new Float64Array((maxV + 1) * W);
+    const mw = new Float64Array(maxV + 1);
+    if (totE > 0) {
+      let remTotal = 0;
+      for (let i = 0; i < rem.length; i++) remTotal += rem[i];
+      const futureE = exact ? totE : (totE * (g.deck.length + P.futureHeld * g.nP)) / Math.max(1, remTotal);
+      // horizon per weapon value
+      let futureFrac = 1;
+      if (!exact) futureFrac = (g.deck.length + P.futureHeld * g.nP) / Math.max(1, remTotal);
+      const kOf = new Float64Array(maxV + 1);
+      for (let wv = 1; wv <= maxV; wv++) {
+        if (P.horizonMode === 'repl') {
+          let better = 0;
+          for (let v = wv; v < 64; v++) better += rem[T.WEAPON * 64 + v];
+          better *= futureFrac;
+          kOf[wv] = Math.max(0, Math.min(P.kMax, (P.replScale * futureE) / (g.nP + better)));
+        } else kOf[wv] = Math.max(0, Math.min(P.weaponUses, futureE / g.nP));
+      }
+      let kTop = 0;
+      for (let wv = 1; wv <= maxV; wv++) if (kOf[wv] > kTop) kTop = kOf[wv];
+      const k = Math.max(0, Math.min(P.weaponUses, futureE / g.nP)); // used for magic
+      const p = ec.map((c) => c / totE);
+      let prev = new Float64Array((maxV + 1) * W), cur;
+      const layers = [prev];
+      const wvals = [];
+      for (let wv = 1; wv <= maxV; wv++) {
+        let present = 0;
+        for (const e of cfg.cards) if ((e.type === 'weapon') && e.value === wv) present = 1;
+        if (present) wvals.push(wv);
+      }
+      for (let j = 1; j <= Math.floor(kTop) + 1; j++) {
+        cur = new Float64Array((maxV + 1) * W);
+        for (const wv of wvals) {
+          for (let lim = 0; lim <= maxV; lim++) {
+            const keep = prev[wv * W + lim];
+            let s = 0;
+            for (let i = 0; i < ev.length; i++) {
+              const e = ev[i];
+              let best = keep;
+              if (lim === 0 || e < lim) {
+                const b = (e < wv ? e : wv) + prev[wv * W + e];
+                if (b > best) best = b;
+              }
+              s += p[i] * best;
+            }
+            cur[wv * W + lim] = s;
+          }
+        }
+        layers.push(cur);
+        prev = cur;
+      }
+      for (const wv of wvals) {
+        const kw = kOf[wv], k0 = Math.floor(kw), kf = kw - k0;
+        const lo = layers[k0], hi = layers[Math.min(k0 + 1, layers.length - 1)];
+        for (let lim = 0; lim <= maxV; lim++) {
+          const i = wv * W + lim;
+          ww[i] = lo[i] * (1 - kf) + hi[i] * kf;
+        }
+      }
+      // Magic: one block on the best of the next k enemies.
+      for (let m = 1; m <= maxV; m++) {
+        let s = 0;
+        for (let x = 1; x <= m; x++) {
+          let below = 0; // P(e < x)
+          for (let i = 0; i < ev.length; i++) if (ev[i] < x) below += p[i];
+          s += 1 - Math.pow(below, Math.max(k, 0.0001));
+        }
+        mw[m] = k > 0 ? s * Math.min(1, k) : 0;
+      }
+    }
+    let meanE = 0;
+    for (let i = 0; i < ev.length; i++) meanE += ev[i] * ec[i];
+    meanE = totE ? meanE / totE : 0;
+    let remCards = 0, remBad = 0;
+    for (let i = 0; i < rem.length; i++) { remCards += rem[i]; if ((i >> 6) <= T.THIEF) remBad += rem[i]; }
+    return {
+      P, maxHp: cfg.hp, thiefDmg: cfg.thiefDamage, W, ww, mw, rem, meanE, badFrac: remCards ? remBad / remCards : 0,
+      deckLeft: g.deck.length,
+      numericKeys: cfg.hp < 128 && maxV < 64,
+      pileCache: [], impactCache: new Map(), states: g.players.map(stateOf), phantomCard: null, nPh: 0,
+    };
+  }
+
+  function hpTerm(P, hp) {
+    const d = P.riskHp - hp;
+    return d > 0 ? hp - (P.riskW * d * d) / P.riskHp : hp;
+  }
+
+  // Value of a player state; tolerates hp <= 0 (used for estimates of future rounds).
+  function evalSoft(ctx, hp, wv, lim, mg) {
+    const P = ctx.P;
+    let v = hpTerm(P, hp);
+    if (wv > 0) v += P.wWeapon * ctx.ww[wv * ctx.W + lim];
+    if (mg > 0) v += P.wMagic * ctx.mw[mg];
+    return v;
+  }
+
+  function evalEnd(ctx, hp, wv, lim, mg) {
+    return hp <= 0 ? DEATH : evalSoft(ctx, hp, wv, lim, mg);
+  }
+
+  function stateOf(pl) {
+    const kills = pl.weapon ? pl.weapon.kills.slice() : [];
+    return {
+      hp: pl.hp, maxHp: pl.maxHp,
+      wv: pl.weapon ? pl.weapon.v : 0,
+      lim: kills.length ? kills[kills.length - 1] : 0,
+      mg: pl.magic, kills,
+    };
+  }
+
+  // ---------------------------------------------------------------- resolver
+  // Exact search over order and choices for the cards in front of one player.
+  // Action options per card type:
+  //   enemy: 0 fist, 1 weapon, 2 magic | thief: 0 take damage, 1 give weapon
+  //   heal/weapon/magic/smith: 0 use/equip, 1 discard
+
+  // soft = true: ignore death (hp may go negative) – used to grade hopeless plans.
+  function resolvePile(ctx, st, cards, soft) {
+    const n = cards.length;
+    const maxHp = st.maxHp, thiefDmg = ctx.thiefDmg;
+    const ts = new Array(n), vs = new Array(n), same = new Array(n);
+    let hasSmith = false;
+    for (let i = 0; i < n; i++) {
+      ts[i] = cards[i].t; vs[i] = cards[i].v;
+      let m = 0;
+      for (let j = 0; j < i; j++) if (ts[j] === ts[i] && vs[j] === vs[i]) m |= 1 << j;
+      same[i] = m;
+      if (ts[i] === T.SMITH) hasSmith = true;
+    }
+    const full = (1 << n) - 1;
+    const memo = new Map(), choice = new Map();
+    const numeric = ctx.numericKeys && n <= 20 && !hasSmith;
+
+    function key(mask, hp, wv, lim, mg, hu, stk) {
+      if (numeric) return ((((mask * 1024 + hp + 512) * 64 + wv) * 64 + lim) * 64 + mg) * 2 + hu;
+      return mask + ',' + hp + ',' + wv + ',' + (stk ? stk.join('.') : lim) + ',' + mg + ',' + hu;
+    }
+
+    function dfs(mask, hp, wv, lim, mg, hu, stk) {
+      if (mask === full) return soft ? evalSoft(ctx, hp, wv, lim, mg) : evalEnd(ctx, hp, wv, lim, mg);
+      const k = key(mask, hp, wv, lim, mg, hu, stk);
+      const m = memo.get(k);
+      if (m !== undefined) return m;
+      let best = -Infinity, bc = -1, r;
+      for (let i = 0; i < n; i++) {
+        const bit = 1 << i;
+        if ((mask & bit) || (same[i] & ~mask)) continue;
+        const nm = mask | bit, v = vs[i];
+        switch (ts[i]) {
+          case T.ENEMY: {
+            r = soft || hp > v ? dfs(nm, hp - v, wv, lim, mg, hu, stk) : DEATH;
+            if (r > best) { best = r; bc = i * 4; }
+            if (wv > 0 && (lim === 0 || v < lim)) {
+              const nh = hp - (v > wv ? v - wv : 0);
+              r = soft || nh > 0 ? dfs(nm, nh, wv, v, mg, hu, stk ? stk.concat(v) : null) : DEATH;
+              if (r > best) { best = r; bc = i * 4 + 1; }
+            }
+            if (mg > 0) {
+              const nh = hp - (v > mg ? v - mg : 0);
+              r = soft || nh > 0 ? dfs(nm, nh, wv, lim, 0, hu, stk) : DEATH;
+              if (r > best) { best = r; bc = i * 4 + 2; }
+            }
+            break;
+          }
+          case T.THIEF: {
+            r = soft || hp > thiefDmg ? dfs(nm, hp - thiefDmg, wv, lim, mg, hu, stk) : DEATH;
+            if (r > best) { best = r; bc = i * 4; }
+            if (wv > 0) {
+              r = dfs(nm, hp, 0, 0, mg, hu, stk ? [] : null);
+              if (r > best) { best = r; bc = i * 4 + 1; }
+            }
+            break;
+          }
+          case T.HEAL: {
+            if (!hu) {
+              r = dfs(nm, hp + v < maxHp ? hp + v : maxHp, wv, lim, mg, 1, stk);
+              if (r > best) { best = r; bc = i * 4; }
+            }
+            r = dfs(nm, hp, wv, lim, mg, hu, stk);
+            if (r > best) { best = r; bc = i * 4 + 1; }
+            break;
+          }
+          case T.WEAPON: {
+            r = dfs(nm, hp, v, 0, mg, hu, stk ? [] : null);
+            if (r > best) { best = r; bc = i * 4; }
+            r = dfs(nm, hp, wv, lim, mg, hu, stk);
+            if (r > best) { best = r; bc = i * 4 + 1; }
+            break;
+          }
+          case T.MAGIC: {
+            r = dfs(nm, hp, wv, lim, v, hu, stk);
+            if (r > best) { best = r; bc = i * 4; }
+            r = dfs(nm, hp, wv, lim, mg, hu, stk);
+            if (r > best) { best = r; bc = i * 4 + 1; }
+            break;
+          }
+          case T.SMITH: {
+            if (wv > 0 && stk.length > 0) {
+              const ns = stk.slice(0, -1);
+              r = dfs(nm, hp, wv, ns.length ? ns[ns.length - 1] : 0, mg, hu, ns);
+              if (r > best) { best = r; bc = i * 4; }
+            }
+            r = dfs(nm, hp, wv, lim, mg, hu, stk);
+            if (r > best) { best = r; bc = i * 4 + 1; }
+            break;
+          }
+        }
+      }
+      memo.set(k, best);
+      choice.set(k, bc);
+      return best;
+    }
+
+    const value = dfs(0, st.hp, st.wv, st.lim, st.mg, 0, hasSmith ? st.kills.slice() : null);
+
+    // Replay the best choices to get the end state and the action list.
+    let mask = 0, hp = st.hp, wv = st.wv, mg = st.mg, hu = 0;
+    let kills = st.kills.slice();
+    const actions = [];
+    while (mask !== full && (soft || hp > 0)) {
+      const lim = kills.length ? kills[kills.length - 1] : 0;
+      const bc = choice.get(key(mask, hp, wv, lim, mg, hu, hasSmith ? kills : null));
+      const i = bc >> 2, opt = bc & 3, v = vs[i];
+      actions.push({ card: cards[i], opt });
+      mask |= 1 << i;
+      switch (ts[i]) {
+        case T.ENEMY:
+          if (opt === 0) hp -= v;
+          else if (opt === 1) { hp -= Math.max(0, v - wv); kills.push(v); }
+          else { hp -= Math.max(0, v - mg); mg = 0; }
+          break;
+        case T.THIEF:
+          if (opt === 0) hp -= thiefDmg; else { wv = 0; kills = []; }
+          break;
+        case T.HEAL:
+          if (opt === 0) { hp = Math.min(maxHp, hp + v); hu = 1; }
+          break;
+        case T.WEAPON:
+          if (opt === 0) { wv = v; kills = []; }
+          break;
+        case T.MAGIC:
+          if (opt === 0) mg = v;
+          break;
+        case T.SMITH:
+          if (opt === 0) kills.pop();
+          break;
+      }
+    }
+    for (let i = 0; i < n; i++) if (!(mask & (1 << i))) actions.push({ card: cards[i], opt: -1 });
+    return {
+      value, dead: hp <= 0, actions,
+      end: { hp, maxHp, wv, lim: kills.length ? kills[kills.length - 1] : 0, mg, kills },
+    };
+  }
+
+  // Value of a state after one more card next round (heal allowed again).
+  function afterOne(ctx, s, c) {
+    const hp = s.hp, wv = s.wv, lim = s.lim, mg = s.mg, v = c.v;
+    const base = evalSoft(ctx, hp, wv, lim, mg);
+    switch (c.t) {
+      case T.ENEMY: {
+        let b = evalSoft(ctx, hp - v, wv, lim, mg);
+        if (wv > 0 && (lim === 0 || v < lim)) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - wv), wv, v, mg));
+        if (mg > 0) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - mg), wv, lim, 0));
+        return b;
+      }
+      case T.THIEF: {
+        let b = evalSoft(ctx, hp - ctx.thiefDmg, wv, lim, mg);
+        if (wv > 0) b = Math.max(b, evalSoft(ctx, hp, 0, 0, mg));
+        return b;
+      }
+      case T.HEAL: return Math.max(base, evalSoft(ctx, Math.min(s.maxHp, hp + v), wv, lim, mg));
+      case T.WEAPON: return Math.max(base, evalSoft(ctx, hp, v, 0, mg));
+      case T.MAGIC: return Math.max(base, evalSoft(ctx, hp, wv, lim, v));
+      case T.SMITH: {
+        if (wv > 0 && s.kills.length) {
+          const k = s.kills, nl = k.length > 1 ? k[k.length - 2] : 0;
+          return Math.max(base, evalSoft(ctx, hp, wv, nl, mg));
+        }
+        return base;
+      }
+    }
+    return base;
+  }
+
+  function marginal(ctx, s, c) {
+    return afterOne(ctx, s, c) - evalSoft(ctx, s.hp, s.wv, s.lim, s.mg);
+  }
+
+  // ---------------------------------------------------------------- play phase
+
+  function resolveCached(g, t, pile) {
+    const ctx = g.ctx;
+    let h = 0;
+    for (let i = 0; i < pile.length; i++) h += ZOB[pile[i].t * 64 + pile[i].v];
+    const cache = ctx.pileCache[t] || (ctx.pileCache[t] = new Map());
+    let r = cache.get(h);
+    if (!r) {
+      const st = ctx.states ? ctx.states[t] : stateOf(g.players[t]);
+      r = resolvePile(ctx, st, pile);
+      if (r.dead) r.softHp = resolvePile(ctx, st, pile, true).end.hp;
+      cache.set(h, r);
+    }
+    return r;
+  }
+
+  function holdValue(g, c, ends) {
+    const ctx = g.ctx, P = g.policy;
+    let best = -Infinity;
+    for (const e of ends) {
+      const m = marginal(ctx, e, c);
+      if (m > best) best = m;
+    }
+    if (!isBad(c)) {
+      let v = best * P.holdGood;
+      if (c.t === T.WEAPON && P.holdWeaponAbs) v = Math.max(v, P.holdWeaponAbs * P.wWeapon * ctx.ww[c.v * ctx.W]);
+      else if (c.t === T.MAGIC && P.holdWeaponAbs) v = Math.max(v, P.holdWeaponAbs * P.wMagic * ctx.mw[c.v]);
+      else if (c.t === T.HEAL && P.holdHealAbs) v = Math.max(v, P.holdHealAbs * c.v);
+      return v;
+    }
+    const endF = Math.max(0, 1 - ctx.deckLeft / P.holdEndDeck);
+    return best * (P.holdBad + P.holdBadEnd * endF);
+  }
+
+  function teamValue(g, piles, held) {
+    const P = g.policy;
+    let sum = 0, minHp = Infinity, dead = 0;
+    const ends = held ? [] : null;
+    for (let t = 0; t < piles.length; t++) {
+      const r = resolveCached(g, t, piles[t]);
+      if (r.dead) {
+        // graded loss: fewer dead players and smaller deficits are less hopeless
+        dead++;
+        sum += DEATH_STEP + 1000 * Math.min(0, r.softHp - 1);
+        continue;
+      }
+      sum += r.value;
+      if (r.end.hp < minHp) minHp = r.end.hp;
+      if (ends) ends.push(r.end);
+    }
+    if (dead) return sum;
+    sum += P.wMinHp * minHp;
+    if (held) sum += holdValue(g, held, ends);
+    return sum;
+  }
+
+  // Leaf evaluation; phantom = expected bad cards the partners will still play.
+  // They follow the distribution rule and are routed where they hurt least.
+  function leafValue(g, piles, bc, held, nPh) {
+    if (nPh <= 0) return teamValue(g, piles, held);
+    let mn = Infinity;
+    for (const b of bc) if (b < mn) mn = b;
+    let best = -Infinity;
+    for (let t = 0; t < piles.length; t++) {
+      if (bc[t] !== mn) continue;
+      piles[t].push(g.ctx.phantomCard); bc[t]++;
+      const v = leafValue(g, piles, bc, held, nPh - 1);
+      piles[t].pop(); bc[t]--;
+      if (v > best) best = v;
+    }
+    return best;
+  }
+
+  // Best assignment of the remaining own cards (target or hold), with the
+  // distribution rule relaxed to "bad-card counts end within 1 of each other".
+  function bestCompletion(g, piles, bc, rest, k, canHold, held) {
+    if (k === rest.length) {
+      let mn = Infinity, mx = -Infinity;
+      for (const b of bc) { if (b < mn) mn = b; if (b > mx) mx = b; }
+      if (mx - mn > 1) return -Infinity;
+      return leafValue(g, piles, bc, held, g.ctx.nPh);
+    }
+    const c = rest[k], bad = isBad(c);
+    let best = -Infinity, v;
+    for (let t = 0; t < piles.length; t++) {
+      piles[t].push(c); if (bad) bc[t]++;
+      v = bestCompletion(g, piles, bc, rest, k + 1, canHold, held);
+      piles[t].pop(); if (bad) bc[t]--;
+      if (v > best) best = v;
+    }
+    if (canHold && !held) {
+      v = bestCompletion(g, piles, bc, rest, k + 1, canHold, c);
+      if (v > best) best = v;
+    }
+    return best;
+  }
+
+  function legalMoves(g, p) {
+    const hand = g.players[p].hand;
+    let minBad = Infinity;
+    for (const b of g.badCount) if (b < minBad) minBad = b;
+    const moves = [], seen = new Set();
+    for (const c of hand) {
+      const cd = code(c);
+      if (seen.has(cd)) continue;
+      seen.add(cd);
+      for (let t = 0; t < g.nP; t++) {
+        if (isBad(c) && g.badCount[t] !== minBad) continue;
+        moves.push({ card: c, target: t });
+      }
+    }
+    if (hand.length === 1 && !g.lastHand) moves.push({ pass: true });
+    return moves;
+  }
+
+  // Oracle: plans the rest of the round with ALL hands visible (upper bound / ideal team).
+  function jointPlan(g) {
+    const items = [];
+    g.players.forEach((pl, o) => { if (!g.passed[o]) for (const c of pl.hand) items.push({ c, o }); });
+    const piles = g.piles.map((x) => x.slice());
+    const bc = g.badCount.slice();
+    const held = new Array(g.nP).fill(null);
+    const assign = new Array(items.length);
+    let bestV = -Infinity, best = null;
+    const canHold = !g.lastHand;
+    (function rec(k) {
+      if (k === items.length) {
+        let mn = Infinity, mx = -Infinity;
+        for (const b of bc) { if (b < mn) mn = b; if (b > mx) mx = b; }
+        if (mx - mn > 1) return;
+        let v = teamValue(g, piles, null);
+        if (v > DEATH_STEP / 2) {
+          // add held-card values against the resolved end states
+          const ends = piles.map((pl, t) => resolveCached(g, t, pl).end);
+          for (const h of held) if (h) v += holdValue(g, h, ends);
+        }
+        if (v > bestV) { bestV = v; best = assign.slice(); }
+        return;
+      }
+      const { c, o } = items[k], bad = isBad(c);
+      for (let t = 0; t < g.nP; t++) {
+        piles[t].push(c); if (bad) bc[t]++;
+        assign[k] = t;
+        rec(k + 1);
+        piles[t].pop(); if (bad) bc[t]--;
+      }
+      if (canHold && !held[o]) {
+        held[o] = c; assign[k] = -1;
+        rec(k + 1);
+        held[o] = null;
+      }
+    })(0);
+    return { items, assign: best };
+  }
+
+  function oracleMove(g, p) {
+    const plan = jointPlan(g);
+    const hand = g.players[p].hand;
+    if (!plan.assign) return null;
+    let minBad = Infinity;
+    for (const b of g.badCount) if (b < minBad) minBad = b;
+    const mine = [];
+    plan.items.forEach((it, k) => { if (it.o === p) mine.push({ c: it.c, t: plan.assign[k] }); });
+    const toPlay = mine.filter((m) => m.t >= 0);
+    if (toPlay.length === 0) return hand.length === 1 && !g.lastHand ? { pass: true } : null;
+    // play bad cards while their target is legal, otherwise good cards first
+    for (const m of toPlay) if (isBad(m.c) && g.badCount[m.t] === minBad) return { card: m.c, target: m.t };
+    for (const m of toPlay) if (!isBad(m.c)) return { card: m.c, target: m.t };
+    return null;
+  }
+
+  function choosePlay(g, p) {
+    const P = g.policy, hand = g.players[p].hand;
+    const moves = legalMoves(g, p);
+    if (P.play === 'random') return moves[g.aiRng.int(moves.length)];
+    if (P.play === 'oracle') {
+      const mv = oracleMove(g, p);
+      if (mv) return mv;
+    }
+    const piles = g.piles.map((x) => x.slice());
+    const bc = g.badCount.slice();
+    // expected bad cards the other players will still play this round
+    const ctx = g.ctx;
+    let nPh = 0;
+    if (P.phantom > 0 && ctx.meanE > 0) {
+      let other = 0;
+      g.players.forEach((pl, q) => { if (q !== p && !g.passed[q]) other += Math.max(0, pl.hand.length - (g.lastHand ? 0 : 0.5)); });
+      nPh = Math.round(other * ctx.badFrac * P.phantom);
+      if (!ctx.phantomCard) ctx.phantomCard = { id: -1, t: T.ENEMY, v: Math.max(1, Math.min(63, Math.round(ctx.meanE * P.phantomScale))) };
+    }
+    ctx.nPh = nPh;
+    let best = null, bestV = -Infinity;
+    for (const mv of moves) {
+      let v;
+      if (mv.pass) {
+        v = leafValue(g, piles, bc, hand[0], nPh);
+      } else {
+        const bad = isBad(mv.card);
+        piles[mv.target].push(mv.card); if (bad) bc[mv.target]++;
+        if (P.play === 'greedy') {
+          v = teamValue(g, piles, null);
+        } else {
+          const rest = hand.filter((c) => c !== mv.card);
+          v = bestCompletion(g, piles, bc, rest, 0, !g.lastHand, null);
+        }
+        piles[mv.target].pop(); if (bad) bc[mv.target]--;
+      }
+      mv.v = v;
+      if (v > bestV || best === null) { bestV = v; best = mv; }
+    }
+    if (P.orderPref !== 'none') {
+      // equally good plans differ only in order: reveal information / secure routing first
+      const prio = (mv) => {
+        if (mv.pass) return 9;
+        const t = mv.card.t;
+        const good = t === T.WEAPON ? 0 : t === T.MAGIC ? 1 : t === T.SMITH ? 2 : t === T.HEAL ? 3 : -1;
+        if (P.orderPref === 'good') return good >= 0 ? good : 5 - mv.card.v / 100;
+        return good >= 0 ? 5 + good : -mv.card.v / 100;
+      };
+      let top = best;
+      for (const mv of moves) if (mv.v >= bestV - 1e-6 && prio(mv) < prio(top)) top = mv;
+      best = top;
+    }
+    return best;
+  }
+
+  function resolveActions(g, p) {
+    if (!g.resolveCtx || g.resolveCtx.round !== g.round) {
+      g.resolveCtx = makeCtx(g, 'resolve');
+      g.resolveCtx.round = g.round;
+    }
+    return resolvePile(g.resolveCtx, stateOf(g.players[p]), g.piles[p]).actions;
+  }
+
+  // ---------------------------------------------------------------- flee & start
+
+  function impact(g, c) {
+    const ctx = g.ctx, P = g.policy, cd = code(c);
+    let r = ctx.impactCache.get(cd);
+    if (r !== undefined) return r;
+    let mx = -Infinity, sum = 0;
+    for (const s of ctx.states) {
+      const m = marginal(ctx, s, c);
+      if (m > mx) mx = m;
+      sum += m;
+    }
+    r = isBad(c) ? P.badMix * mx + (1 - P.badMix) * (sum / ctx.states.length) : mx;
+    ctx.impactCache.set(cd, r);
+    return r;
+  }
+
+  function staticValue(g, c) {
+    const P = g.policy;
+    switch (c.t) {
+      case T.ENEMY: return -c.v;
+      case T.THIEF: return -P.svThief;
+      case T.HEAL: return c.v * P.svHeal;
+      case T.WEAPON: return c.v * P.svWeapon;
+      case T.MAGIC: return c.v * P.svMagic;
+      case T.SMITH: return P.svSmith;
+    }
+    return 0;
+  }
+
+  function bottomCost(P, B) {
+    const x = -B - P.bottomFree;
+    return x > 0 ? (x * x) / P.bottomScale : 0;
+  }
+
+  // Positive = this player would like to flee (from its own hand + public info).
+  function fleeDelta(g, p) {
+    const P = g.policy, ctx = g.ctx, hand = g.players[p].hand;
+    const pool = Int32Array.from(ctx.rem);
+    for (const c of hand) pool[code(c)]--;
+    let B = 0;
+    for (const id of g.known) {
+      const c = g.cards[id];
+      pool[code(c)]--;
+      B += staticValue(g, c);
+    }
+    let cnt = 0, sImp = 0, sSv = 0;
+    for (let cd = 0; cd < pool.length; cd++) {
+      const k = pool[cd];
+      if (k <= 0) continue;
+      const c = { t: cd >> 6, v: cd & 63 };
+      cnt += k;
+      sImp += k * impact(g, c);
+      sSv += k * staticValue(g, c);
+    }
+    if (cnt === 0) return 0;
+    let hOwn = 0, svOwn = 0;
+    for (const c of hand) { hOwn += impact(g, c); svOwn += staticValue(g, c); }
+    let d = (g.handSize * sImp) / cnt - hOwn;
+    if (P.fleeDangerW > 0) {
+      let danger = 0, minHp = Infinity;
+      for (const c of hand) if (isBad(c)) danger -= Math.min(0, impact(g, c));
+      for (const pl of g.players) if (pl.hp < minHp) minHp = pl.hp;
+      d += P.fleeDangerW * Math.max(0, danger - P.fleeDangerFrac * minHp);
+    }
+    const others = (g.nP - 1) * g.handSize * (sSv / cnt);
+    if (P.fleeRelW) d -= P.fleeRelW * ((g.handSize * sSv) / cnt - svOwn);
+    d -= P.fleeBottomW * (bottomCost(P, B + svOwn + others) - bottomCost(P, B));
+    return d;
+  }
+
+  const SIGNAL_NUM = [-1, 0, 1, 2]; // nicht, offen, will, unbedingt
+
+  function decideFlee(g) {
+    const P = g.policy;
+    if (P.flee === 'never') return { flee: false };
+    const deltas = g.players.map((_, p) => fleeDelta(g, p));
+    if (P.flee === 'fullInfo') {
+      const s = deltas.reduce((a, b) => a + b, 0);
+      return { flee: s > P.fleeFullT, deltas };
+    }
+    const q = (d) => (d >= P.fleeT2 ? 3 : d >= P.fleeT1 ? 2 : d > -P.fleeT1 ? 1 : 0);
+    const mid = [-(P.fleeT1 + 3), 0, (P.fleeT1 + P.fleeT2) / 2, P.fleeT2 + 4];
+    const first = deltas.map(q);
+    const final = deltas.map((d, i) => {
+      let u = d;
+      for (let j = 0; j < first.length; j++) if (j !== i) u += mid[first[j]];
+      return q(u);
+    });
+    const score = final.reduce((a, l) => a + SIGNAL_NUM[l], 0);
+    return { flee: score > 0, deltas, first, final };
+  }
+
+  function decideStart(g) {
+    const P = g.policy, n = g.nP;
+    if (P.start === 'random') return { start: g.aiRng.int(n) };
+    if (P.start === 'rotate') return { start: (g.lastStart + 1 + n) % n };
+    if (P.start === 'strongest') {
+      let best = -Infinity, start = 0;
+      g.players.forEach((pl, p) => {
+        let imp = 0;
+        for (const c of pl.hand) imp += Math.abs(impact(g, c));
+        if (imp > best) { best = imp; start = p; }
+      });
+      return { start };
+    }
+    const levels = g.players.map((pl) => {
+      let imp = 0;
+      for (const c of pl.hand) imp += Math.abs(impact(g, c));
+      return imp >= P.startT2 ? 3 : imp >= P.startT1 ? 2 : imp >= P.startT0 ? 1 : 0;
+    });
+    let best = -1, start = 0;
+    for (let k = 1; k <= n; k++) {
+      const p = (g.lastStart + k + n) % n;
+      if (levels[p] > best) { best = levels[p]; start = p; }
+    }
+    return { start, levels };
+  }
+
+  return {
+    DEATH, DEFAULT_POLICY, PRESETS, makePolicy,
+    makeCtx, evalSoft, evalEnd, stateOf, resolvePile, marginal,
+    legalMoves, choosePlay, resolveActions, decideFlee, decideStart, fleeDelta, impact,
+  };
+});
+
+;
+// ---- src/engine.js
+// Game engine: rules, round flow, validation, logging.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./rng'), require('./config'), require('./ai'));
+  else { const E = root.Errantry; E.engine = factory(E.rng, E.config, E.ai); }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (rng, config, ai) {
+  'use strict';
+
+  const { T, code, isBad, label } = config;
+  const SEAT = 'ABC';
+  const FLEE_WORDS = ['will nicht fliehen', 'offen', 'will fliehen', 'will unbedingt fliehen'];
+  const START_WORDS = ['will nicht', 'offen', 'will', 'will unbedingt'];
+
+  function newCounters(nP) {
+    return {
+      dmgFist: 0, dmgWeapon: 0, dmgMagic: 0, dmgThief: 0, prevWeapon: 0, prevMagic: 0,
+      healed: 0, healOver: 0, healDiscard: 0, healDiscardValue: 0,
+      weaponEquip: 0, weaponDiscard: 0, weaponStolen: 0,
+      magicEquip: 0, magicDiscard: 0, magicUsed: 0, smithUsed: 0, smithDiscard: 0,
+      thiefDamage: 0, thiefSteal: 0, passes: 0, flees: 0, fights: 0,
+      startSeat: new Array(nP).fill(0),
+    };
+  }
+
+  function gameSeed(baseSeed, i) { return rng.hashSeed(baseSeed, i); }
+
+  function newGame(cfgIn, policyIn, seed, opts) {
+    opts = opts || {};
+    const cfg = opts.normalized ? cfgIn : config.normalize(cfgIn);
+    const policy = opts.normalized ? policyIn : ai.makePolicy(policyIn);
+    const nP = cfg.players;
+    const cards = config.buildDeck(cfg);
+    const deck = cards.slice();
+    rng.makeRng(rng.hashSeed(seed, 11)).shuffle(deck);
+    const totalCodes = new Int32Array(config.CODE_SPACE);
+    let totalEnemySum = 0;
+    for (const c of cards) { totalCodes[code(c)]++; if (c.t === T.ENEMY) totalEnemySum += c.v; }
+    const g = {
+      cfg, policy, nP, handSize: config.handSize(nP), seed,
+      cards, total: cards.length, deck, // top of deck = last element
+      fleeRng: rng.makeRng(rng.hashSeed(seed, 22)),
+      aiRng: rng.makeRng(rng.hashSeed(seed, 33)),
+      players: [],
+      round: 0, fledLast: false, lastStart: -1,
+      known: new Set(), // ids of cards in the deck whose identity is public (put under by fleeing)
+      totalCodes, resolvedCodes: new Int32Array(config.CODE_SPACE),
+      resolvedCount: 0, totalEnemySum, resolvedEnemySum: 0,
+      piles: null, badCount: null, passed: null, lastHand: false, ctx: null,
+      deathInfo: null, deadSeats: [],
+      log: opts.log ? [] : null,
+      st: newCounters(nP),
+      result: null,
+    };
+    for (let p = 0; p < nP; p++) g.players.push({ seat: p, hp: cfg.hp, maxHp: cfg.hp, weapon: null, magic: 0, hand: [] });
+    return g;
+  }
+
+  // ---------------------------------------------------------------- formatting
+
+  function fmtPlayer(pl) {
+    let s = SEAT[pl.seat] + ' ' + pl.hp + 'LP';
+    if (pl.weapon) {
+      const k = pl.weapon.kills;
+      s += ' W' + pl.weapon.v + (k.length ? '<' + k[k.length - 1] : '');
+    }
+    if (pl.magic) s += ' M' + pl.magic;
+    return s;
+  }
+  const fmtCards = (cs) => (cs.length ? cs.map(label).join(' ') : '–');
+
+  // ---------------------------------------------------------------- round steps
+
+  function draw(g) {
+    for (const pl of g.players) {
+      while (pl.hand.length < g.handSize && g.deck.length) {
+        const c = g.deck.pop();
+        g.known.delete(c.id);
+        pl.hand.push(c);
+      }
+    }
+  }
+
+  function canFlee(g) {
+    return !g.fledLast && g.deck.length > g.cfg.fleeBlockDeck;
+  }
+
+  function doFlee(g) {
+    const all = [];
+    for (const pl of g.players) { all.push(...pl.hand); pl.hand.length = 0; }
+    g.fleeRng.shuffle(all);
+    g.deck.unshift(...all); // under the deck
+    for (const c of all) g.known.add(c.id);
+    g.fledLast = true;
+    g.st.flees++;
+    if (g.log) g.log.push('  → FLUCHT. Unter das Deck: ' + fmtCards(all));
+  }
+
+  function beginPlay(g) {
+    g.piles = g.players.map(() => []);
+    g.badCount = new Array(g.nP).fill(0);
+    g.passed = new Array(g.nP).fill(false);
+  }
+
+  function isActive(g, p) {
+    return g.players[p].hand.length > 0 && !g.passed[p];
+  }
+
+  function applyPlay(g, p, mv) {
+    const pl = g.players[p];
+    if (mv.pass) {
+      if (pl.hand.length !== 1) throw new Error('Passen nur mit genau 1 Karte erlaubt');
+      if (g.lastHand) throw new Error('In der letzten Hand darf nicht gepasst werden');
+      g.passed[p] = true;
+      g.st.passes++;
+      if (g.log) g.log.push('  ' + SEAT[p] + ' passt (hält ' + label(pl.hand[0]) + ')');
+      return;
+    }
+    const idx = pl.hand.indexOf(mv.card);
+    if (idx < 0) throw new Error('Karte nicht auf der Hand');
+    const t = mv.target;
+    if (!(t >= 0 && t < g.nP)) throw new Error('Ungültiges Ziel');
+    if (isBad(mv.card)) {
+      const min = Math.min(...g.badCount);
+      if (g.badCount[t] !== min) throw new Error('Verteilungsregel verletzt: ' + label(mv.card) + ' an ' + SEAT[t]);
+      g.badCount[t]++;
+    }
+    pl.hand.splice(idx, 1);
+    g.piles[t].push(mv.card);
+    if (g.log) g.log.push('  ' + SEAT[p] + ': ' + label(mv.card) + ' → ' + SEAT[t]);
+  }
+
+  // Applies a resolution plan; returns false if the player died.
+  function applyResolution(g, p, actions) {
+    const pl = g.players[p], pile = g.piles[p], st = g.st;
+    if (actions.length !== pile.length) throw new Error('Abhandlung muss jede Karte genau einmal enthalten');
+    const seen = new Set();
+    for (const a of actions) {
+      if (pile.indexOf(a.card) < 0 || seen.has(a.card.id)) throw new Error('Ungültige Karte in der Abhandlung');
+      seen.add(a.card.id);
+    }
+    let healUsed = false;
+    const parts = [];
+    for (const a of actions) {
+      const c = a.card, v = c.v;
+      g.resolvedCount++;
+      g.resolvedCodes[code(c)]++;
+      switch (c.t) {
+        case T.ENEMY: {
+          let dmg;
+          if (a.opt === 0) {
+            dmg = v; st.dmgFist += dmg;
+            parts.push(label(c) + ' Faust −' + dmg);
+          } else if (a.opt === 1) {
+            const w = pl.weapon;
+            if (!w) throw new Error('Keine Waffe zum Blocken');
+            const k = w.kills;
+            if (k.length && !(v < k[k.length - 1])) throw new Error('Waffe kann ' + label(c) + ' nicht blocken (letzter Gegner ' + k[k.length - 1] + ')');
+            dmg = Math.max(0, v - w.v); st.dmgWeapon += dmg; st.prevWeapon += v - dmg;
+            k.push(v);
+            parts.push(label(c) + ' Waffe −' + dmg);
+          } else if (a.opt === 2) {
+            if (!pl.magic) throw new Error('Keine Magie');
+            dmg = Math.max(0, v - pl.magic); st.dmgMagic += dmg; st.prevMagic += v - dmg; st.magicUsed++;
+            pl.magic = 0;
+            parts.push(label(c) + ' Magie −' + dmg);
+          } else throw new Error('Ungültige Aktion für Gegner');
+          pl.hp -= dmg;
+          g.resolvedEnemySum += v;
+          break;
+        }
+        case T.THIEF: {
+          if (a.opt === 1) {
+            if (!pl.weapon) throw new Error('Dieb: keine Waffe zum Stehlen');
+            parts.push('D nimmt W' + pl.weapon.v);
+            pl.weapon = null; st.thiefSteal++; st.weaponStolen++;
+          } else if (a.opt === 0) {
+            pl.hp -= g.cfg.thiefDamage; st.dmgThief += g.cfg.thiefDamage; st.thiefDamage++;
+            parts.push('D −' + g.cfg.thiefDamage);
+          } else throw new Error('Ungültige Aktion für Dieb');
+          break;
+        }
+        case T.HEAL: {
+          if (a.opt === 0) {
+            if (healUsed) throw new Error('Nur eine Heilung pro Runde');
+            healUsed = true;
+            const gain = Math.min(v, pl.maxHp - pl.hp);
+            pl.hp += gain; st.healed += gain; st.healOver += v - gain;
+            parts.push(label(c) + ' +' + gain);
+          } else if (a.opt === 1) {
+            st.healDiscard++; st.healDiscardValue += v;
+            parts.push(label(c) + ' verworfen');
+          } else throw new Error('Ungültige Aktion für Heilung');
+          break;
+        }
+        case T.WEAPON: {
+          if (a.opt === 0) { pl.weapon = { v, kills: [] }; st.weaponEquip++; parts.push(label(c) + ' angelegt'); }
+          else if (a.opt === 1) { st.weaponDiscard++; parts.push(label(c) + ' verworfen'); }
+          else throw new Error('Ungültige Aktion für Waffe');
+          break;
+        }
+        case T.MAGIC: {
+          if (a.opt === 0) { pl.magic = v; st.magicEquip++; parts.push(label(c) + ' angelegt'); }
+          else if (a.opt === 1) { st.magicDiscard++; parts.push(label(c) + ' verworfen'); }
+          else throw new Error('Ungültige Aktion für Magie');
+          break;
+        }
+        case T.SMITH: {
+          if (a.opt === 0) {
+            if (!pl.weapon || !pl.weapon.kills.length) throw new Error('Schmied: nichts zu reparieren');
+            pl.weapon.kills.pop(); st.smithUsed++;
+            parts.push('S repariert');
+          } else if (a.opt === 1) { st.smithDiscard++; parts.push('S verworfen'); }
+          else throw new Error('Ungültige Aktion für Schmied');
+          break;
+        }
+      }
+      if (pl.hp <= 0) {
+        g.deadSeats.push(p);
+        if (!g.deathInfo) g.deathInfo = { seat: p, t: c.t, v: c.v, card: label(c), round: g.round };
+        if (g.log) g.log.push('  ' + SEAT[p] + ' löst auf: ' + parts.join(' · ') + ' ⇒ ' + SEAT[p] + ' STIRBT (' + pl.hp + 'LP)');
+        return false;
+      }
+    }
+    if (g.log && pile.length) g.log.push('  ' + SEAT[p] + ' löst auf: ' + parts.join(' · ') + ' ⇒ ' + fmtPlayer(pl));
+    return true;
+  }
+
+  function checkConservation(g) {
+    let n = g.deck.length + g.resolvedCount;
+    for (const pl of g.players) n += pl.hand.length;
+    if (n !== g.total) throw new Error('Kartenerhaltung verletzt: ' + n + ' statt ' + g.total);
+  }
+
+  function allDone(g) {
+    return g.deck.length === 0 && g.players.every((pl) => pl.hand.length === 0);
+  }
+
+  function fleeText(g, d) {
+    if (!d.first && !d.deltas) return '  Flucht? (deaktiviert)';
+    const fmt = (x) => (x >= 0 ? '+' : '') + x.toFixed(1);
+    if (!d.first) return '  Flucht? (volle Info) Δ ' + d.deltas.map((x, i) => SEAT[i] + fmt(x)).join(' ') + ' → ' + (d.flee ? 'fliehen' : 'kämpfen');
+    const a = d.first.map((l, i) => SEAT[i] + ' ' + FLEE_WORDS[l] + ' (Δ' + fmt(d.deltas[i]) + ')').join(', ');
+    const changed = d.final.some((l, i) => l !== d.first[i]);
+    const b = changed ? ' ⇒ nachjustiert: ' + d.final.map((l, i) => SEAT[i] + ' ' + FLEE_WORDS[l]).join(', ') : '';
+    return '  Flucht? ' + a + b + ' → ' + (d.flee ? 'FLIEHEN' : 'kämpfen');
+  }
+
+  function playRound(g) {
+    g.round++;
+    const L = g.log;
+    draw(g);
+    if (allDone(g)) return finish(g, true);
+    g.lastHand = g.deck.length === 0;
+    g.ctx = ai.makeCtx(g);
+    if (L) {
+      L.push('');
+      L.push('── Runde ' + g.round + ' · Deck ' + g.deck.length + (g.lastHand ? ' · letzte Hand' : '') + (g.known.size ? ' · davon unten bekannt ' + g.known.size : '') + ' ──');
+      for (const pl of g.players) L.push('  ' + fmtPlayer(pl) + ' · Hand: ' + fmtCards(pl.hand));
+    }
+    if (canFlee(g)) {
+      const d = ai.decideFlee(g);
+      if (L) L.push(fleeText(g, d));
+      if (d.flee) { doFlee(g); return; }
+    } else if (L) {
+      L.push('  Flucht nicht möglich (' + (g.fledLast ? 'letzte Runde geflohen' : 'Deck ≤ ' + g.cfg.fleeBlockDeck) + ')');
+    }
+    g.fledLast = false;
+    g.st.fights++;
+
+    const s = ai.decideStart(g);
+    g.lastStart = s.start;
+    g.st.startSeat[s.start]++;
+    if (L) L.push('  Start: ' + (s.levels ? s.levels.map((l, i) => SEAT[i] + ' ' + START_WORDS[l]).join(', ') + ' → ' : '') + SEAT[s.start] + ' beginnt');
+
+    beginPlay(g);
+    let turn = s.start;
+    for (;;) {
+      let k = 0;
+      while (k < g.nP && !isActive(g, turn)) { turn = (turn + 1) % g.nP; k++; }
+      if (k === g.nP) break;
+      applyPlay(g, turn, ai.choosePlay(g, turn));
+      turn = (turn + 1) % g.nP;
+    }
+
+    let died = false;
+    for (let p = 0; p < g.nP; p++) {
+      if (!applyResolution(g, p, ai.resolveActions(g, p))) died = true;
+    }
+    if (died) return finish(g, false);
+    g.piles = null;
+    checkConservation(g);
+    if (allDone(g)) return finish(g, true);
+  }
+
+  function finish(g, win) {
+    const hp = g.players.map((pl) => pl.hp);
+    const sumHp = hp.reduce((a, b) => a + b, 0);
+    g.result = {
+      win, rounds: g.round, fights: g.st.fights, flees: g.st.flees,
+      progress: g.resolvedCount / g.total,
+      hp, sumHp, minHp: Math.min(...hp),
+      score: win ? sumHp : -(g.totalEnemySum - g.resolvedEnemySum),
+      death: win ? null : g.deathInfo,
+      deadSeats: g.deadSeats.slice(),
+      st: g.st,
+    };
+    if (g.log) {
+      g.log.push('');
+      g.log.push(win ? '★ SIEG – Restleben ' + hp.map((h, i) => SEAT[i] + ' ' + h).join(', ')
+        : '✗ NIEDERLAGE in Runde ' + g.round + ' – ' + SEAT[g.deathInfo.seat] + ' stirbt an ' + g.deathInfo.card + ' · ' + Math.round(g.result.progress * 100) + '% des Decks geschafft');
+    }
+    return g.result;
+  }
+
+  function runGame(cfg, policy, seed, opts) {
+    const g = newGame(cfg, policy, seed, opts);
+    while (!g.result) {
+      playRound(g);
+      if (g.round > 2000) throw new Error('Spiel endet nicht');
+    }
+    return g;
+  }
+
+  function runGames(cfgIn, policyIn, baseSeed, from, to, onProgress) {
+    const cfg = config.normalize(cfgIn);
+    const policy = ai.makePolicy(policyIn);
+    const out = [];
+    for (let i = from; i < to; i++) {
+      const g = runGame(cfg, policy, gameSeed(baseSeed, i), { normalized: true });
+      g.result.index = i;
+      out.push(g.result);
+      if (onProgress && (i - from) % 50 === 49) onProgress(i - from + 1);
+    }
+    return out;
+  }
+
+  return {
+    SEAT, newGame, draw, canFlee, doFlee, beginPlay, applyPlay, applyResolution,
+    playRound, runGame, runGames, gameSeed, fmtPlayer,
+  };
+});
+
+;
+// ---- src/stats.js
+// Aggregates game results into the balancing dimensions + a text report.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else (root.Errantry = root.Errantry || {}).stats = factory();
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  function wilson(k, n, z) {
+    z = z || 1.96;
+    if (n === 0) return [0, 0];
+    const p = k / n, d = 1 + (z * z) / n;
+    const c = (p + (z * z) / (2 * n)) / d;
+    const h = (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / d;
+    return [Math.max(0, c - h), Math.min(1, c + h)];
+  }
+
+  const mean = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+  function median(a) {
+    if (!a.length) return 0;
+    const s = a.slice().sort((x, y) => x - y), m = s.length >> 1;
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  }
+
+  const COUNTERS = [
+    'dmgFist', 'dmgWeapon', 'dmgMagic', 'dmgThief', 'prevWeapon', 'prevMagic',
+    'healed', 'healOver', 'healDiscard', 'healDiscardValue',
+    'weaponEquip', 'weaponDiscard', 'weaponStolen', 'magicEquip', 'magicDiscard', 'magicUsed',
+    'smithUsed', 'smithDiscard', 'thiefDamage', 'thiefSteal', 'passes', 'flees', 'fights',
+  ];
+
+  function aggregate(results, maxHp) {
+    const n = results.length;
+    const winsArr = results.filter((r) => r.win), lossArr = results.filter((r) => !r.win);
+    const wins = winsArr.length;
+    const nP = n ? results[0].hp.length : 0;
+    if (!maxHp) maxHp = n ? Math.max(...results.map((r) => Math.max(...r.hp))) : 20;
+
+    const lossProgress = new Array(10).fill(0);
+    for (const r of lossArr) lossProgress[Math.min(9, Math.floor(r.progress * 10))]++;
+
+    const survival = [];
+    for (let x = 0; x <= 100; x += 5) survival.push({ x, share: n ? results.filter((r) => r.win || r.progress * 100 >= x).length / n : 0 });
+
+    const minHpHist = new Array(maxHp + 1).fill(0);
+    for (const r of winsArr) minHpHist[Math.max(0, Math.min(maxHp, r.minHp))]++;
+    const sumHpHist = {};
+    for (const r of winsArr) sumHpHist[r.sumHp] = (sumHpHist[r.sumHp] || 0) + 1;
+
+    const deathCause = {}, deathSeat = new Array(nP).fill(0);
+    for (const r of lossArr) {
+      if (!r.death) continue;
+      deathCause[r.death.card] = (deathCause[r.death.card] || 0) + 1;
+      for (const seat of r.deadSeats || [r.death.seat]) deathSeat[seat]++;
+    }
+
+    const counters = {};
+    for (const k of COUNTERS) counters[k] = mean(results.map((r) => r.st[k] || 0));
+    const startSeat = new Array(nP).fill(0);
+    for (const r of results) r.st.startSeat.forEach((v, i) => (startSeat[i] += v));
+
+    const byFlees = {};
+    for (const r of results) {
+      const b = byFlees[r.flees] || (byFlees[r.flees] = { games: 0, wins: 0 });
+      b.games++; if (r.win) b.wins++;
+    }
+
+    return {
+      games: n, wins, winRate: n ? wins / n : 0, winCI: wilson(wins, n),
+      avgProgress: mean(results.map((r) => r.progress)),
+      avgLossProgress: mean(lossArr.map((r) => r.progress)),
+      medianLossProgress: median(lossArr.map((r) => r.progress)),
+      lossProgress, survival,
+      avgWinSumHp: mean(winsArr.map((r) => r.sumHp)),
+      avgWinMinHp: mean(winsArr.map((r) => r.minHp)),
+      closeWins: winsArr.filter((r) => r.minHp <= 5).length,
+      minHpHist, sumHpHist,
+      avgScore: mean(results.map((r) => r.score)), medianScore: median(results.map((r) => r.score)),
+      deathCause, deathSeat,
+      avgRounds: mean(results.map((r) => r.rounds)), avgFights: mean(results.map((r) => r.fights)),
+      counters, startSeat, byFlees, maxHp, players: nP,
+    };
+  }
+
+  // McNemar-style paired comparison of two result lists over the same seeds.
+  function paired(a, b) {
+    let onlyA = 0, onlyB = 0;
+    for (let i = 0; i < Math.min(a.length, b.length); i++) {
+      if (a[i].win && !b[i].win) onlyA++;
+      else if (!a[i].win && b[i].win) onlyB++;
+    }
+    const z = onlyA + onlyB ? (onlyA - onlyB) / Math.sqrt(onlyA + onlyB) : 0;
+    return { onlyA, onlyB, z };
+  }
+
+  const pct = (x, d) => (x * 100).toFixed(d === undefined ? 1 : d) + '%';
+  const f1 = (x) => x.toFixed(1);
+  const bar = (share, w) => '█'.repeat(Math.round(share * (w || 30)));
+
+  function formatReport(s, title) {
+    const L = [];
+    const SEAT = 'ABC';
+    L.push('═'.repeat(64));
+    if (title) L.push(title);
+    L.push('Spiele: ' + s.games + '   Siege: ' + s.wins + '   Siegquote: ' + pct(s.winRate, 2) +
+      '  (95%-KI ' + pct(s.winCI[0]) + ' – ' + pct(s.winCI[1]) + ')');
+    L.push('─'.repeat(64));
+    L.push('Fortschritt: Ø ' + pct(s.avgProgress) + ' des Decks · bei Niederlage Ø ' + pct(s.avgLossProgress) + ', Median ' + pct(s.medianLossProgress));
+    L.push('Siege: Ø Restleben gesamt ' + f1(s.avgWinSumHp) + ' · Ø schwächster Spieler ' + f1(s.avgWinMinHp) +
+      ' · knappe Siege (≤5 LP) ' + (s.wins ? pct(s.closeWins / s.wins) : '–'));
+    L.push('Score (Sieg = Restleben, Niederlage = −Restgegner): Ø ' + f1(s.avgScore) + ' · Median ' + f1(s.medianScore));
+    L.push('Runden Ø ' + f1(s.avgRounds) + ' (davon Kämpfe ' + f1(s.avgFights) + ') · Fluchten Ø ' + s.counters.flees.toFixed(2));
+    L.push('');
+    L.push('Niederlagen nach Deckfortschritt:');
+    const lossN = s.games - s.wins || 1;
+    s.lossProgress.forEach((k, i) => L.push('  ' + String(i * 10).padStart(3) + '–' + String(i * 10 + 10).padEnd(3) + '% ' + pct(k / lossN).padStart(6) + ' ' + bar(k / lossN)));
+    L.push('');
+    L.push('Überlebenskurve (Anteil Spiele, die x% des Decks erreichen):');
+    for (const p of s.survival) if (p.x % 10 === 0) L.push('  ' + String(p.x).padStart(3) + '% ' + pct(p.share).padStart(6) + ' ' + bar(p.share));
+    L.push('');
+    const causes = Object.entries(s.deathCause).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    L.push('Todesursachen (Top 10): ' + causes.map(([k, v]) => k + ' ' + pct(v / lossN, 0)).join(', '));
+    L.push('Wer stirbt: ' + s.deathSeat.map((v, i) => SEAT[i] + ' ' + pct(v / lossN, 0)).join(', ') +
+      ' · Startspieler: ' + s.startSeat.map((v, i) => SEAT[i] + ' ' + pct(v / (s.startSeat.reduce((a, b) => a + b, 0) || 1), 0)).join(', '));
+    const c = s.counters;
+    L.push('');
+    L.push('Schaden pro Spiel: Faust ' + f1(c.dmgFist) + ' · Rest trotz Waffe ' + f1(c.dmgWeapon) + ' · Rest trotz Magie ' + f1(c.dmgMagic) + ' · Diebe ' + f1(c.dmgThief));
+    L.push('Verhindert: Waffe ' + f1(c.prevWeapon) + ' · Magie ' + f1(c.prevMagic));
+    L.push('Heilung: geheilt ' + f1(c.healed) + ' · über Max verschenkt ' + f1(c.healOver) + ' · verworfen ' + f1(c.healDiscard) + ' Karten (' + f1(c.healDiscardValue) + ' LP)');
+    L.push('Waffen: angelegt ' + f1(c.weaponEquip) + ' · verworfen ' + f1(c.weaponDiscard) + ' · gestohlen ' + f1(c.weaponStolen) +
+      ' · Diebe: Schaden ' + c.thiefDamage.toFixed(2) + ' / Waffe ' + c.thiefSteal.toFixed(2));
+    if (c.magicEquip || c.smithUsed || c.smithDiscard) L.push('Magie: angelegt ' + f1(c.magicEquip) + ' · benutzt ' + f1(c.magicUsed) + ' · Schmied benutzt ' + f1(c.smithUsed) + ' · verworfen ' + f1(c.smithDiscard));
+    L.push('Gepasst (Karte gehalten) pro Spiel: ' + f1(c.passes));
+    L.push('Siegquote nach Anzahl Fluchten: ' + Object.entries(s.byFlees).sort((a, b) => a[0] - b[0])
+      .map(([k, b]) => k + '× ' + pct(b.wins / b.games, 0) + ' (' + b.games + ')').join(' · '));
+    L.push('═'.repeat(64));
+    return L.join('\n');
+  }
+
+  return { aggregate, paired, formatReport, wilson };
+});
+
+</script>
+<script>
+/* Errantry simulator UI. Engine: window.Errantry (rng, config, ai, engine, stats). */
+(function () {
+  'use strict';
+  const E = window.Errantry;
+  const C = E.config;
+  const $ = (id) => document.getElementById(id);
+  const SEAT = 'ABC';
+  const STORE_KEY = 'errantry.ui.v1';
+
+  // ------------------------------------------------------------------ helpers
+  function el(tag, attrs, children) {
+    const n = document.createElement(tag);
+    if (attrs) for (const k in attrs) {
+      if (k === 'text') n.textContent = attrs[k];
+      else if (k === 'class') n.className = attrs[k];
+      else if (k.startsWith('on')) n.addEventListener(k.slice(2), attrs[k]);
+      else n.setAttribute(k, attrs[k]);
+    }
+    if (children) for (const c of children) if (c != null) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    return n;
+  }
+  const svgNS = 'http://www.w3.org/2000/svg';
+  function sv(tag, attrs) {
+    const n = document.createElementNS(svgNS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  const pct = (x, d) => (x * 100).toFixed(d === undefined ? 1 : d).replace('.', ',') + ' %';
+  const num = (x, d) => x.toFixed(d === undefined ? 1 : d).replace('.', ',');
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  // ------------------------------------------------------------------ state
+  const state = {
+    cfg: clone(C.DEFAULT_CONFIG),
+    policy: E.ai.PRESETS.expert ? 'expert' : 'planner',
+    policyJson: '',
+    runs: [],
+    refIdx: -1,
+  };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (saved && saved.cfg) Object.assign(state, { cfg: saved.cfg, policy: saved.policy || state.policy, policyJson: saved.policyJson || '' });
+  } catch (e) { /* storage unavailable */ }
+  function save() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ cfg: state.cfg, policy: state.policy, policyJson: state.policyJson })); } catch (e) { /* ignore */ }
+  }
+
+  function currentPolicy() {
+    let over = {};
+    if (state.policyJson.trim()) {
+      over = JSON.parse(state.policyJson); // throws on invalid JSON – caught by callers
+    }
+    return Object.assign({}, E.ai.PRESETS[state.policy] || {}, over);
+  }
+  function policyLabel() {
+    const o = $('policy').selectedOptions[0];
+    return (o ? o.textContent.split(' (')[0] : state.policy) + (state.policyJson.trim() ? ' + Anpassung' : '');
+  }
+
+  // ------------------------------------------------------------------ worker pool
+  const WORKER_SUFFIX = `
+self.onmessage = function (e) {
+  var m = e.data;
+  try {
+    var res = Errantry.engine.runGames(m.cfg, m.policy, m.seed, m.from, m.to);
+    self.postMessage({ id: m.id, res: res });
+  } catch (err) { self.postMessage({ id: m.id, error: String(err && err.message || err) }); }
+};`;
+  let pool = null;
+  function getPool() {
+    if (pool) return pool;
+    const workers = [];
+    try {
+      const src = document.getElementById('engine').textContent + '\n' + WORKER_SUFFIX;
+      const url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+      const n = Math.max(1, Math.min(16, (navigator.hardwareConcurrency || 4) - 1));
+      for (let i = 0; i < n; i++) workers.push(new Worker(url));
+    } catch (e) { workers.length = 0; }
+    pool = { workers };
+    return pool;
+  }
+  function killPool() {
+    if (pool) for (const w of pool.workers) w.terminate();
+    pool = null;
+  }
+
+  // Runs games [0, games) – in workers if possible, else chunked on the main thread.
+  function runBatch(cfg, policy, seed, games, onProgress, token) {
+    const p = getPool();
+    const chunk = Math.max(25, Math.ceil(games / Math.max(1, p.workers.length * 8)));
+    const jobs = [];
+    for (let from = 0; from < games; from += chunk) jobs.push({ from, to: Math.min(games, from + chunk) });
+    const out = [];
+    let done = 0;
+    if (!p.workers.length) {
+      return new Promise((resolve, reject) => {
+        let j = 0;
+        (function step() {
+          if (token.cancelled) return reject(new Error('abgebrochen'));
+          try {
+            const job = jobs[j++];
+            out.push(...E.engine.runGames(cfg, policy, seed, job.from, job.to));
+            done += job.to - job.from;
+            onProgress(done / games);
+          } catch (e) { return reject(e); }
+          if (j < jobs.length) setTimeout(step, 0); else resolve(out.sort((a, b) => a.index - b.index));
+        })();
+      });
+    }
+    return new Promise((resolve, reject) => {
+      let next = 0, active = 0, failed = false;
+      token.cancel = () => { failed = true; killPool(); reject(new Error('abgebrochen')); };
+      const feed = (w) => {
+        if (failed) return;
+        if (next >= jobs.length) { if (active === 0) resolve(out.sort((a, b) => a.index - b.index)); return; }
+        const job = jobs[next++];
+        active++;
+        w.onmessage = (ev) => {
+          active--;
+          if (ev.data.error) { failed = true; killPool(); return reject(new Error(ev.data.error)); }
+          out.push(...ev.data.res);
+          done += job.to - job.from;
+          onProgress(done / games);
+          feed(w);
+        };
+        w.onerror = (ev) => { failed = true; killPool(); reject(new Error(ev.message || 'Worker-Fehler')); };
+        w.postMessage({ id: next, cfg, policy, seed, from: job.from, to: job.to });
+      };
+      for (const w of p.workers) feed(w);
+    });
+  }
+
+  // ------------------------------------------------------------------ config editor
+  function renderConfig() {
+    const cfg = state.cfg;
+    for (const b of $('players').querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.v) === Number(cfg.players)));
+    $('hp').value = cfg.hp;
+    $('thiefDamage').value = cfg.thiefDamage;
+    $('fleeBlockDeck').value = cfg.fleeBlockDeck;
+    $('handInfo').textContent = 'Handkarten je Spieler: ' + C.handSize(Number(cfg.players)) + ' (fest durch die Spieleranzahl)';
+    $('policy').value = state.policy;
+    $('policyJson').value = state.policyJson;
+
+    const order = (e) => C.TYPE_BY_KEY[e.type].t * 100 + (Number(e.value) || 0);
+    cfg.cards.sort((a, b) => order(a) - order(b));
+    const tb = $('cardRows');
+    tb.textContent = '';
+    cfg.cards.forEach((e, i) => {
+      const ti = C.TYPE_BY_KEY[e.type];
+      const typeSel = el('select', { 'aria-label': 'Typ' }, C.TYPES.map((t) => el('option', { value: t.key, text: t.name })));
+      typeSel.value = e.type;
+      typeSel.addEventListener('change', () => { e.type = typeSel.value; if (!C.TYPE_BY_KEY[e.type].hasValue) e.value = 0; else if (!e.value) e.value = 2; changed(true); });
+      const val = el('input', { type: 'number', min: '1', max: '63', value: String(e.value), 'aria-label': 'Wert' });
+      if (!ti.hasValue) { val.disabled = true; val.value = ''; }
+      val.addEventListener('change', () => { e.value = Math.max(1, Math.min(63, Number(val.value) || 1)); changed(true); });
+      const cnt = el('input', { type: 'number', min: '0', max: '99', value: String(e.count), 'aria-label': 'Anzahl' });
+      cnt.addEventListener('change', () => { e.count = Math.max(0, Number(cnt.value) || 0); changed(false); });
+      const del = el('button', { class: 'ghost', title: 'Entfernen', 'aria-label': 'Entfernen', text: '✕', onclick: () => { cfg.cards.splice(i, 1); changed(true); } });
+      tb.appendChild(el('tr', null, [el('td', null, [typeSel]), el('td', null, [val]), el('td', null, [cnt]), el('td', null, [del])]));
+    });
+    renderSummary();
+  }
+
+  function renderSummary() {
+    const cfg = state.cfg;
+    const by = {};
+    let total = 0;
+    for (const e of cfg.cards) {
+      const b = by[e.type] || (by[e.type] = { n: 0, sum: 0 });
+      b.n += Number(e.count) || 0; b.sum += (Number(e.count) || 0) * (Number(e.value) || 0);
+      total += Number(e.count) || 0;
+    }
+    const s = $('deckSummary');
+    s.textContent = '';
+    s.appendChild(el('div', null, [el('b', { text: total + ' Karten' }), ' · ' + C.TYPES.filter((t) => by[t.key] && by[t.key].n).map((t) => t.name + ' ' + by[t.key].n).join(' · ')]));
+    const enemy = by.enemy ? by.enemy.sum : 0, heal = by.heal ? by.heal.sum : 0, weap = by.weapon ? by.weapon.sum : 0;
+    s.appendChild(el('div', null, ['Gegnerstärke gesamt ', el('b', { text: String(enemy) }), ' · Heilung gesamt ', el('b', { text: String(heal) }),
+      ' · Waffenstärke gesamt ', el('b', { text: String(weap) }), ' · Leben gesamt ', el('b', { text: String(cfg.players * cfg.hp) })]));
+  }
+
+  function changed(rerender) {
+    save();
+    if (rerender) renderConfig(); else renderSummary();
+    fillSweepParams();
+  }
+
+  function setupConfig() {
+    for (const b of $('players').querySelectorAll('button')) b.addEventListener('click', () => { state.cfg.players = Number(b.dataset.v); changed(true); });
+    for (const id of ['hp', 'thiefDamage', 'fleeBlockDeck']) $(id).addEventListener('change', () => { state.cfg[id] = Math.max(0, Number($(id).value) || 0); if (id === 'hp') state.cfg.hp = Math.max(1, state.cfg.hp); changed(true); });
+    $('presetStd').addEventListener('click', () => { state.cfg = clone(C.DEFAULT_CONFIG); changed(true); });
+    $('presetEmpty').addEventListener('click', () => { state.cfg.cards = []; changed(true); });
+    $('addRow').addEventListener('click', () => { state.cfg.cards.push({ type: 'enemy', value: 2, count: 1 }); changed(true); });
+    const gt = $('genType');
+    for (const t of C.TYPES) gt.appendChild(el('option', { value: t.key, text: t.name }));
+    $('genAdd').addEventListener('click', () => {
+      const type = gt.value, ti = C.TYPE_BY_KEY[type], count = Math.max(0, Number($('genCount').value) || 0);
+      const from = ti.hasValue ? Math.max(1, Number($('genFrom').value) || 1) : 0, to = ti.hasValue ? Math.min(63, Number($('genTo').value) || from) : 0;
+      for (let v = from; v <= to; v++) {
+        const idx = state.cfg.cards.findIndex((e) => e.type === type && Number(e.value) === v);
+        if (idx >= 0) { if (count) state.cfg.cards[idx].count = count; else state.cfg.cards.splice(idx, 1); }
+        else if (count) state.cfg.cards.push({ type, value: v, count });
+      }
+      changed(true);
+    });
+    $('policy').addEventListener('change', () => { state.policy = $('policy').value; save(); });
+    $('policyJson').addEventListener('change', () => { state.policyJson = $('policyJson').value; save(); });
+    $('exportCfg').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(state.cfg, null, 2)], { type: 'application/json' });
+      const a = el('a', { href: URL.createObjectURL(blob), download: 'errantry-deck.json' });
+      document.body.appendChild(a); a.click(); a.remove();
+    });
+    $('importCfg').addEventListener('change', (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try { const cfg = JSON.parse(r.result); C.normalize(cfg); state.cfg = Object.assign(clone(C.DEFAULT_CONFIG), cfg); changed(true); }
+        catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
+      };
+      r.readAsText(f);
+      ev.target.value = '';
+    });
+  }
+
+  // ------------------------------------------------------------------ charts
+  function chartBox(title, sub) {
+    const card = el('div', { class: 'card' });
+    card.appendChild(el('h2', { text: title }));
+    if (sub) card.appendChild(el('p', { class: 'hint', style: 'margin:-6px 0 8px', text: sub }));
+    const wrap = el('div', { class: 'chart' });
+    const tip = el('div', { class: 'tip' });
+    wrap.appendChild(tip);
+    card.appendChild(wrap);
+    return { card, wrap, tip };
+  }
+  function showTip(box, x, y, rows) {
+    const t = box.tip;
+    t.textContent = '';
+    for (const r of rows) {
+      const line = el('div');
+      if (r.color) line.appendChild(el('span', { class: 'k', style: 'background:' + r.color }));
+      line.appendChild(el('b', { text: r.value }));
+      if (r.label) line.appendChild(document.createTextNode('  ' + r.label));
+      t.appendChild(line);
+    }
+    t.style.display = 'block';
+    const W = box.wrap.clientWidth, tw = t.offsetWidth;
+    t.style.left = Math.max(0, Math.min(W - tw, x + 12)) + 'px';
+    t.style.top = Math.max(0, y - 10) + 'px';
+  }
+  const hideTip = (box) => { box.tip.style.display = 'none'; };
+  function legend(items) {
+    return el('div', { class: 'legend' }, items.map((it) => el('span', null, [el('i', { style: 'background:' + it.color + ';height:' + (it.rect ? '10px' : '2px') }), it.name])));
+  }
+  function niceMax(v) {
+    if (v <= 0) return 1;
+    const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p;
+    return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+  }
+  function axes(svg, X, Y, W, H, m, yTicks, yFmt) {
+    for (const t of yTicks) {
+      const y = Y(t);
+      svg.appendChild(sv('line', { x1: m.l, x2: W - m.r, y1: y, y2: y, stroke: cssVar('--grid'), 'stroke-width': 1 }));
+      const tx = sv('text', { x: m.l - 6, y: y + 4, 'text-anchor': 'end' });
+      tx.textContent = yFmt(t);
+      svg.appendChild(tx);
+    }
+  }
+
+  // series: [{name, color, pts:[[x,y]], band?:[[x,lo,hi]]}]
+  function lineChart(box, o) {
+    const W = Math.max(300, box.wrap.clientWidth || 600), H = o.height || 230, m = { l: 46, r: 18, t: 10, b: 34 };
+    const [x0, x1] = o.xDomain, yMax = o.yMax;
+    const X = (x) => m.l + ((x - x0) / (x1 - x0 || 1)) * (W - m.l - m.r);
+    const Y = (y) => H - m.b - (y / yMax) * (H - m.t - m.b);
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': o.aria || '' });
+    const ticks = []; for (let i = 0; i <= 4; i++) ticks.push((yMax * i) / 4);
+    axes(svg, X, Y, W, H, m, ticks, o.yFmt);
+    for (const xt of o.xTicks) {
+      const tx = sv('text', { x: X(xt), y: H - m.b + 16, 'text-anchor': 'middle' });
+      tx.textContent = o.xFmt(xt);
+      svg.appendChild(tx);
+    }
+    if (o.xLabel) { const tl = sv('text', { x: (m.l + W - m.r) / 2, y: H - 4, 'text-anchor': 'middle' }); tl.textContent = o.xLabel; svg.appendChild(tl); }
+    for (const s of o.series) {
+      if (s.band && s.band.length) {
+        const d = s.band.map((b, i) => (i ? 'L' : 'M') + X(b[0]) + ',' + Y(b[2])).join('') + s.band.slice().reverse().map((b) => 'L' + X(b[0]) + ',' + Y(b[1])).join('') + 'Z';
+        svg.appendChild(sv('path', { d, fill: s.color, 'fill-opacity': 0.12, stroke: 'none' }));
+      }
+      const d = s.pts.map((p, i) => (i ? 'L' : 'M') + X(p[0]) + ',' + Y(p[1])).join('');
+      svg.appendChild(sv('path', { d, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+      if (s.markers) for (const p of s.pts) svg.appendChild(sv('circle', { cx: X(p[0]), cy: Y(p[1]), r: 4, fill: s.color, stroke: cssVar('--surface'), 'stroke-width': 2 }));
+      else { const p = s.pts[s.pts.length - 1]; if (p) svg.appendChild(sv('circle', { cx: X(p[0]), cy: Y(p[1]), r: 4, fill: s.color, stroke: cssVar('--surface'), 'stroke-width': 2 })); }
+    }
+    const cross = sv('line', { y1: m.t, y2: H - m.b, stroke: cssVar('--muted'), 'stroke-width': 1, visibility: 'hidden' });
+    svg.appendChild(cross);
+    const hit = sv('rect', { x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b, fill: 'transparent' });
+    svg.appendChild(hit);
+    const xs = o.series[0].pts.map((p) => p[0]);
+    const onMove = (ev) => {
+      const r = svg.getBoundingClientRect(), px = ((ev.clientX - r.left) / r.width) * W;
+      let best = 0;
+      for (let i = 1; i < xs.length; i++) if (Math.abs(X(xs[i]) - px) < Math.abs(X(xs[best]) - px)) best = i;
+      const xv = xs[best];
+      cross.setAttribute('x1', X(xv)); cross.setAttribute('x2', X(xv)); cross.setAttribute('visibility', 'visible');
+      const rows = [{ value: o.xFmtTip ? o.xFmtTip(xv) : o.xFmt(xv) }];
+      for (const s of o.series) { const p = s.pts.find((q) => q[0] === xv); if (p) rows.push({ color: s.color, value: o.yFmtTip ? o.yFmtTip(p[1], s, xv) : o.yFmt(p[1]), label: s.name }); }
+      showTip(box, (X(xv) / W) * r.width, ((ev.clientY - r.top)), rows);
+    };
+    hit.addEventListener('pointermove', onMove);
+    hit.addEventListener('pointerleave', () => { cross.setAttribute('visibility', 'hidden'); hideTip(box); });
+    box.wrap.appendChild(svg);
+  }
+
+  // columns: cats[], series [{name,color,values[]}]
+  function columnChart(box, o) {
+    const W = Math.max(300, box.wrap.clientWidth || 600), H = o.height || 210, m = { l: 46, r: 10, t: 10, b: 34 };
+    const n = o.cats.length, ns = o.series.length;
+    const yMax = niceMax(Math.max(1e-9, ...o.series.flatMap((s) => s.values)));
+    const band = (W - m.l - m.r) / n;
+    const bw = Math.min(24, (band - 6) / ns - 2);
+    const Y = (y) => H - m.b - (y / yMax) * (H - m.t - m.b);
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': o.aria || '' });
+    const ticks = []; for (let i = 0; i <= 4; i++) ticks.push((yMax * i) / 4);
+    axes(svg, null, Y, W, H, m, ticks, o.yFmt);
+    o.cats.forEach((c, i) => {
+      const cx = m.l + band * i + band / 2;
+      if (n <= 16 || i % 2 === 0) { const tx = sv('text', { x: cx, y: H - m.b + 16, 'text-anchor': 'middle' }); tx.textContent = c; svg.appendChild(tx); }
+      o.series.forEach((s, j) => {
+        const v = s.values[i], x = cx - (ns * (bw + 2)) / 2 + j * (bw + 2), y = Y(v), h = H - m.b - y;
+        if (h > 0.5) {
+          const r = Math.min(4, h, bw / 2);
+          const d = `M${x},${H - m.b}V${y + r}Q${x},${y} ${x + r},${y}H${x + bw - r}Q${x + bw},${y} ${x + bw},${y + r}V${H - m.b}Z`;
+          svg.appendChild(sv('path', { d, fill: s.color }));
+        }
+      });
+      const hitR = sv('rect', { x: m.l + band * i, y: m.t, width: band, height: H - m.t - m.b, fill: 'transparent' });
+      hitR.addEventListener('pointermove', (ev) => {
+        const r = svg.getBoundingClientRect();
+        showTip(box, ((m.l + band * i + band / 2) / W) * r.width, ev.clientY - r.top, [{ value: o.catTip ? o.catTip(c) : c }].concat(o.series.map((s) => ({ color: s.color, value: o.yFmt(s.values[i]), label: s.name }))));
+      });
+      hitR.addEventListener('pointerleave', () => hideTip(box));
+      svg.appendChild(hitR);
+    });
+    if (o.xLabel) { const tl = sv('text', { x: (m.l + W - m.r) / 2, y: H - 4, 'text-anchor': 'middle' }); tl.textContent = o.xLabel; svg.appendChild(tl); }
+    box.wrap.appendChild(svg);
+  }
+
+  // horizontal bars: rows [{label, value, tip}]
+  function barChart(box, o) {
+    const rowH = 26, m = { l: 54, r: 56, t: 4, b: 4 };
+    const W = Math.max(300, box.wrap.clientWidth || 600), H = m.t + m.b + rowH * o.rows.length;
+    const vMax = Math.max(1e-9, ...o.rows.map((r) => r.value));
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': o.aria || '' });
+    o.rows.forEach((row, i) => {
+      const y = m.t + i * rowH + 4, bh = Math.min(18, rowH - 8), w = ((W - m.l - m.r) * row.value) / vMax;
+      const lt = sv('text', { x: m.l - 8, y: y + bh / 2 + 4, 'text-anchor': 'end' }); lt.textContent = row.label; svg.appendChild(lt);
+      if (w > 0.5) {
+        const r = Math.min(4, w, bh / 2), x = m.l;
+        svg.appendChild(sv('path', { d: `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + bh - r}Q${x + w},${y + bh} ${x + w - r},${y + bh}H${x}Z`, fill: o.color }));
+      }
+      const vt = sv('text', { x: m.l + w + 6, y: y + bh / 2 + 4 }); vt.textContent = o.fmt(row.value); svg.appendChild(vt);
+      const hitR = sv('rect', { x: 0, y: m.t + i * rowH, width: W, height: rowH, fill: 'transparent' });
+      hitR.addEventListener('pointermove', (ev) => { const r = svg.getBoundingClientRect(); showTip(box, ((m.l + w) / W) * r.width, ev.clientY - r.top, [{ value: o.fmt(row.value), label: row.tip || row.label }]); });
+      hitR.addEventListener('pointerleave', () => hideTip(box));
+      svg.appendChild(hitR);
+    });
+    box.wrap.appendChild(svg);
+  }
+
+  // ------------------------------------------------------------------ simulation
+  let runToken = null;
+  async function runSimulation() {
+    let policy;
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert('Konfiguration ungültig: ' + e.message); return; }
+    const games = Math.max(10, Math.floor(Number($('games').value) || 1000));
+    const seed = Math.floor(Number($('seed').value) || 0);
+    const cfg = clone(state.cfg);
+    $('runBtn').disabled = true; $('stopBtn').hidden = false;
+    const t0 = performance.now();
+    runToken = { cancelled: false };
+    const tok = runToken;
+    $('runInfo').textContent = 'läuft …';
+    try {
+      const res = await runBatch(cfg, policy, seed, games, (f) => { $('bar').style.width = (f * 100).toFixed(1) + '%'; $('runInfo').textContent = Math.round(f * games) + ' / ' + games + ' Spiele'; }, tok);
+      const ms = performance.now() - t0;
+      const s = E.stats.aggregate(res, cfg.hp);
+      const run = { s, cfg, policy, policyLabel: policyLabel(), seed, games, ms, label: cfgLabel(cfg), when: new Date() };
+      state.runs.unshift(run);
+      if (state.refIdx >= 0) state.refIdx++;
+      $('runInfo').textContent = games + ' Spiele in ' + num(ms / 1000) + ' s';
+      renderResults();
+      renderRuns();
+    } catch (e) {
+      $('runInfo').textContent = e.message === 'abgebrochen' ? 'abgebrochen' : 'Fehler: ' + e.message;
+    } finally {
+      $('runBtn').disabled = false; $('stopBtn').hidden = true;
+    }
+  }
+
+  function cfgLabel(cfg) {
+    const by = {};
+    for (const e of cfg.cards) by[e.type] = (by[e.type] || 0) + Number(e.count);
+    return cfg.players + ' Sp. · ' + cfg.hp + ' LP · ' + C.TYPES.filter((t) => by[t.key]).map((t) => t.short + by[t.key]).join(' ');
+  }
+
+  function tile(l, v, d) { return el('div', { class: 'tile' }, [el('div', { class: 'l', text: l }), el('div', { class: 'v', text: v }), d ? el('div', { class: 'd', text: d }) : null]); }
+
+  function renderResults() {
+    const box = $('results');
+    box.textContent = '';
+    const run = state.runs[0];
+    if (!run) { box.appendChild(el('div', { class: 'card empty', text: 'Noch keine Simulation.' })); return; }
+    const ref = state.refIdx > 0 ? state.runs[state.refIdx] : null;
+    const s = run.s, rs = ref ? ref.s : null;
+    const c1 = cssVar('--series-1'), c2 = cssVar('--series-2');
+
+    // hero
+    const hero = el('div', { class: 'card' });
+    const dWin = rs ? (s.winRate - rs.winRate) * 100 : null;
+    hero.appendChild(el('div', { class: 'hero' }, [
+      el('div', null, [el('div', { class: 'hint', text: 'Siegquote' }), el('div', { class: 'big', text: pct(s.winRate) })]),
+      el('div', { class: 'ci' }, [
+        el('div', { text: '95 %-Konfidenz: ' + pct(s.winCI[0]) + ' – ' + pct(s.winCI[1]) }),
+        el('div', { text: s.games + ' Spiele · ' + s.wins + ' Siege · KI: ' + run.policyLabel }),
+        el('div', { text: run.label }),
+        dWin !== null ? el('div', { class: dWin >= 0 ? 'delta-up' : 'delta-down', text: (dWin >= 0 ? '▲ +' : '▼ ') + num(dWin) + ' Pkt. gegenüber Referenz (' + pct(rs.winRate) + ')' }) : null,
+      ]),
+    ]));
+    const t = el('div', { class: 'tiles' });
+    t.appendChild(tile('Ø Deckfortschritt', pct(s.avgProgress, 0), 'bei Niederlage Ø ' + pct(s.avgLossProgress, 0)));
+    t.appendChild(tile('Ø Restleben bei Sieg', num(s.avgWinSumHp), 'schwächster Spieler Ø ' + num(s.avgWinMinHp)));
+    t.appendChild(tile('Knappe Siege', s.wins ? pct(s.closeWins / s.wins, 0) : '–', 'schwächster Spieler ≤ 5 LP'));
+    t.appendChild(tile('Fluchten pro Spiel', num(s.counters.flees, 2), 'gehaltene Karten ' + num(s.counters.passes)));
+    t.appendChild(tile('Runden pro Spiel', num(s.avgRounds), 'davon Kämpfe ' + num(s.avgFights)));
+    t.appendChild(tile('Score Ø', num(s.avgScore), 'Sieg = Restleben, Niederlage = −Restgegner'));
+    hero.appendChild(t);
+    box.appendChild(hero);
+
+    const grid = el('div', { class: 'grid2' });
+    box.appendChild(grid);
+
+    // survival
+    const sb = chartBox('Überlebenskurve', 'Anteil der Spiele, die mindestens x % des Decks durchspielen');
+    grid.appendChild(sb.card);
+    const series = [{ name: 'Aktuell', color: c1, pts: s.survival.map((p) => [p.x, p.share * 100]) }];
+    if (rs) series.push({ name: 'Referenz', color: c2, pts: rs.survival.map((p) => [p.x, p.share * 100]) });
+    if (rs) sb.card.insertBefore(legend(series), sb.wrap);
+    lineChart(sb, { series, xDomain: [0, 100], yMax: 100, xTicks: [0, 25, 50, 75, 100], xFmt: (x) => x + ' %', yFmt: (y) => Math.round(y) + ' %', yFmtTip: (y) => num(y) + ' %', xFmtTip: (x) => 'bis ' + x + ' % des Decks', xLabel: 'Deckfortschritt', aria: 'Überlebenskurve' });
+
+    // loss progress
+    const lb = chartBox('Wann wird verloren?', 'Verteilung der Niederlagen nach Deckfortschritt');
+    grid.appendChild(lb.card);
+    const lossN = Math.max(1, s.games - s.wins);
+    const cs = [{ name: 'Aktuell', color: c1, values: s.lossProgress.map((k) => (k / lossN) * 100) }];
+    if (rs) cs.push({ name: 'Referenz', color: c2, values: rs.lossProgress.map((k) => (k / Math.max(1, rs.games - rs.wins)) * 100) });
+    if (rs) lb.card.insertBefore(legend(cs.map((x) => ({ name: x.name, color: x.color, rect: true }))), lb.wrap);
+    columnChart(lb, { cats: s.lossProgress.map((_, i) => i * 10 + '–' + (i * 10 + 10)), series: cs, yFmt: (y) => Math.round(y) + ' %', catTip: (c) => c + ' % des Decks', xLabel: 'Deckfortschritt (%)', aria: 'Niederlagen nach Fortschritt' });
+
+    // death causes
+    const db = chartBox('Todesursachen', 'Karte, die den letzten Treffer gesetzt hat (Anteil der Niederlagen)');
+    grid.appendChild(db.card);
+    const causes = Object.entries(s.deathCause).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (causes.length) barChart(db, { rows: causes.map(([k, v]) => ({ label: k, value: v / lossN, tip: k === 'D' ? 'Dieb' : 'Gegner ' + k.slice(1) })), color: c1, fmt: (v) => pct(v, 0), aria: 'Todesursachen' });
+    else db.wrap.appendChild(el('p', { class: 'hint', text: 'Keine Niederlagen.' }));
+
+    // remaining hp at win
+    const hb = chartBox('Restleben bei Sieg', 'Leben des schwächsten Spielers am Spielende');
+    grid.appendChild(hb.card);
+    if (s.wins) {
+      const vals = s.minHpHist.slice(1).map((k) => (k / s.wins) * 100);
+      columnChart(hb, { cats: vals.map((_, i) => String(i + 1)), series: [{ name: 'Aktuell', color: c1, values: vals }], yFmt: (y) => Math.round(y) + ' %', catTip: (c) => c + ' LP', xLabel: 'Leben des schwächsten Spielers', aria: 'Restleben bei Sieg' });
+    } else hb.wrap.appendChild(el('p', { class: 'hint', text: 'Keine Siege.' }));
+
+    // economy table
+    const eb = el('div', { class: 'card' });
+    eb.appendChild(el('h2', { text: 'Schaden & Heilung pro Spiel' }));
+    const c = s.counters, rc = rs ? rs.counters : null;
+    const rows = [
+      ['Schaden durch Faust', 'dmgFist'], ['Restschaden trotz Waffe', 'dmgWeapon'], ['Restschaden trotz Magie', 'dmgMagic'], ['Schaden durch Diebe', 'dmgThief'],
+      ['Von Waffen verhindert', 'prevWeapon'], ['Von Magie verhindert', 'prevMagic'], ['Geheilt', 'healed'], ['Heilung über Maximum verschenkt', 'healOver'],
+      ['Heilkarten verworfen', 'healDiscard'], ['Waffen angelegt', 'weaponEquip'], ['Waffen verworfen', 'weaponDiscard'], ['Waffen gestohlen', 'weaponStolen'],
+      ['Magie benutzt', 'magicUsed'], ['Schmied benutzt', 'smithUsed'], ['Karten gehalten (gepasst)', 'passes'], ['Fluchten', 'flees'],
+    ].filter(([, k]) => c[k] || (rc && rc[k]));
+    const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, [el('th', { text: 'Kennzahl' }), el('th', { text: 'Aktuell' }), rc ? el('th', { text: 'Referenz' }) : null])])]);
+    const tbody = el('tbody');
+    for (const [l, k] of rows) tbody.appendChild(el('tr', null, [el('td', { text: l }), el('td', { class: 'n', text: num(c[k]) }), rc ? el('td', { class: 'n', text: num(rc[k]) }) : null]));
+    tbl.appendChild(tbody);
+    eb.appendChild(tbl);
+    grid.appendChild(eb);
+
+    // flees & seats
+    const fb = el('div', { class: 'card' });
+    fb.appendChild(el('h2', { text: 'Fluchten & Sitzplätze' }));
+    const ft = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, [el('th', { text: 'Fluchten im Spiel' }), el('th', { text: 'Spiele' }), el('th', { text: 'Siegquote' })])])]);
+    const fbody = el('tbody');
+    for (const [k, b] of Object.entries(s.byFlees).sort((a, b) => a[0] - b[0])) fbody.appendChild(el('tr', null, [el('td', { text: k + '×' }), el('td', { class: 'n', text: String(b.games) }), el('td', { class: 'n', text: pct(b.wins / b.games, 0) })]));
+    ft.appendChild(fbody);
+    fb.appendChild(ft);
+    const totalStart = s.startSeat.reduce((a, b) => a + b, 0) || 1;
+    const st = el('table', { class: 'data', style: 'margin-top:12px' }, [el('thead', null, [el('tr', null, [el('th', { text: 'Spieler' }), el('th', { text: 'stirbt (Anteil Niederl.)' }), el('th', { text: 'beginnt Runden' })])])]);
+    const sbody = el('tbody');
+    s.deathSeat.forEach((v, i) => sbody.appendChild(el('tr', null, [el('td', { text: SEAT[i] }), el('td', { class: 'n', text: pct(v / lossN, 0) }), el('td', { class: 'n', text: pct(s.startSeat[i] / totalStart, 0) })])));
+    st.appendChild(sbody);
+    fb.appendChild(st);
+    grid.appendChild(fb);
+  }
+
+  function renderRuns() {
+    $('runsCard').hidden = state.runs.length < 1;
+    const box = $('runs');
+    box.textContent = '';
+    state.runs.forEach((r, i) => {
+      const isRef = i === state.refIdx;
+      box.appendChild(el('div', { class: 'run' }, [
+        el('span', { class: 'w', text: pct(r.s.winRate) }),
+        el('span', { class: 'lbl', title: r.label, text: r.label + ' · ' + r.policyLabel + ' · ' + r.games + ' Spiele' }),
+        i === 0 ? el('span', { class: 'badge', text: 'aktuell' }) : null,
+        isRef ? el('span', { class: 'badge ref', text: 'Referenz' }) : null,
+        i > 0 ? el('button', { class: 'btn', text: isRef ? 'Referenz aus' : 'Als Referenz', onclick: () => { state.refIdx = isRef ? -1 : i; renderResults(); renderRuns(); } }) : null,
+        el('button', { class: 'ghost', text: 'Laden', title: 'Konfiguration dieses Laufs laden', onclick: () => { state.cfg = clone(r.cfg); changed(true); } }),
+      ]));
+    });
+  }
+
+  // ------------------------------------------------------------------ sweep
+  function fillSweepParams() {
+    const sel = $('swParam');
+    const prev = sel.value;
+    sel.textContent = '';
+    const g1 = el('optgroup', { label: 'Spiel' }, [
+      el('option', { value: 'hp', text: 'Leben je Spieler' }),
+      el('option', { value: 'thiefDamage', text: 'Diebschaden' }),
+      el('option', { value: 'fleeBlockDeck', text: 'Fluchtsperre (Karten im Deck)' }),
+      el('option', { value: 'players', text: 'Spieleranzahl (2–3)' }),
+    ]);
+    const g2 = el('optgroup', { label: 'Anzahl je Wert für alle Karten eines Typs' }, C.TYPES.map((t) => el('option', { value: 'copies:' + t.key, text: t.name + (t.hasValue ? ' (jeder Wert)' : ' (Anzahl)') })));
+    const g3 = el('optgroup', { label: 'Anzahl einer einzelnen Karte' }, state.cfg.cards.filter((e) => C.TYPE_BY_KEY[e.type].hasValue).map((e) => el('option', { value: 'count:' + e.type + ':' + e.value, text: C.TYPE_BY_KEY[e.type].name + ' ' + e.value })));
+    sel.append(g1, g2, g3);
+    if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  }
+
+  function applySweep(cfg, param, v) {
+    if (param === 'hp' || param === 'thiefDamage' || param === 'fleeBlockDeck' || param === 'players') { cfg[param] = v; return; }
+    const [kind, type, value] = param.split(':');
+    if (kind === 'copies') {
+      const ti = C.TYPE_BY_KEY[type];
+      const rows = cfg.cards.filter((e) => e.type === type);
+      if (!ti.hasValue && !rows.length) cfg.cards.push({ type, value: 0, count: v });
+      for (const e of rows) e.count = v;
+    } else if (kind === 'count') {
+      const row = cfg.cards.find((e) => e.type === type && Number(e.value) === Number(value));
+      if (row) row.count = v; else cfg.cards.push({ type, value: Number(value), count: v });
+    }
+  }
+
+  let swToken = null;
+  async function runSweep() {
+    let policy;
+    try { policy = currentPolicy(); } catch (e) { alert('KI-Parameter ungültig: ' + e.message); return; }
+    const param = $('swParam').value, from = Number($('swFrom').value), to = Number($('swTo').value), step = Math.max(1, Number($('swStep').value) || 1);
+    const games = Math.max(50, Number($('swGames').value) || 1000), seed = Math.floor(Number($('seed').value) || 0);
+    const xs = [];
+    for (let v = from; from <= to ? v <= to : v >= to; v += from <= to ? step : -step) xs.push(v);
+    if (!xs.length || xs.length > 60) { alert('Bitte 1 bis 60 Messpunkte wählen.'); return; }
+    const label = $('swParam').selectedOptions[0].textContent;
+    $('swRun').disabled = true; $('swStop').hidden = false;
+    swToken = { cancelled: false };
+    const tok = swToken;
+    const pts = [];
+    const out = $('swResults');
+    try {
+      for (let i = 0; i < xs.length; i++) {
+        const cfg = clone(state.cfg);
+        applySweep(cfg, param, xs[i]);
+        C.normalize(cfg);
+        const res = await runBatch(cfg, policy, seed, games, (f) => { $('swBar').style.width = (((i + f) / xs.length) * 100).toFixed(1) + '%'; }, tok);
+        const s = E.stats.aggregate(res, cfg.hp);
+        pts.push({ x: xs[i], s });
+        renderSweep(out, label, pts, games);
+      }
+    } catch (e) {
+      if (e.message !== 'abgebrochen') alert('Fehler: ' + e.message);
+    } finally {
+      $('swRun').disabled = false; $('swStop').hidden = true;
+    }
+  }
+
+  function renderSweep(out, label, pts, games) {
+    out.textContent = '';
+    const c1 = cssVar('--series-1');
+    const box = chartBox('Siegquote abhängig von: ' + label, games + ' Spiele je Punkt · Fläche = 95 %-Konfidenzintervall');
+    out.appendChild(box.card);
+    const xs = pts.map((p) => p.x);
+    const yMax = Math.min(100, niceMax(Math.max(5, ...pts.map((p) => p.s.winCI[1] * 100))));
+    lineChart(box, {
+      series: [{ name: 'Siegquote', color: c1, markers: true, pts: pts.map((p) => [p.x, p.s.winRate * 100]), band: pts.map((p) => [p.x, p.s.winCI[0] * 100, p.s.winCI[1] * 100]) }],
+      xDomain: [Math.min(...xs), Math.max(...xs) === Math.min(...xs) ? Math.min(...xs) + 1 : Math.max(...xs)], yMax,
+      xTicks: xs.length <= 12 ? xs : xs.filter((_, i) => i % Math.ceil(xs.length / 12) === 0),
+      xFmt: (x) => String(x), yFmt: (y) => Math.round(y) + ' %', yFmtTip: (y, s, x) => { const p = pts.find((q) => q.x === x); return num(y) + ' % (' + pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) + ')'; },
+      xLabel: label, aria: 'Sweep',
+    });
+    const card = el('div', { class: 'card' });
+    card.appendChild(el('h2', { text: 'Messpunkte' }));
+    const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, ['Wert', 'Siegquote', '95 %-KI', 'Ø Fortschritt', 'Ø Restleben (Sieg)', 'Fluchten/Spiel'].map((h) => el('th', { text: h })))])]);
+    const tb = el('tbody');
+    for (const p of pts) tb.appendChild(el('tr', null, [el('td', { text: String(p.x) }), el('td', { class: 'n', text: pct(p.s.winRate) }), el('td', { class: 'n', text: pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) }), el('td', { class: 'n', text: pct(p.s.avgProgress, 0) }), el('td', { class: 'n', text: num(p.s.avgWinSumHp) }), el('td', { class: 'n', text: num(p.s.counters.flees, 2) })]));
+    tbl.appendChild(tb);
+    card.appendChild(tbl);
+    out.appendChild(card);
+  }
+
+  // ------------------------------------------------------------------ single game
+  function showGame(index) {
+    let policy;
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return null; }
+    const seed = Math.floor(Number($('gSeed').value) || 0);
+    const g = E.engine.runGame(clone(state.cfg), policy, E.engine.gameSeed(seed, index), { log: true });
+    $('gIndex').value = index;
+    const log = $('gLog'), chips = $('gChips');
+    log.textContent = ''; chips.textContent = '';
+    log.appendChild(el('div', { class: 'hint', text: 'Seed ' + seed + ' · Spiel ' + index + ' · ' + cfgLabel(state.cfg) + ' · KI: ' + policyLabel() }));
+    g.log.forEach((line) => {
+      let cls = null;
+      if (line.startsWith('──')) cls = 'round';
+      else if (line.startsWith('★')) cls = 'win';
+      else if (line.startsWith('✗')) cls = 'loss';
+      const d = el('div', cls ? { class: cls, text: line } : { text: line || ' ' });
+      log.appendChild(d);
+      if (cls === 'round') {
+        const m = line.match(/Runde (\d+)/);
+        chips.appendChild(el('button', { text: 'R' + (m ? m[1] : '?'), onclick: () => { log.scrollTop = d.offsetTop - log.offsetTop - 4; } }));
+      }
+    });
+    return g.result;
+  }
+  function findGame(wantWin) {
+    let i = Number($('gIndex').value) + 1;
+    for (let k = 0; k < 400; k++, i++) {
+      let policy;
+      try { policy = currentPolicy(); } catch (e) { alert(e.message); return; }
+      const g = E.engine.runGame(clone(state.cfg), policy, E.engine.gameSeed(Math.floor(Number($('gSeed').value) || 0), i));
+      if (g.result.win === wantWin) { showGame(i); return; }
+    }
+    alert('In den nächsten 400 Spielen nicht gefunden.');
+  }
+
+  // ------------------------------------------------------------------ help
+  function renderHelp() {
+    const h = $('helpText');
+    const P = (t) => el('p', { text: t });
+    h.append(
+      el('h2', { text: 'Umgesetzte Regeln' }),
+      el('ul', null, [
+        'Alle Karten bilden ein gemeinsames Deck. Gewonnen ist, wenn alle Karten durchgespielt sind. Fällt ein Spieler auf 0 oder weniger Leben, verlieren alle.',
+        '2 Spieler: 4 Handkarten, 3 Spieler: 3 Handkarten. Nach jeder Runde wird aufgefüllt.',
+        'Vor dem ersten Ausspielen kann das Team fliehen: alle Handkarten offen, gemischt unter das Deck. Nicht zweimal in Folge und nicht mehr bei wenigen Karten im Deck.',
+        'Reihum legt jeder 1 Karte pro Zug an einen beliebigen Spieler (auch sich selbst). Mit nur 1 Karte darf man passen und hält sie bis zur nächsten Runde. In der letzten Hand muss alles gespielt werden.',
+        'Gegner und Diebe müssen an einen Spieler mit den bisher wenigsten Gegnern dieser Runde.',
+        'Am Rundenende handelt jeder seine Karten in frei gewählter Reihenfolge ab.',
+        'Gegner: Faust (voller Schaden), Waffe (Schaden = Gegner − Waffe, nur Gegner kleiner als der zuletzt geblockte) oder Magie (einmalig, wie eine Waffe).',
+        'Heilung: max. eine pro Runde, nicht über das Maximum. Schmied: entfernt den obersten Gegner von der Waffe. Dieb: nimmt die Waffe oder macht Diebschaden.',
+      ].map((t) => el('li', { text: t }))),
+      el('h2', { text: 'Wie die KI spielt' }),
+      P('Abhandeln: Für die Karten vor einem Spieler wird jede Reihenfolge und jede Wahl (Faust/Waffe/Magie, Anlegen/Verwerfen, Heilzeitpunkt, Dieb) exakt durchgerechnet. Bewertet wird das Ergebnis über Leben (mit Risikoaufschlag bei wenig Leben) plus den erwarteten Nutzen der Waffe für die noch kommenden Gegner (Kartenzählen).'),
+      P('Ausspielen: Wer am Zug ist, plant seine ganze Resthand (Ziel je Karte oder Halten) und spielt die erste Karte des besten Plans. Nach jedem Zug des Partners wird neu geplant. Die Hand des Partners ist unbekannt.'),
+      P('Fliehen und Startspieler: Jeder bewertet nur seine eigene Hand und gibt eines von vier Signalen (nicht / offen / will / unbedingt). Danach wird einmal nachjustiert. Berücksichtigt wird auch, was bereits unter dem Deck liegt.'),
+      P('Experte: Die Gewichte dieser Bewertung wurden per Evolution auf dem Standarddeck optimiert, mit Millionen simulierter Spiele. Das Orakel sieht alle Hände und zeigt, was bei perfekter Absprache möglich wäre.'),
+      el('h2', { text: 'Konsole' }),
+      el('pre', { class: 'log', text: 'node cli/sim.js --games 10000\nnode cli/sim.js --log --seed 1 --game 3\nnode cli/sim.js --compare expert,planner,random\nnode cli/ab.js "base" "holdBad=1"\nnode cli/evolve.js --pop 48 --games 1000 --gens 60' }),
+    );
+  }
+
+  // ------------------------------------------------------------------ tabs & boot
+  function setupTabs() {
+    for (const b of document.querySelectorAll('nav.tabs button')) {
+      b.addEventListener('click', () => {
+        for (const x of document.querySelectorAll('nav.tabs button')) x.setAttribute('aria-selected', String(x === b));
+        for (const p of document.querySelectorAll('[data-panel]')) p.hidden = p.dataset.panel !== b.dataset.tab;
+      });
+    }
+  }
+
+  setupTabs();
+  setupConfig();
+  renderConfig();
+  fillSweepParams();
+  renderHelp();
+  $('runBtn').addEventListener('click', runSimulation);
+  $('stopBtn').addEventListener('click', () => { if (runToken) { runToken.cancelled = true; if (runToken.cancel) runToken.cancel(); } });
+  $('swRun').addEventListener('click', runSweep);
+  $('swStop').addEventListener('click', () => { if (swToken) { swToken.cancelled = true; if (swToken.cancel) swToken.cancel(); } });
+  $('gRun').addEventListener('click', () => showGame(Math.floor(Number($('gIndex').value) || 0)));
+  $('gNextLoss').addEventListener('click', () => findGame(false));
+  $('gNextWin').addEventListener('click', () => findGame(true));
+  let rt = null;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (state.runs.length) renderResults(); }, 200); });
+  // "#autorun=500" starts a simulation right away (handy for links and headless checks)
+  const auto = location.hash.match(/autorun(?:=(\d+))?/);
+  if (auto) { if (auto[1]) $('games').value = auto[1]; runSimulation(); }
+})();
+
+</script>
+</body>
+</html>
