@@ -26,11 +26,64 @@ const NAMED = {
   mix3: () => add(std(3), ...config.series('magic', 2, 10, 1), { type: 'smith', value: 0, count: 3 }),
   hp16: () => std(2, 16),
   hp24: () => std(2, 24),
+  // edge decks (never used in the first training): plausible but extreme
+  thief10: () => setN(std(2), 'thief', 10),
+  smith10: () => add(std(2), { type: 'smith', value: 0, count: 10 }),
+  magicW: () => add(std(2), ...config.series('magic', 2, 10, 2)), // as much magic as weapons
+  hp10: () => std(2, 10),
+  hp30: () => std(2, 30),
+  big18: () => add(std(2), ...config.series('enemy', 15, 18, 2)), // enemies up to 18
+  zero: () => add(std(2), { type: 'enemy', value: 0, count: 6 }), // enemies with strength 0
+  wild2: () => setN(add(std(2, 14), ...config.series('magic', 2, 10, 2), { type: 'smith', value: 0, count: 6 }), 'thief', 8),
+  wild3: () => setN(add(std(3, 16), ...config.series('magic', 2, 10, 2), { type: 'smith', value: 0, count: 8 }, ...config.series('enemy', 15, 17, 2)), 'thief', 10),
 };
 
+// Random deck within the range the designer considers plausible:
+// 2–3 players, 10–30 HP, 0–10 thieves, 0–10 smiths, no magic up to as much as weapons,
+// enemies 2–14 ×4 sometimes with bigger ones (up to 18) or some of strength 0,
+// heals and weapons 2–10 ×2 slightly varied.
+function randomDeck(rng) {
+  const ri = (a, b) => a + rng.int(b - a + 1);
+  const cfg = std(rng.next() < 0.65 ? 2 : 3, ri(10, 30));
+  setN(cfg, 'thief', ri(0, 10));
+  const tags = [];
+  const smiths = rng.next() < 0.4 ? 0 : ri(1, 10);
+  if (smiths) add(cfg, { type: 'smith', value: 0, count: smiths });
+  if (rng.next() < 0.65) {
+    const lo = ri(1, 4), hi = ri(Math.max(lo + 2, 6), 10), k = rng.next() < 0.5 ? 1 : 2;
+    add(cfg, ...config.series('magic', lo, hi, k));
+    tags.push('M' + lo + '-' + hi + 'x' + k);
+  }
+  if (rng.next() < 0.2) { const top = ri(15, 18); add(cfg, ...config.series('enemy', 15, top, 1)); tags.push('G15-' + top); }
+  if (rng.next() < 0.2) { const z = ri(1, 6); add(cfg, { type: 'enemy', value: 0, count: z }); tags.push('G0x' + z); }
+  for (const type of ['heal', 'weapon']) {
+    if (rng.next() < 0.3) { // a few extra or missing copies
+      const d = rng.next() < 0.5 ? 1 : -1;
+      for (let i = 0, n = ri(1, 3); i < n; i++) {
+        const v = ri(2, 10), e = cfg.cards.find((x) => x.type === type && x.value === v);
+        if (e) e.count = Math.max(0, e.count + d);
+      }
+      tags.push(type[0].toUpperCase() + (d > 0 ? '+' : '-'));
+    }
+  }
+  cfg.cards = cfg.cards.filter((e) => e.count > 0);
+  const thieves = (cfg.cards.find((e) => e.type === 'thief') || { count: 0 }).count;
+  const name = cfg.players + 'p' + cfg.hp + 'D' + thieves + (smiths ? 'S' + smiths : '') + (tags.length ? ' ' + tags.join(' ') : '');
+  return { name, cfg };
+}
+
+function setN(cfg, type, n) {
+  cfg.cards = cfg.cards.filter((e) => e.type !== type).concat(n ? [{ type, value: 0, count: n }] : []);
+  return cfg;
+}
+
 const GROUPS = {
+  edge: 'thief10,smith10,magicW,hp10,hp30,big18,zero,wild2,wild3',
+  // fixed validation set for training on random decks (hp10/big18 left out: ~0 % for everyone)
+  holdout: 'std2,std3,magic2,smith2,thief10,smith10,magicW,hp30,zero,wild2,wild3',
   train: 'std2,std2,std3,magic2,smith2,mix2,mix3,hp16',
   all: Object.keys(NAMED).join(','),
+  base: 'std2,std3,magic2,smith2',
 };
 
 function resolve(list) {
@@ -42,4 +95,4 @@ function resolve(list) {
   });
 }
 
-module.exports = { NAMED, GROUPS, resolve };
+module.exports = { NAMED, GROUPS, resolve, randomDeck };

@@ -26,6 +26,7 @@
     'healed', 'healOver', 'healDiscard', 'healDiscardValue',
     'weaponEquip', 'weaponDiscard', 'weaponStolen', 'magicEquip', 'magicDiscard', 'magicUsed',
     'smithUsed', 'smithDiscard', 'thiefDamage', 'thiefSteal', 'passes', 'flees', 'fights',
+    'stealReplaced', 'thiefHeld',
   ];
 
   function aggregate(results, maxHp) {

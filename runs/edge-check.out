@@ -1,0 +1,23 @@
+﻿Strategien: humanfast | untrained,memory=human · 4000 Spiele je Konfiguration · Seed 777
+  std2    humanfast                    Sieg  71.7%                          Fortschritt 93.6%  Tiefpunkt Ø 1.7  Fluchten 5.38  · 12s · Rest ~3min 47s
+  std2    untrained,memory=human       Sieg  11.4%  Δ -60.3 Pkt. (z -73.8)  Fortschritt 74.3%  Tiefpunkt Ø 0.3  Fluchten 1.28  · 3s · Rest ~2min 17s
+  thief10 humanfast                    Sieg  38.4%                          Fortschritt 87.5%  Tiefpunkt Ø 0.8  Fluchten 5.48  · 10s · Rest ~2min 21s
+  thief10 untrained,memory=human       Sieg   2.1%  Δ -36.3 Pkt. (z -46.6)  Fortschritt 60.3%  Tiefpunkt Ø 0.0  Fluchten 1.22  · 3s · Rest ~1min 49s
+  smith10 humanfast                    Sieg  92.3%                          Fortschritt 96.0%  Tiefpunkt Ø 3.1  Fluchten 6.18  · 41s · Rest ~3min 25s
+  smith10 untrained,memory=human       Sieg  38.4%  Δ -54.0 Pkt. (z -65.2)  Fortschritt 84.6%  Tiefpunkt Ø 1.1  Fluchten 1.44  · 7s · Rest ~2min 55s
+  magicW  humanfast                    Sieg  98.4%                          Fortschritt 98.9%  Tiefpunkt Ø 3.6  Fluchten 8.19  · 22s · Rest ~3min 0s
+  magicW  untrained,memory=human       Sieg  73.0%  Δ -25.3 Pkt. (z -35.7)  Fortschritt 93.3%  Tiefpunkt Ø 2.5  Fluchten 1.56  · 6s · Rest ~2min 34s
+  hp10    humanfast                    Sieg   1.8%                          Fortschritt 55.6%  Tiefpunkt Ø 0.0  Fluchten 4.16  · 4s · Rest ~2min 10s
+  hp10    untrained,memory=human       Sieg   0.1%  Δ -1.7 Pkt. (z -8.2)    Fortschritt 42.4%  Tiefpunkt Ø 0.0  Fluchten 1.26  · 2s · Rest ~1min 48s
+  hp30    humanfast                    Sieg  95.7%                          Fortschritt 99.3%  Tiefpunkt Ø 7.5  Fluchten 5.39  · 14s · Rest ~1min 40s
+  hp30    untrained,memory=human       Sieg  47.8%  Δ -47.9 Pkt. (z -58.9)  Fortschritt 90.4%  Tiefpunkt Ø 2.4  Fluchten 1.22  · 3s · Rest ~1min 23s
+  big18   humanfast                    Sieg   0.0%                          Fortschritt 60.5%  Tiefpunkt Ø 0.0  Fluchten 4.96  · 5s · Rest ~1min 10s
+  big18   untrained,memory=human       Sieg   0.0%  Δ +0.0 Pkt. (z 0.0)     Fortschritt 39.1%  Tiefpunkt Ø 0.0  Fluchten 1.05  · 2s · Rest ~0min 56s
+  zero    humanfast                    Sieg  74.0%                          Fortschritt 94.6%  Tiefpunkt Ø 1.8  Fluchten 5.70  · 12s · Rest ~0min 48s
+  zero    untrained,memory=human       Sieg  10.3%  Δ -63.6 Pkt. (z -79.0)  Fortschritt 75.3%  Tiefpunkt Ø 0.2  Fluchten 1.45  · 3s · Rest ~0min 36s
+  wild2   humanfast                    Sieg  87.0%                          Fortschritt 91.9%  Tiefpunkt Ø 1.2  Fluchten 8.65  · 41s · Rest ~0min 33s
+  wild2   untrained,memory=human       Sieg  33.2%  Δ -53.8 Pkt. (z -63.2)  Fortschritt 80.4%  Tiefpunkt Ø 0.5  Fluchten 1.76  · 8s · Rest ~0min 21s
+  wild3   humanfast                    Sieg  35.4%                          Fortschritt 95.3%  Tiefpunkt Ø 0.4  Fluchten 10.29  · 12s · Rest ~0min 10s
+  wild3   untrained,memory=human       Sieg   1.2%  Δ -34.2 Pkt. (z -44.6)  Fortschritt 66.2%  Tiefpunkt Ø 0.0  Fluchten 1.46  · 5s · Rest ~0min 0s
+
+Ø über 10 Konfigurationen: humanfast 59.5% | untrained,memory=human 21.7% · 3min 33s

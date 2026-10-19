@@ -48,16 +48,17 @@
   }
 
   // ------------------------------------------------------------------ state
-  const state = { cfg: clone(C.DEFAULT_CONFIG), policy: 'expert', policyJson: '', runs: [], refIdx: -1, versions: [], selected: new Set() };
+  const state = { cfg: clone(C.DEFAULT_CONFIG), policy: 'human', policyJson: '', runs: [], refIdx: -1, versions: [], selected: new Set() };
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
-    if (saved && saved.cfg) Object.assign(state, { cfg: saved.cfg, policy: saved.policy || state.policy, policyJson: saved.policyJson || '' });
+    // pv 2: "Mensch" became the default – older saved choices are switched over once
+    if (saved && saved.cfg) Object.assign(state, { cfg: saved.cfg, policy: saved.pv === 2 && saved.policy ? saved.policy : state.policy, policyJson: saved.policyJson || '' });
     state.versions = JSON.parse(localStorage.getItem(VERSIONS_KEY) || '[]');
   } catch (e) { /* storage unavailable */ }
   if (!state.cfg.cards3) state.cfg.cards3 = [];
-  if (!E.ai.PRESETS[state.policy]) state.policy = 'expert';
+  if (!E.ai.PRESETS[state.policy]) state.policy = 'human';
   function save() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify({ cfg: state.cfg, policy: state.policy, policyJson: state.policyJson })); } catch (e) { /* ignore */ }
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ pv: 2, cfg: state.cfg, policy: state.policy, policyJson: state.policyJson })); } catch (e) { /* ignore */ }
   }
   function saveVersions() {
     try { localStorage.setItem(VERSIONS_KEY, JSON.stringify(state.versions)); } catch (e) { /* ignore */ }
@@ -69,7 +70,7 @@
     return Object.assign({}, E.ai.PRESETS[state.policy] || {}, over);
   }
   function policyLabel() {
-    const names = { expert: 'Experte', fast: 'Schnell', untrained: 'Untrainiert', random: 'Zufall' };
+    const names = { human: 'Mensch', humanfast: 'Mensch schnell', expert: 'Experte', fast: 'Schnell', untrained: 'Untrainiert', random: 'Zufall' };
     return (names[state.policy] || state.policy) + (state.policyJson.trim() ? ' + Anpassung' : '');
   }
 
@@ -106,7 +107,10 @@ self.onmessage = function (e) {
   }
 
   // Runs games [0, games) – in workers if possible, else chunked on the main thread.
-  // onProgress(fraction) is called after every finished chunk.
+  // onProgress(fraction, added) is called after every finished chunk. "added" holds the
+  // results that just joined the unbroken prefix of finished chunks: only those are used
+  // for live estimates, because chunks with short (lost) games finish first and would
+  // otherwise bias the running numbers.
   function runBatch(cfg, policy, seed, games, onProgress, token) {
     const p = getPool();
     const slow = policy.play === 'pimc';
@@ -115,16 +119,25 @@ self.onmessage = function (e) {
     for (let from = 0; from < games; from += chunk) jobs.push({ from, to: Math.min(games, from + chunk) });
     const out = [];
     let done = 0;
+    const byJob = [];
+    let prefix = 0;
+    const finishJob = (ji, res) => {
+      byJob[ji] = res;
+      const added = [];
+      while (prefix < jobs.length && byJob[prefix]) { added.push(...byJob[prefix]); byJob[prefix] = true; prefix++; }
+      return added;
+    };
     if (!p.workers.length) {
       return new Promise((resolve, reject) => {
         let j = 0;
         (function step() {
           if (token.cancelled) return reject(new Error('abgebrochen'));
           try {
-            const job = jobs[j++];
-            out.push(...E.engine.runGames(cfg, policy, seed, job.from, job.to));
+            const ji = j++, job = jobs[ji];
+            const res = E.engine.runGames(cfg, policy, seed, job.from, job.to);
+            out.push(...res);
             done += job.to - job.from;
-            onProgress(done / games);
+            onProgress(done / games, finishJob(ji, res));
           } catch (e) { return reject(e); }
           if (j < jobs.length) setTimeout(step, 0); else resolve(out.sort((a, b) => a.index - b.index));
         })();
@@ -136,14 +149,14 @@ self.onmessage = function (e) {
       const feed = (w) => {
         if (failed) return;
         if (next >= jobs.length) { if (active === 0) resolve(out.sort((a, b) => a.index - b.index)); return; }
-        const job = jobs[next++];
+        const ji = next++, job = jobs[ji];
         active++;
         w.onmessage = (ev) => {
           active--;
           if (ev.data.error) { failed = true; killPool(); return reject(new Error(ev.data.error)); }
           out.push(...ev.data.res);
           done += job.to - job.from;
-          onProgress(done / games);
+          onProgress(done / games, finishJob(ji, ev.data.res));
           feed(w);
         };
         w.onerror = (ev) => { failed = true; killPool(); reject(new Error(ev.message || 'Worker-Fehler')); };
@@ -168,108 +181,261 @@ self.onmessage = function (e) {
     });
   }
 
-  // ------------------------------------------------------------------ config editor
-  function renderCardList(listKey, tbodyId) {
+  // ------------------------------------------------------------------ deck editor
+  // Matrix per card type: one small card per strength with its count. Thief and smith
+  // have no strength, only a count. Enemies may have strength 0.
+  const TYPE_COLOR = { enemy: '--t-enemy', thief: '--t-thief', heal: '--t-heal', weapon: '--t-weapon', magic: '--t-magic', smith: '--t-smith' };
+  const VALUE_RANGE = { enemy: [0, 14], heal: [1, 10], weapon: [1, 10], magic: [1, 10] };
+  const TYPE_HINT = { thief: 'Stiehlt eine Waffe oder macht Diebschaden.', smith: 'Entfernt den obersten Gegner von einer Waffe.' };
+  const ui = { list: 'cards', extra: {} }; // extra = additional strength columns per type (display only)
+  // display order: types with a strength first, then thief and smith (count only) together
+  const SHOW_ORDER = ['enemy', 'heal', 'weapon', 'magic', 'thief', 'smith'];
+  const TYPES_SHOWN = SHOW_ORDER.map((k) => C.TYPES.find((t) => t.key === k));
+
+  const listTotal = (list) => list.reduce((s, e) => s + Number(e.count || 0), 0);
+  function countOf(list, type, value) {
+    const e = list.find((x) => x.type === type && Number(x.value) === value);
+    return e ? Number(e.count) : 0;
+  }
+  function setCount(list, type, value, n) {
+    n = Math.max(0, Math.min(99, Math.floor(Number(n)) || 0));
+    const i = list.findIndex((x) => x.type === type && Number(x.value) === value);
+    if (i >= 0) { if (n) list[i].count = n; else list.splice(i, 1); } else if (n) list.push({ type, value, count: n });
+  }
+
+  function renderComposition() {
     const cfg = state.cfg;
-    const list = cfg[listKey];
-    const order = (e) => C.TYPE_BY_KEY[e.type].t * 100 + (Number(e.value) || 0);
-    list.sort((a, b) => order(a) - order(b));
-    const tb = $(tbodyId);
-    tb.textContent = '';
-    if (!list.length) tb.appendChild(el('tr', null, [el('td', { colspan: '4', class: 'hint', text: listKey === 'cards3' ? 'Keine Zusatzkarten – bei 3 Spielern wird das Grunddeck gespielt.' : 'Keine Karten.' })]));
-    list.forEach((e, i) => {
+    const players = ui.list === 'cards3' ? 3 : Number(cfg.players);
+    const comp = $('composition');
+    comp.textContent = '';
+    let n;
+    try { n = C.normalize(Object.assign(clone(cfg), { players })); } catch (e) { comp.appendChild(el('p', { class: 'hint', text: 'Fehler im Deck: ' + e.message })); return; }
+    const by = {};
+    let total = 0;
+    for (const e of n.deckCards) { by[e.type] = (by[e.type] || 0) + e.count; total += e.count; }
+    const extraN = listTotal(n.cards3);
+    $('deckCount').textContent = total + ' Karten bei ' + players + ' Spielern' + (players === 3 && extraN ? ' (davon ' + extraN + ' Zusatzkarten)' : '');
+    $('listSel').querySelector('[data-list="cards"]').textContent = 'Grunddeck · ' + listTotal(cfg.cards);
+    $('listSel').querySelector('[data-list="cards3"]').textContent = 'Zusatz bei 3 Spielern · ' + listTotal(cfg.cards3);
+    const shown = TYPES_SHOWN.filter((t) => by[t.key]);
+    const bar = el('div', { class: 'comp-bar', role: 'img', 'aria-label': 'Zusammensetzung: ' + shown.map((t) => t.name + ' ' + by[t.key]).join(', ') });
+    for (const t of shown) bar.appendChild(el('span', { style: 'flex:' + by[t.key] + ';background:var(' + TYPE_COLOR[t.key] + ')', title: t.name + ': ' + by[t.key] + ' Karten (' + pct(by[t.key] / total, 0) + ')' }));
+    const legend = el('div', { class: 'comp-legend' }, shown.map((t) => el('span', null, [el('i', { style: 'background:var(' + TYPE_COLOR[t.key] + ')' }), t.name + ' ', el('b', { text: String(by[t.key]) }), ' · ' + pct(by[t.key] / total, 0)])));
+    const sum = (type) => n.deckCards.filter((e) => e.type === type).reduce((s, e) => s + e.count * e.value, 0);
+    const facts = el('div', { class: 'comp-legend' }, [
+      el('span', null, ['Gegnerstärke gesamt ', el('b', { text: String(sum('enemy')) })]),
+      el('span', null, ['Heilung gesamt ', el('b', { text: String(sum('heal')) })]),
+      el('span', null, ['Waffenstärke gesamt ', el('b', { text: String(sum('weapon')) })]),
+      el('span', null, ['Leben gesamt ', el('b', { text: String(players * cfg.hp) })]),
+    ]);
+    if (total) comp.append(bar, legend, facts);
+    else comp.appendChild(el('p', { class: 'hint', text: 'Das Deck ist leer – unten Anzahlen eintragen oder „Standarddeck laden“.' }));
+  }
+
+  function rowSummary(t, list) {
+    const rows = list.filter((e) => e.type === t.key);
+    const n = listTotal(rows), sum = rows.reduce((s2, e) => s2 + Number(e.count) * Number(e.value), 0);
+    return n + (n === 1 ? ' Karte' : ' Karten') + (t.hasValue && n ? ' · Summe ' + sum : '');
+  }
+
+  // Count field: every keystroke is stored at once (no waiting for blur), on leaving the
+  // field the shown number is replaced by the stored one, and the mouse wheel never
+  // changes a count by accident while scrolling the page.
+  function bindCount(inp, commitFn) {
+    inp.addEventListener('input', () => { if (inp.value !== '') commitFn(inp.value); });
+    inp.addEventListener('change', () => { inp.value = String(commitFn(inp.value)); });
+    inp.addEventListener('wheel', () => { if (document.activeElement === inp) inp.blur(); });
+  }
+
+  function renderDeck() {
+    const cfg = state.cfg, list = cfg[ui.list];
+    for (const b of $('listSel').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.list === ui.list));
+    $('listNote').hidden = ui.list !== 'cards3';
+    $('presetEmpty').textContent = ui.list === 'cards3' ? 'Zusatzkarten leeren' : 'Grunddeck leeren';
+    renderComposition();
+    const box = $('typeRows');
+    box.textContent = '';
+    for (const t of TYPES_SHOWN) {
+      const rows = list.filter((e) => e.type === t.key);
+      const n = listTotal(rows), sum = rows.reduce((s, e) => s + Number(e.count) * Number(e.value), 0);
+      const row = el('div', { class: 'trow', style: '--tc:var(' + TYPE_COLOR[t.key] + ')' });
+      const info = el('div', { class: 'tinfo' }, [
+        el('div', { class: 'tname' }, [el('i'), t.name]),
+        el('div', { class: 'tsum', text: rowSummary(t, state.cfg[ui.list]) }),
+      ]);
+      const tsum = info.querySelector('.tsum');
+      // a typed number only updates its own card, the row sum and the bar – no re-render,
+      // so Tab to the next field keeps working
+      const commit = (value, n2, cellEl) => {
+        setCount(state.cfg[ui.list], t.key, value, n2);
+        const now = countOf(state.cfg[ui.list], t.key, value);
+        if (cellEl) { cellEl.classList.toggle('zero', !now); cellEl.title = t.name + ' der Stärke ' + value + ': ' + now + '×'; }
+        tsum.textContent = rowSummary(t, state.cfg[ui.list]);
+        save();
+        renderComposition();
+        fillSweepParams();
+        return now;
+      };
+      if (t.hasValue) info.appendChild(el('div', { class: 'cl', style: 'font-size:11px;color:var(--muted)', text: 'Karte: oben Stärke, darunter Anzahl' }));
+      row.appendChild(info);
+      if (t.hasValue) {
+        const [lo, hiDefault] = VALUE_RANGE[t.key];
+        const vals = rows.map((e) => Number(e.value));
+        const from = Math.min(lo, ...vals), to = Math.max(hiDefault + (ui.extra[t.key] || 0), ...vals);
+        const allIn = el('input', { type: 'number', min: '0', max: '99', placeholder: 'Anz.', 'aria-label': t.name + ': Anzahl für alle Stärken', style: 'width:58px;padding:2px 6px;font-size:12px' });
+        info.appendChild(el('div', { class: 'tquick' }, [
+          allIn,
+          el('button', { class: 'btn', text: 'alle setzen', title: 'Jede angezeigte Stärke ' + from + '–' + to + ' auf diese Anzahl setzen', onclick: () => {
+            if (allIn.value === '') return;
+            for (let x = from; x <= to; x++) setCount(list, t.key, x, allIn.value);
+            changed(true);
+          } }),
+          el('button', { class: 'btn', text: 'leeren', onclick: () => { for (const v of vals) setCount(list, t.key, v, 0); ui.extra[t.key] = 0; changed(true); } }),
+        ]));
+        const cells = el('div', { class: 'cells' });
+        for (let x = from; x <= to; x++) {
+          const c = countOf(list, t.key, x);
+          const inp = el('input', { type: 'number', min: '0', max: '99', value: String(c), 'aria-label': t.name + ' Stärke ' + x + ': Anzahl' });
+          const cell = el('label', { class: 'cell' + (c ? '' : ' zero'), title: t.name + ' der Stärke ' + x + ': ' + c + '×' }, [
+            el('span', { class: 'cv', text: String(x) }), inp,
+          ]);
+          bindCount(inp, (v) => commit(x, v, cell));
+          cells.appendChild(cell);
+        }
+        cells.appendChild(el('button', { class: 'cell add', title: 'Stärke ' + (to + 1) + ' hinzufügen', 'aria-label': t.name + ': Stärke ' + (to + 1) + ' hinzufügen', text: '+', onclick: () => { ui.extra[t.key] = (ui.extra[t.key] || 0) + 1; renderDeck(); } }));
+        row.appendChild(cells);
+      } else {
+        const c = countOf(list, t.key, 0);
+        const inp = el('input', { type: 'number', min: '0', max: '99', value: String(c), 'aria-label': t.name + ': Anzahl' });
+        bindCount(inp, (v) => commit(0, v, null));
+        const step = (d) => () => { inp.value = String(commit(0, countOf(state.cfg[ui.list], t.key, 0) + d, null)); };
+        row.appendChild(el('div', { class: 'plain-count' }, [
+          el('span', { class: 'stepper' }, [el('button', { text: '−', 'aria-label': t.name + ' weniger', onclick: step(-1) }), inp, el('button', { text: '+', 'aria-label': t.name + ' mehr', onclick: step(1) })]),
+          el('span', { class: 'hint', style: 'margin:0', text: TYPE_HINT[t.key] }),
+        ]));
+      }
+      box.appendChild(row);
+    }
+  }
+
+  // One entry per card (type + strength): older saved decks could contain the same card
+  // several times – the counts are added up so every field shows the real number.
+  function mergeList(list) {
+    const out = [], idx = new Map();
+    for (const e of list || []) {
       const ti = C.TYPE_BY_KEY[e.type];
-      const typeSel = el('select', { 'aria-label': 'Typ' }, C.TYPES.map((t) => el('option', { value: t.key, text: t.name })));
-      typeSel.value = e.type;
-      typeSel.addEventListener('change', () => { e.type = typeSel.value; if (!C.TYPE_BY_KEY[e.type].hasValue) e.value = 0; else if (!e.value) e.value = 2; changed(true); });
-      const val = el('input', { type: 'number', min: '1', max: '63', value: String(e.value), 'aria-label': 'Wert' });
-      if (!ti.hasValue) { val.disabled = true; val.value = ''; }
-      val.addEventListener('change', () => { e.value = Math.max(1, Math.min(63, Number(val.value) || 1)); changed(true); });
-      const cnt = el('input', { type: 'number', min: '0', max: '99', value: String(e.count), 'aria-label': 'Anzahl' });
-      cnt.addEventListener('change', () => { e.count = Math.max(0, Number(cnt.value) || 0); changed(false); });
-      const del = el('button', { class: 'ghost', title: 'Entfernen', 'aria-label': 'Entfernen', text: '✕', onclick: () => { list.splice(i, 1); changed(true); } });
-      tb.appendChild(el('tr', null, [el('td', null, [typeSel]), el('td', null, [val]), el('td', null, [cnt]), el('td', null, [del])]));
-    });
+      if (!ti) continue;
+      const value = ti.hasValue ? Number(e.value) || 0 : 0, count = Math.max(0, Number(e.count) || 0);
+      const k = e.type + ':' + value;
+      if (idx.has(k)) out[idx.get(k)].count += count;
+      else if (count) { idx.set(k, out.length); out.push({ type: e.type, value, count }); }
+    }
+    return out;
   }
 
   function renderConfig() {
     const cfg = state.cfg;
-    if (!cfg.cards3) cfg.cards3 = [];
+    cfg.cards = mergeList(cfg.cards);
+    cfg.cards3 = mergeList(cfg.cards3);
+    save();
     for (const b of $('players').querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.v) === Number(cfg.players)));
     $('hp').value = cfg.hp;
     $('thiefDamage').value = cfg.thiefDamage;
     $('fleeBlockDeck').value = cfg.fleeBlockDeck;
-    $('handInfo').textContent = 'Handkarten je Spieler: ' + C.handSize(Number(cfg.players)) + ' (fest durch die Spieleranzahl)';
+    $('handInfo').textContent = 'Handkarten je Spieler: ' + C.handSize(Number(cfg.players)) + ' (fest durch die Spieleranzahl).';
     $('policy').value = state.policy;
     $('policyJson').value = state.policyJson;
-    renderCardList('cards', 'cardRows');
-    renderCardList('cards3', 'cardRows3');
-    renderSummary();
+    renderDeck();
     renderPolicyHint();
-  }
-
-  function deckStats(cfg, players) {
-    const n = C.normalize(Object.assign(clone(cfg), { players }));
-    const by = {};
-    let total = 0;
-    for (const e of n.deckCards) {
-      const b = by[e.type] || (by[e.type] = { n: 0, sum: 0 });
-      b.n += e.count; b.sum += e.count * (e.value || 0); total += e.count;
-    }
-    return { by, total };
-  }
-
-  function renderSummary() {
-    const cfg = state.cfg, s = $('deckSummary');
-    s.textContent = '';
-    try {
-      for (const players of [2, 3]) {
-        const { by, total } = deckStats(cfg, players);
-        const active = Number(cfg.players) === players;
-        s.appendChild(el('div', { style: active ? '' : 'opacity:.65' }, [
-          el('b', { text: players + ' Spieler: ' + total + ' Karten' }), ' · ' + C.TYPES.filter((t) => by[t.key] && by[t.key].n).map((t) => t.name + ' ' + by[t.key].n).join(' · ') +
-          ' · Gegnerstärke ' + (by.enemy ? by.enemy.sum : 0) + ' · Heilung ' + (by.heal ? by.heal.sum : 0) + ' · Leben gesamt ' + players * cfg.hp,
-        ]));
-      }
-    } catch (e) { s.appendChild(el('div', { text: 'Fehler: ' + e.message })); }
   }
 
   function renderPolicyHint() {
     const hints = {
-      expert: 'Schließt aus den Flucht- und Startsignalen auf die Partnerhand (PIMC). Ca. 0,4 s je Spiel und Prozessorkern, mit 3 Spielern ca. 2 s – 1000 Spiele dauern je nach Rechner etwa 1–4 Minuten.',
-      fast: 'Gleiche trainierte Bewertung, aber ohne Partnerhand-Schluss: einige tausend Spiele pro Sekunde, ideal für große Sweeps. Spielt etwas schwächer als der Experte.',
-      untrained: 'Die Bewertung vor der Evolution – zeigt, wie viel das Training gebracht hat.',
-      random: 'Spielt zufällige erlaubte Züge – untere Grenze zum Vergleich.',
+      human: 'Spielt wie der Experte, merkt sich aber nur, was Menschen sich merken: Die 2 stärksten Gegnerwerte werden mitgezählt, von den letzten 2 Fluchten bleibt nur ein grober Eindruck (viele Gegner / gemischt / viel Heilung oder Waffe). Für das Balancing gedacht.',
+      humanfast: 'Menschliches Gedächtnis wie „Mensch“, aber ohne Partnerhand-Schluss. Gut für große Sweeps, etwas schwächer.',
+      expert: 'Schließt aus den Flucht- und Startsignalen auf die Partnerhand. Ca. 0,4 s je Spiel und Prozessorkern, mit 3 Spielern ca. 2 s.',
+      fast: 'Gleiche trainierte Bewertung ohne Partnerhand-Schluss. Tausende Spiele pro Sekunde, gut für große Sweeps, etwas schwächer.',
+      untrained: 'Bewertung vor der Evolution. Zeigt, wie viel das Training gebracht hat.',
+      random: 'Spielt zufällige erlaubte Züge. Untere Grenze zum Vergleich.',
     };
     $('policyHint').textContent = hints[state.policy] || '';
   }
 
+  // ---- live estimate while a simulation runs
+  function newLive(total) { return { total, n: 0, wins: 0, prog: 0, winMin: 0, hist: [[0, NaN, 0, 1]] }; }
+  function addLive(L, added) {
+    for (const r of added) { L.n++; L.prog += r.progress; if (r.win) { L.wins++; L.winMin += r.minHp; } }
+    if (added.length) { const ci = E.stats.wilson(L.wins, L.n); L.hist.push([L.n, L.wins / L.n, ci[0], ci[1]]); }
+  }
+
+  // Win rate with its 95 % interval (Wilson), an interval bar and the convergence curve:
+  // the estimate and its band over the number of games counted so far.
+  function renderLive(L, done) {
+    const q = $('quickResult');
+    q.textContent = '';
+    if (!L || !L.n) { q.appendChild(el('p', { class: 'hint', text: 'Erste Spiele laufen …' })); return; }
+    const p = L.wins / L.n, ci = E.stats.wilson(L.wins, L.n), half = (ci[1] - ci[0]) / 2;
+    q.appendChild(el('div', { class: 'headline' }, [
+      el('span', { class: 'big', text: pct(p) }),
+      el('span', { class: 'sub' }, [
+        el('b', { text: '95 %-Konfidenz ' + pct(ci[0]) + ' – ' + pct(ci[1]) }),
+        ' (± ' + num(half * 100) + ' Pkt.) · ' + (done ? L.n + ' Spiele' : 'live aus ' + L.n + ' von ' + L.total + ' Spielen'),
+      ]),
+    ]));
+    // interval bar on 0–100 %
+    const bar = el('div', { class: 'ci-bar', role: 'img', 'aria-label': 'Siegquote ' + pct(p) + ', Konfidenz ' + pct(ci[0]) + ' bis ' + pct(ci[1]) }, [
+      el('span', { class: 'ci-band', style: 'left:' + ci[0] * 100 + '%;width:' + (ci[1] - ci[0]) * 100 + '%' }),
+      el('span', { class: 'ci-dot', style: 'left:' + p * 100 + '%' }),
+    ]);
+    q.appendChild(el('div', { class: 'ci-wrap' }, [bar, el('div', { class: 'ci-scale' }, [el('span', { text: '0 %' }), el('span', { text: '50 %' }), el('span', { text: '100 %' })])]));
+    // convergence curve
+    const H = L.hist.filter((h) => h[0] > 0);
+    if (H.length >= 2) {
+      const W = 420, Hh = 120, padL = 38, padR = 8, padT = 6, padB = 18;
+      let lo = 1, hi = 0;
+      const tail = H.slice(Math.floor(H.length * 0.15)); // ignore the wild first points for the scale
+      for (const h of tail) { if (h[2] < lo) lo = h[2]; if (h[3] > hi) hi = h[3]; }
+      lo = Math.max(0, lo - 0.02); hi = Math.min(1, hi + 0.02);
+      if (hi - lo < 0.06) { const m = (hi + lo) / 2; lo = Math.max(0, m - 0.03); hi = Math.min(1, m + 0.03); }
+      const X = (n) => padL + (n / L.total) * (W - padL - padR);
+      const Y = (v) => padT + (1 - (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (Hh - padT - padB);
+      const svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + Hh, class: 'conv', role: 'img', 'aria-label': 'Verlauf der Schätzung' });
+      for (const v of [lo, (lo + hi) / 2, hi]) {
+        svg.appendChild(sv('line', { x1: padL, x2: W - padR, y1: Y(v), y2: Y(v), class: 'grid' }));
+        const t = sv('text', { x: padL - 4, y: Y(v) + 3, 'text-anchor': 'end', class: 'tick' }); t.textContent = Math.round(v * 100) + ' %'; svg.appendChild(t);
+      }
+      const band = H.map((h) => X(h[0]) + ',' + Y(h[3])).concat(H.slice().reverse().map((h) => X(h[0]) + ',' + Y(h[2])));
+      svg.appendChild(sv('polygon', { points: band.join(' '), class: 'band' }));
+      svg.appendChild(sv('polyline', { points: H.map((h) => X(h[0]) + ',' + Y(h[1])).join(' '), class: 'est' }));
+      const last = H[H.length - 1];
+      svg.appendChild(sv('circle', { cx: X(last[0]), cy: Y(last[1]), r: 3, class: 'est-dot' }));
+      const xl = sv('text', { x: W - padR, y: Hh - 4, 'text-anchor': 'end', class: 'tick' }); xl.textContent = L.total + ' Spiele'; svg.appendChild(xl);
+      const x0 = sv('text', { x: padL, y: Hh - 4, class: 'tick' }); x0.textContent = '0'; svg.appendChild(x0);
+      q.appendChild(svg);
+    }
+    q.appendChild(el('p', { class: 'hint', style: 'margin-top:4px', text:
+      'Ø Deckfortschritt ' + pct(L.prog / L.n, 0) + (L.wins ? ' · schwächster Spieler bei Sieg Ø ' + num(L.winMin / L.wins) + ' LP' : '') +
+      (done ? ' · Details unten' : ' · Band = 95 %-Konfidenz, wird mit jedem Block enger') }));
+  }
+
+  function deckMsg(t) {
+    $('deckMsg').textContent = t;
+    clearTimeout(deckMsg.t);
+    deckMsg.t = setTimeout(() => { $('deckMsg').textContent = ''; }, 2500);
+  }
+
   function changed(rerender) {
     save();
-    if (rerender) renderConfig(); else renderSummary();
+    if (rerender) renderConfig(); else renderComposition();
     fillSweepParams();
   }
 
   function setupConfig() {
+    for (const b of $('listSel').querySelectorAll('button')) b.addEventListener('click', () => { ui.list = b.dataset.list; renderDeck(); });
     for (const b of $('players').querySelectorAll('button')) b.addEventListener('click', () => { state.cfg.players = Number(b.dataset.v); changed(true); });
     for (const id of ['hp', 'thiefDamage', 'fleeBlockDeck']) $(id).addEventListener('change', () => { state.cfg[id] = Math.max(0, Number($(id).value) || 0); if (id === 'hp') state.cfg.hp = Math.max(1, state.cfg.hp); changed(true); });
-    $('presetStd').addEventListener('click', () => { state.cfg = clone(C.DEFAULT_CONFIG); changed(true); });
-    $('presetEmpty').addEventListener('click', () => { state.cfg.cards = []; state.cfg.cards3 = []; changed(true); });
-    $('addRow').addEventListener('click', () => { state.cfg.cards.push({ type: 'enemy', value: 2, count: 1 }); changed(true); });
-    $('addRow3').addEventListener('click', () => { state.cfg.cards3.push({ type: 'heal', value: 5, count: 1 }); changed(true); });
-    const gt = $('genType');
-    for (const t of C.TYPES) gt.appendChild(el('option', { value: t.key, text: t.name }));
-    $('genAdd').addEventListener('click', () => {
-      const list = state.cfg[$('genList').value];
-      const type = gt.value, ti = C.TYPE_BY_KEY[type], count = Math.max(0, Number($('genCount').value) || 0);
-      const from = ti.hasValue ? Math.max(1, Number($('genFrom').value) || 1) : 0, to = ti.hasValue ? Math.min(63, Number($('genTo').value) || from) : 0;
-      for (let v = from; v <= to; v++) {
-        const idx = list.findIndex((e) => e.type === type && Number(e.value) === v);
-        if (idx >= 0) { if (count) list[idx].count = count; else list.splice(idx, 1); }
-        else if (count) list.push({ type, value: v, count });
-      }
-      changed(true);
-    });
+    $('presetStd').addEventListener('click', () => { state.cfg = clone(C.DEFAULT_CONFIG); ui.extra = {}; changed(true); deckMsg('Standarddeck geladen.'); });
+    $('presetEmpty').addEventListener('click', () => { state.cfg[ui.list] = []; changed(true); deckMsg(ui.list === 'cards3' ? 'Zusatzkarten geleert.' : 'Grunddeck geleert.'); });
     $('policy').addEventListener('change', () => { state.policy = $('policy').value; save(); renderPolicyHint(); });
     $('policyJson').addEventListener('change', () => { state.policyJson = $('policyJson').value; save(); });
     $('exportCfg').addEventListener('click', () => download('errantry-deck.json', state.cfg));
@@ -278,8 +444,8 @@ self.onmessage = function (e) {
       if (!f) return;
       const r = new FileReader();
       r.onload = () => {
-        try { const cfg = JSON.parse(r.result); C.normalize(cfg); state.cfg = Object.assign(clone(C.DEFAULT_CONFIG), cfg); changed(true); }
-        catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
+        try { const cfg = JSON.parse(r.result); C.normalize(cfg); state.cfg = Object.assign(clone(C.DEFAULT_CONFIG), cfg); changed(true); deckMsg('Deck importiert.'); }
+        catch (e) { deckMsg('Import fehlgeschlagen: ' + e.message); }
       };
       r.readAsText(f);
       ev.target.value = '';
@@ -436,7 +602,7 @@ self.onmessage = function (e) {
   let runToken = null;
   async function runSimulation() {
     let policy;
-    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert('Konfiguration ungültig: ' + e.message); return; }
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { $('runInfo').textContent = 'Konfiguration ungültig: ' + e.message; return; }
     const games = Math.max(10, Math.floor(Number($('games').value) || 1000));
     const seed = Math.floor(Number($('seed').value) || 0);
     const cfg = clone(state.cfg);
@@ -446,10 +612,15 @@ self.onmessage = function (e) {
     const tok = runToken;
     $('bar').style.width = '0%';
     $('runInfo').textContent = 'startet …';
+    const L = newLive(games);
+    let drawPending = false;
+    renderLive(L, false);
     try {
-      const res = await runBatch(cfg, policy, seed, games, (f) => {
+      const res = await runBatch(cfg, policy, seed, games, (f, added) => {
         $('bar').style.width = (f * 100).toFixed(1) + '%';
         $('runInfo').textContent = etaText(t0, f, Math.round(f * games) + ' / ' + games + ' Spiele');
+        addLive(L, added);
+        if (added.length && !drawPending) { drawPending = true; requestAnimationFrame(() => { drawPending = false; if (!L.done) renderLive(L, false); }); }
       }, tok);
       const ms = performance.now() - t0;
       const s = E.stats.aggregate(res, cfg.hp);
@@ -457,6 +628,8 @@ self.onmessage = function (e) {
       state.runs.unshift(run);
       if (state.refIdx >= 0) state.refIdx++;
       $('runInfo').textContent = games + ' Spiele in ' + fmtTime(ms / 1000);
+      L.done = true;
+      renderLive(L, true);
       renderResults();
       renderRuns();
     } catch (e) {
@@ -471,8 +644,34 @@ self.onmessage = function (e) {
     const by = {};
     for (const e of n.deckCards) by[e.type] = (by[e.type] || 0) + Number(e.count);
     const extra = n.cards3.reduce((x, e) => x + e.count, 0);
-    return cfg.players + ' Sp. · ' + cfg.hp + ' LP · ' + C.TYPES.filter((t) => by[t.key]).map((t) => t.short + by[t.key]).join(' ') +
+    return cfg.players + ' Sp. · ' + cfg.hp + ' LP · ' + TYPES_SHOWN.filter((t) => by[t.key]).map((t) => t.short + by[t.key]).join(' ') +
       (extra ? (Number(cfg.players) === 3 ? ' (inkl. ' + extra + ' Zusatzkarten)' : ' · +' + extra + ' Zusatzkarten bei 3 Sp.') : '');
+  }
+
+  // The exact deck this run shuffled (built the same way as the engine does), so the
+  // input can be checked against what was really simulated.
+  function deckDetail(cfg) {
+    const n = C.normalize(clone(cfg));
+    const total = n.deckCards.reduce((x, e) => x + e.count, 0);
+    const d = el('details', { class: 'deck-detail' }, [
+      el('summary', { text: 'Simuliertes Deck: ' + total + ' Karten, ' + n.players + ' Spieler, ' + n.hp + ' LP (aufklappen zum Prüfen)' }),
+    ]);
+    for (const t of TYPES_SHOWN) {
+      const rows = n.deckCards.filter((e) => e.type === t.key).sort((a, b) => a.value - b.value);
+      if (!rows.length) continue;
+      const cnt = rows.reduce((x, e) => x + e.count, 0);
+      const parts = t.hasValue ? rows.map((e) => e.count + '× ' + e.value).join(' · ') : cnt + '×';
+      d.appendChild(el('div', { class: 'dd-row' }, [el('b', { text: t.name + ' (' + cnt + '): ' }), parts]));
+    }
+    return d;
+  }
+
+  // 95 % interval of the difference of two win rates in points (independent samples –
+  // with the same seed the true interval is narrower, so this errs on the safe side)
+  function diffCI(a, b) {
+    const se = Math.sqrt((a.winRate * (1 - a.winRate)) / Math.max(1, a.games) + (b.winRate * (1 - b.winRate)) / Math.max(1, b.games));
+    const d = a.winRate - b.winRate;
+    return { lo: (d - 1.96 * se) * 100, hi: (d + 1.96 * se) * 100 };
   }
 
   function tile(l, v, d) { return el('div', { class: 'tile' }, [el('div', { class: 'l', text: l }), el('div', { class: 'v', text: v }), d ? el('div', { class: 'd', text: d }) : null]); }
@@ -481,7 +680,7 @@ self.onmessage = function (e) {
     const box = $('results');
     box.textContent = '';
     const run = state.runs[0];
-    if (!run) { box.appendChild(el('div', { class: 'card empty', text: 'Noch keine Simulation.' })); return; }
+    if (!run) { box.appendChild(el('div', { class: 'card empty', text: 'Noch keine Simulation. Deck einstellen und rechts „Simulieren“ drücken – die Auswertung erscheint hier.' })); return; }
     const ref = state.refIdx > 0 ? state.runs[state.refIdx] : null;
     const s = run.s, rs = ref ? ref.s : null;
     const c1 = cssVar('--series-1'), c2 = cssVar('--series-2');
@@ -495,7 +694,11 @@ self.onmessage = function (e) {
         el('div', { text: '95 %-Konfidenz: ' + pct(s.winCI[0]) + ' – ' + pct(s.winCI[1]) }),
         el('div', { text: s.games + ' Spiele · ' + s.wins + ' Siege · KI: ' + run.policyLabel }),
         el('div', { text: run.label }),
-        dWin !== null ? el('div', { class: dWin >= 0 ? 'delta-up' : 'delta-down', text: (dWin >= 0 ? '▲ +' : '▼ ') + num(dWin) + ' Pkt. gegenüber Referenz (' + pct(rs.winRate) + ')' }) : null,
+        dWin !== null ? (() => {
+          const d = diffCI(s, rs), sure = d.lo > 0 || d.hi < 0;
+          return el('div', { class: !sure ? 'hint' : dWin >= 0 ? 'delta-up' : 'delta-down', text: (dWin >= 0 ? '▲ +' : '▼ ') + num(dWin) + ' Pkt. gegenüber Referenz (' + pct(rs.winRate) + ') · 95 %-KI des Unterschieds ' +
+            (d.lo >= 0 ? '+' : '') + num(d.lo) + ' bis ' + (d.hi >= 0 ? '+' : '') + num(d.hi) + ' Pkt. · ' + (sure ? 'sicher ' + (dWin >= 0 ? 'besser' : 'schlechter') : 'nicht sicher, kann Zufall sein') });
+        })() : null,
       ]),
     ]));
     const t = el('div', { class: 'tiles' });
@@ -506,6 +709,7 @@ self.onmessage = function (e) {
     t.appendChild(tile('Runden pro Spiel', num(s.avgRounds), 'davon Kämpfe ' + num(s.avgFights)));
     t.appendChild(tile('Score Ø', num(s.avgScore), 'Sieg = Restleben, Niederlage = −Restgegner'));
     hero.appendChild(t);
+    hero.appendChild(deckDetail(run.cfg));
     box.appendChild(hero);
 
     const grid = el('div', { class: 'grid2' });
@@ -526,7 +730,7 @@ self.onmessage = function (e) {
     const cs = [{ name: 'Aktuell', color: c1, values: s.lossProgress.map((k) => (k / lossN) * 100) }];
     if (rs) cs.push({ name: 'Referenz', color: c2, values: rs.lossProgress.map((k) => (k / Math.max(1, rs.games - rs.wins)) * 100) });
     if (rs) lb.card.insertBefore(legend(cs.map((x) => ({ name: x.name, color: x.color, rect: true }))), lb.wrap);
-    columnChart(lb, { cats: s.lossProgress.map((_, i) => i * 10 + '–' + (i * 10 + 10)), series: cs, yFmt: (y) => Math.round(y) + ' %', catTip: (c) => c + ' % des Decks', xLabel: 'Deckfortschritt (%)', aria: 'Niederlagen nach Fortschritt' });
+    columnChart(lb, { cats: s.lossProgress.map((_, i) => String(i * 10 + 10)), series: cs, yFmt: (y) => Math.round(y) + ' %', catTip: (c) => (Number(c) - 10) + '–' + c + ' % des Decks', xLabel: 'Deckfortschritt bis … %', aria: 'Niederlagen nach Fortschritt' });
 
     // death causes
     const db = chartBox('Todesursachen', 'Karte, die den letzten Treffer gesetzt hat (Anteil der Niederlagen)');
@@ -551,6 +755,7 @@ self.onmessage = function (e) {
       ['Schaden durch Faust', 'dmgFist'], ['Restschaden trotz Waffe', 'dmgWeapon'], ['Restschaden trotz Magie', 'dmgMagic'], ['Schaden durch Diebe', 'dmgThief'],
       ['Von Waffen verhindert', 'prevWeapon'], ['Von Magie verhindert', 'prevMagic'], ['Geheilt', 'healed'], ['Heilung über Maximum verschenkt', 'healOver'],
       ['Heilkarten verworfen', 'healDiscard'], ['Waffen angelegt', 'weaponEquip'], ['Waffen verworfen', 'weaponDiscard'], ['Waffen gestohlen', 'weaponStolen'],
+      ['… davon direkt durch neue Waffe ersetzt', 'stealReplaced'], ['Diebe 10 Schaden', 'thiefDamage'], ['Diebe zurückgehalten', 'thiefHeld'],
       ['Magie benutzt', 'magicUsed'], ['Schmied benutzt', 'smithUsed'], ['Karten gehalten (gepasst)', 'passes'], ['Fluchten', 'flees'],
     ].filter(([, k]) => c[k] || (rc && rc[k]));
     const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, [el('th', { text: 'Kennzahl' }), el('th', { text: 'Aktuell' }), rc ? el('th', { text: 'Referenz' }) : null])])]);
@@ -602,6 +807,17 @@ self.onmessage = function (e) {
     btn._flash = setTimeout(() => { btn.textContent = btn.dataset.label; }, 1500);
   }
 
+  // button that asks once more before acting (instead of a confirm dialog)
+  function twoStep(label, ask, title, act) {
+    const b = el('button', { class: 'btn', text: label, title });
+    b.addEventListener('click', () => {
+      if (b.dataset.armed) { act(); return; }
+      b.dataset.armed = '1'; b.textContent = ask; b.style.color = 'var(--critical)';
+      setTimeout(() => { delete b.dataset.armed; b.textContent = label; b.style.color = ''; }, 3000);
+    });
+    return b;
+  }
+
   function renderVersions() {
     const box = $('verList');
     box.textContent = '';
@@ -621,19 +837,15 @@ self.onmessage = function (e) {
         el('div', null, [el('div', { class: 'name', text: v.name }), el('div', { class: 'meta', title: meta, text: meta })]),
         el('div', { class: 'acts' }, [
           el('button', { class: 'btn', text: 'Laden', onclick: () => { state.cfg = clone(v.cfg); if (!state.cfg.cards3) state.cfg.cards3 = []; changed(true); } }),
-          el('button', { class: 'btn', text: 'Überschreiben', title: 'Mit dem aktuellen Stand links überschreiben', onclick: () => {
-            if (confirm('Version „' + v.name + '“ mit dem aktuellen Stand überschreiben?')) { v.cfg = clone(state.cfg); v.saved = Date.now(); delete v.lastResult; saveVersions(); renderVersions(); }
-          } }),
-          el('button', { class: 'ghost', text: '✕', title: 'Löschen', 'aria-label': 'Löschen', onclick: () => {
-            if (confirm('Version „' + v.name + '“ löschen?')) { state.versions.splice(i, 1); state.selected.delete(v.id); saveVersions(); renderVersions(); }
-          } }),
+          twoStep('Überschreiben', 'Wirklich überschreiben?', 'Mit dem aktuellen Deck überschreiben', () => { v.cfg = clone(state.cfg); v.saved = Date.now(); delete v.lastResult; saveVersions(); renderVersions(); }),
+          twoStep('Löschen', 'Wirklich löschen?', 'Version löschen', () => { state.versions.splice(i, 1); state.selected.delete(v.id); saveVersions(); renderVersions(); }),
         ]),
       ]));
     });
   }
 
   function saveVersion() {
-    try { C.normalize(state.cfg); } catch (e) { alert('Konfiguration ungültig: ' + e.message); return; }
+    try { C.normalize(state.cfg); } catch (e) { flash($('verSave'), 'Deck ungültig'); return; }
     const name = $('verName').value.trim() || 'Version ' + (state.versions.length + 1);
     const v = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, cfg: clone(state.cfg), saved: Date.now() };
     state.versions.push(v);
@@ -663,7 +875,7 @@ self.onmessage = function (e) {
           }
           saveVersions();
           renderVersions();
-        } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
+        } catch (e) { $('cmpInfo').textContent = 'Import fehlgeschlagen: ' + e.message; }
       };
       r.readAsText(f);
       ev.target.value = '';
@@ -675,9 +887,9 @@ self.onmessage = function (e) {
   let cmpToken = null;
   async function runCompare() {
     const vs = state.versions.filter((v) => state.selected.has(v.id));
-    if (!vs.length) { alert('Bitte mindestens eine Version auswählen.'); return; }
+    if (!vs.length) { $('cmpInfo').textContent = 'Bitte mindestens eine Version auswählen (Häkchen links).'; return; }
     let policy;
-    try { policy = currentPolicy(); } catch (e) { alert('KI-Parameter ungültig: ' + e.message); return; }
+    try { policy = currentPolicy(); } catch (e) { $('cmpInfo').textContent = 'KI-Parameter ungültig: ' + e.message; return; }
     const mode = $('cmpPlayers').value;
     const games = Math.max(50, Number($('cmpGames').value) || 1000), seed = Math.floor(Number($('seed').value) || 0);
     const jobs = [];
@@ -753,65 +965,120 @@ self.onmessage = function (e) {
   }
 
   // ------------------------------------------------------------------ sweep
+  const VALUED = TYPES_SHOWN.filter((t) => t.hasValue);
   function fillSweepParams() {
     const sel = $('swParam');
     const prev = sel.value;
     sel.textContent = '';
     const g1 = el('optgroup', { label: 'Spiel' }, [
-      el('option', { value: 'hp', text: 'Leben je Spieler' }),
+      el('option', { value: 'hp', text: 'Leben je Spieler (Startleben = max. Leben)' }),
       el('option', { value: 'thiefDamage', text: 'Diebschaden' }),
       el('option', { value: 'fleeBlockDeck', text: 'Fluchtsperre (Karten im Deck)' }),
       el('option', { value: 'players', text: 'Spieleranzahl (2–3)' }),
     ]);
-    const g2 = el('optgroup', { label: 'Anzahl je Wert für alle Karten eines Typs' }, C.TYPES.map((t) => el('option', { value: 'copies:' + t.key, text: t.name + (t.hasValue ? ' (jeder Wert)' : ' (Anzahl)') })));
-    const g3 = el('optgroup', { label: 'Anzahl einer einzelnen Karte' }, state.cfg.cards.filter((e) => C.TYPE_BY_KEY[e.type].hasValue).map((e) => el('option', { value: 'count:' + e.type + ':' + e.value, text: C.TYPE_BY_KEY[e.type].name + ' ' + e.value })));
-    sel.append(g1, g2, g3);
+    const g2 = el('optgroup', { label: 'Wertebereich eines Typs (neue Werte mit der üblichen Anzahl)' }, VALUED.flatMap((t) => [
+      el('option', { value: 'max:' + t.key, text: t.name + ': höchste Stärke' }),
+      el('option', { value: 'min:' + t.key, text: t.name + ': niedrigste Stärke' }),
+    ]));
+    const g3 = el('optgroup', { label: 'Anzahl je Wert für alle Karten eines Typs' }, TYPES_SHOWN.map((t) => el('option', { value: 'copies:' + t.key, text: t.name + (t.hasValue ? ' (jeder vorhandene Wert)' : ' (Anzahl)') })));
+    // every single card, also strengths that are not in the deck yet (e.g. enemy 0 or 16)
+    const g4 = el('optgroup', { label: 'Anzahl einer einzelnen Karte' });
+    for (const t of VALUED) {
+      const [lo, hi] = VALUE_RANGE[t.key];
+      const present = state.cfg.cards.filter((e) => e.type === t.key).map((e) => Number(e.value));
+      const top = Math.max(hi, ...present, t.key === 'enemy' ? 18 : hi);
+      for (let v = Math.min(lo, ...present); v <= top; v++) {
+        const n = countOf(state.cfg.cards, t.key, v);
+        g4.appendChild(el('option', { value: 'count:' + t.key + ':' + v, text: t.name + ' ' + v + (n ? ' (jetzt ' + n + '×)' : ' (jetzt keine)') }));
+      }
+    }
+    sel.append(g1, g2, g3, g4);
     if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  }
+
+  const rowsOf = (cfg, type) => cfg.cards.filter((e) => e.type === type);
+  // the usual count of a type (most frequent count among its values), for new values
+  function usualCount(cfg, type) {
+    const freq = {};
+    for (const e of rowsOf(cfg, type)) freq[e.count] = (freq[e.count] || 0) + 1;
+    const best = Object.entries(freq).sort((a, b) => b[1] - a[1] || b[0] - a[0])[0];
+    return best ? Number(best[0]) : 1;
+  }
+
+  // sensible from/to/step when a parameter is picked
+  function sweepDefaults(param) {
+    const cfg = state.cfg;
+    const [kind, type, value] = param.split(':');
+    const vals = type ? rowsOf(cfg, type).map((e) => Number(e.value)) : [];
+    let d;
+    if (param === 'hp') d = [10, 30, 2];
+    else if (param === 'thiefDamage') d = [4, 16, 2];
+    else if (param === 'fleeBlockDeck') d = [0, 12, 2];
+    else if (param === 'players') d = [2, 3, 1];
+    else if (kind === 'max') { const cur = vals.length ? Math.max(...vals) : 8; d = [Math.max(VALUE_RANGE[type][0] + 1, cur - 4), cur + 4, 1]; }
+    else if (kind === 'min') { const cur = vals.length ? Math.min(...vals) : 2; d = [VALUE_RANGE[type][0], cur + 4, 1]; }
+    else if (kind === 'copies') d = C.TYPE_BY_KEY[type].hasValue ? [0, 6, 1] : [0, 10, 1];
+    else if (kind === 'count') { const cur = countOf(cfg.cards, type, Number(value)); d = [0, Math.max(6, cur + 3), 1]; }
+    if (d) { $('swFrom').value = d[0]; $('swTo').value = d[1]; $('swStep').value = d[2]; }
+    $('swPlayers').disabled = param === 'players';
   }
 
   function applySweep(cfg, param, v) {
     if (param === 'hp' || param === 'thiefDamage' || param === 'fleeBlockDeck' || param === 'players') { cfg[param] = v; return; }
     const [kind, type, value] = param.split(':');
+    const ti = C.TYPE_BY_KEY[type];
     if (kind === 'copies') {
-      const ti = C.TYPE_BY_KEY[type];
-      const rows = cfg.cards.filter((e) => e.type === type);
+      const rows = rowsOf(cfg, type);
       if (!ti.hasValue && !rows.length) cfg.cards.push({ type, value: 0, count: v });
       for (const e of rows) e.count = v;
     } else if (kind === 'count') {
       const row = cfg.cards.find((e) => e.type === type && Number(e.value) === Number(value));
       if (row) row.count = v; else cfg.cards.push({ type, value: Number(value), count: v });
+    } else if (kind === 'max' || kind === 'min') {
+      // strengths beyond v are removed, missing ones up to v are added with the usual count
+      const k = usualCount(cfg, type), vals = rowsOf(cfg, type).map((e) => Number(e.value));
+      const lo = kind === 'max' ? (vals.length ? Math.min(...vals) : 2) : v;
+      const hi = kind === 'max' ? v : (vals.length ? Math.max(...vals) : VALUE_RANGE[type][1]);
+      cfg.cards = cfg.cards.filter((e) => e.type !== type || (Number(e.value) >= lo && Number(e.value) <= hi));
+      for (let x = lo; x <= hi; x++) if (!cfg.cards.some((e) => e.type === type && Number(e.value) === x)) cfg.cards.push({ type, value: x, count: k });
     }
+    cfg.cards = cfg.cards.filter((e) => e.count > 0);
   }
 
   let swToken = null;
   async function runSweep() {
     let policy;
-    try { policy = currentPolicy(); } catch (e) { alert('KI-Parameter ungültig: ' + e.message); return; }
+    try { policy = currentPolicy(); } catch (e) { $('swInfo').textContent = 'KI-Parameter ungültig: ' + e.message; return; }
     const param = $('swParam').value, from = Number($('swFrom').value), to = Number($('swTo').value), step = Math.max(1, Number($('swStep').value) || 1);
     const games = Math.max(50, Number($('swGames').value) || 1000), seed = Math.floor(Number($('seed').value) || 0);
     const xs = [];
     for (let v = from; from <= to ? v <= to : v >= to; v += from <= to ? step : -step) xs.push(v);
-    if (!xs.length || xs.length > 60) { alert('Bitte 1 bis 60 Messpunkte wählen.'); return; }
+    if (!xs.length || xs.length > 60) { $('swInfo').textContent = 'Bitte 1 bis 60 Messpunkte wählen.'; return; }
+    const pSel = $('swPlayers').value;
+    const playerSets = param === 'players' ? [null] : pSel === 'both' ? [2, 3] : pSel === 'deck' ? [Number(state.cfg.players)] : [Number(pSel)];
     const label = $('swParam').selectedOptions[0].textContent;
     $('swRun').disabled = true; $('swStop').hidden = false;
     const t0 = performance.now();
     swToken = { cancelled: false };
     const tok = swToken;
-    const pts = [];
+    const curves = playerSets.map((pl) => ({ players: pl, pts: [] }));
     const out = $('swResults');
+    const jobs = [];
+    for (const c of curves) for (const x of xs) jobs.push({ c, x });
     try {
-      for (let i = 0; i < xs.length; i++) {
+      for (let i = 0; i < jobs.length; i++) {
+        const { c, x } = jobs[i];
         const cfg = clone(state.cfg);
-        applySweep(cfg, param, xs[i]);
-        C.normalize(cfg);
+        if (c.players) cfg.players = c.players;
+        applySweep(cfg, param, x);
+        const n = C.normalize(cfg);
         const res = await runBatch(cfg, policy, seed, games, (f) => {
-          const tf = (i + f) / xs.length;
+          const tf = (i + f) / jobs.length;
           $('swBar').style.width = (tf * 100).toFixed(1) + '%';
-          $('swInfo').textContent = etaText(t0, tf, 'Punkt ' + (i + 1) + '/' + xs.length + ' (' + xs[i] + ')');
+          $('swInfo').textContent = etaText(t0, tf, 'Punkt ' + (i + 1) + '/' + jobs.length + ' (' + x + (c.players ? ', ' + c.players + ' Spieler' : '') + ')');
         }, tok);
-        const s = E.stats.aggregate(res, cfg.hp);
-        pts.push({ x: xs[i], s });
-        renderSweep(out, label, pts, games);
+        c.pts.push({ x, s: E.stats.aggregate(res, cfg.hp), cards: n.deckCards.reduce((a, e) => a + e.count, 0) });
+        renderSweep(out, label, curves, games);
       }
       $('swInfo').textContent = 'fertig in ' + fmtTime((performance.now() - t0) / 1000);
     } catch (e) {
@@ -821,27 +1088,45 @@ self.onmessage = function (e) {
     }
   }
 
-  function renderSweep(out, label, pts, games) {
+  function renderSweep(out, label, curves, games) {
     out.textContent = '';
-    const c1 = cssVar('--series-1');
-    const box = chartBox('Siegquote abhängig von: ' + label, games + ' Spiele je Punkt · Fläche = 95 %-Konfidenzintervall');
+    const colors = [cssVar('--series-1'), cssVar('--series-2')];
+    const shown = curves.filter((c) => c.pts.length);
+    const all = shown.flatMap((c) => c.pts);
+    const sub = (shown.length === 1 && shown[0].players ? shown[0].players + ' Spieler · ' : '') + games + ' Spiele je Punkt · Fläche = 95 %-Konfidenzintervall';
+    const box = chartBox('Siegquote abhängig von: ' + label, sub);
     out.appendChild(box.card);
-    const xs = pts.map((p) => p.x);
-    const yMax = Math.min(100, niceMax(Math.max(5, ...pts.map((p) => p.s.winCI[1] * 100))));
+    const series = shown.map((c, i) => ({
+      name: c.players ? c.players + ' Spieler' : 'Siegquote', color: colors[i % 2], markers: true,
+      pts: c.pts.map((p) => [p.x, p.s.winRate * 100]), band: c.pts.map((p) => [p.x, p.s.winCI[0] * 100, p.s.winCI[1] * 100]),
+    }));
+    if (series.length > 1) box.card.insertBefore(legend(series), box.wrap);
+    const xs = [...new Set(all.map((p) => p.x))].sort((a, b) => a - b);
+    const yMax = Math.min(100, niceMax(Math.max(5, ...all.map((p) => p.s.winCI[1] * 100))));
     lineChart(box, {
-      series: [{ name: 'Siegquote', color: c1, markers: true, pts: pts.map((p) => [p.x, p.s.winRate * 100]), band: pts.map((p) => [p.x, p.s.winCI[0] * 100, p.s.winCI[1] * 100]) }],
-      xDomain: [Math.min(...xs), Math.max(...xs) === Math.min(...xs) ? Math.min(...xs) + 1 : Math.max(...xs)], yMax,
+      series,
+      xDomain: [xs[0], xs[xs.length - 1] === xs[0] ? xs[0] + 1 : xs[xs.length - 1]], yMax,
       xTicks: xs.length <= 12 ? xs : xs.filter((_, i) => i % Math.ceil(xs.length / 12) === 0),
-      xFmt: (x) => String(x), yFmt: (y) => Math.round(y) + ' %', yFmtTip: (y, s, x) => { const p = pts.find((q) => q.x === x); return num(y) + ' % (' + pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) + ')'; },
+      xFmt: (x) => String(x), yFmt: (y) => Math.round(y) + ' %',
+      yFmtTip: (y, s, x) => { const c = shown[series.indexOf(s)] || shown[0]; const p = c.pts.find((q) => q.x === x); return num(y) + ' %' + (p ? ' (' + pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) + ')' : ''); },
       xLabel: label, aria: 'Sweep',
     });
     const card = el('div', { class: 'card' });
     card.appendChild(el('h2', { text: 'Messpunkte' }));
-    const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, ['Wert', 'Siegquote', '95 %-KI', 'Ø Fortschritt', 'Ø Restleben (Sieg)', 'Fluchten/Spiel'].map((h) => el('th', { text: h })))])]);
+    const multi = shown.some((c) => c.players);
+    const heads = (multi ? ['Spieler'] : []).concat(['Wert', 'Karten', 'Siegquote', '95 %-KI', 'Ø Fortschritt', 'Ø Restleben (Sieg)', 'schwächster (Sieg)', 'Fluchten/Spiel']);
+    const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, heads.map((h) => el('th', { text: h })))])]);
     const tb = el('tbody');
-    for (const p of pts) tb.appendChild(el('tr', null, [el('td', { text: String(p.x) }), el('td', { class: 'n', text: pct(p.s.winRate) }), el('td', { class: 'n', text: pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) }), el('td', { class: 'n', text: pct(p.s.avgProgress, 0) }), el('td', { class: 'n', text: num(p.s.avgWinSumHp) }), el('td', { class: 'n', text: num(p.s.counters.flees, 2) })]));
+    for (const c of shown) for (const p of c.pts) {
+      tb.appendChild(el('tr', null, (multi ? [el('td', { class: 'n', text: String(c.players) })] : []).concat([
+        el('td', { text: String(p.x) }), el('td', { class: 'n', text: String(p.cards) }),
+        el('td', { class: 'n', text: pct(p.s.winRate) }), el('td', { class: 'n', text: pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) }),
+        el('td', { class: 'n', text: pct(p.s.avgProgress, 0) }), el('td', { class: 'n', text: num(p.s.avgWinSumHp) }), el('td', { class: 'n', text: num(p.s.avgWinMinHp) }),
+        el('td', { class: 'n', text: num(p.s.counters.flees, 2) }),
+      ])));
+    }
     tbl.appendChild(tb);
-    card.appendChild(tbl);
+    card.appendChild(el('div', { style: 'overflow-x:auto' }, [tbl]));
     out.appendChild(card);
   }
 
@@ -868,7 +1153,7 @@ self.onmessage = function (e) {
   async function showGame(index) {
     if (gBusy) return;
     let policy;
-    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return; }
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { $('gInfo').textContent = e.message; return; }
     const seed = Math.floor(Number($('gSeed').value) || 0);
     gBusy = true;
     $('gInfo').textContent = 'rechnet …';
@@ -884,7 +1169,7 @@ self.onmessage = function (e) {
   async function findGame(wantWin) {
     if (gBusy) return;
     let policy;
-    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return; }
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { $('gInfo').textContent = e.message; return; }
     const seed = Math.floor(Number($('gSeed').value) || 0);
     gBusy = true;
     let i = Number($('gIndex').value) + 1;
@@ -944,9 +1229,11 @@ self.onmessage = function (e) {
   renderVersions();
   fillSweepParams();
   renderHelp();
+  renderResults();
   $('runBtn').addEventListener('click', runSimulation);
   $('stopBtn').addEventListener('click', () => { if (runToken) { runToken.cancelled = true; if (runToken.cancel) runToken.cancel(); } });
   $('swRun').addEventListener('click', runSweep);
+  $('swParam').addEventListener('change', () => sweepDefaults($('swParam').value));
   $('swStop').addEventListener('click', () => { if (swToken) { swToken.cancelled = true; if (swToken.cancel) swToken.cancel(); } });
   $('gRun').addEventListener('click', () => showGame(Math.floor(Number($('gIndex').value) || 0)));
   $('gNextLoss').addEventListener('click', () => findGame(false));

@@ -31,6 +31,11 @@
     pimcUseFinal: 1, // pimc: also match the adjusted (second) flee signal
     flee: 'signals', // signals | never | fullInfo
     start: 'signals', // signals | rotate | random | strongest
+    // card memory: 'perfect' counts every card exactly; 'human' only tracks the strongest
+    // enemies exactly and remembers the last fled hands only roughly
+    memory: 'perfect',
+    memTopE: 2, // human: number of strongest enemy strengths that are counted (14 and 13)
+    memFlees: 2, // human: number of last fled hands remembered (only "many enemies / mixed / many good")
     // value function
     riskHp: 8, // below this HP, losing HP costs extra (quadratic)
     riskW: 1,
@@ -53,6 +58,9 @@
     holdWeaponAbs: 0, // a held weapon is a fresh reserve: value >= this * worth(fresh weapon)
     holdHealAbs: 0, // a held heal is a reserve against later damage: value >= this * heal value
     holdBadEnd: 0, // extra cost factor for holding bad cards near the end of the deck
+    // cost factor for holding a thief (-1 = like other bad cards, holdBad). 0.3: held thieves
+    // go onto worn or about-to-be-replaced weapons later; holdout decks +0.6 pts (2026-10-19)
+    holdThief: 0.3,
     holdEndDeck: 16, // "near the end" = fewer than this many cards in the deck
     futureHeld: 1, // held cards count as future cards for weapon worth
     // planner: expected bad cards the partner(s) will still play (phantom enemies)
@@ -68,6 +76,7 @@
     heldResW: 0, // resolution keeps the own held card in mind (cost of facing it next round)
     endLook: 0, // 1 = in the second-to-last round, judge plans by whether the last hand is survivable
     endLookRes: 1, // ... and also use it when resolving the cards at the end of that round
+    endLookMax: 1024, // max. ways to split the last-hand cards (2 players: 2^10; keeps 3 players fast)
     fleeHorizon: 0, // fleeing with fewer deck cards than this is scaled down (cards return soon)
     fleeLatePen: 0, // ... and penalised by up to this much
     // bottom of the deck as positive/negative balance relative to the deck's average mix
@@ -112,6 +121,8 @@
   const PRESETS = {
     expert: { play: 'pimc', pimcSamples: 4 }, // trained values + partner-hand inference (strongest, slower)
     fast: {}, // trained values, plain planner (about 100x faster)
+    human: { play: 'pimc', pimcSamples: 4, memory: 'human' }, // like expert, but with a human card memory
+    humanfast: { memory: 'human' },
     untrained: Object.assign({}, UNTRAINED),
     planner: {},
     greedy: { play: 'greedy' },
@@ -135,12 +146,55 @@
 
   // mode 'resolve': built after all cards of the round are on the table, so the
   // future (deck + held cards) is known exactly as a multiset.
+  // Cards not yet resolved (deck + hands + table) as the player believes them to be.
+  // 'perfect': exact counts. 'human': the strongest enemy strengths are counted exactly;
+  // for all other cards the player only knows how many cards are left and assumes the
+  // original mix of the deck (fractional counts).
+  function perceivedRemaining(g) {
+    const n = config.CODE_SPACE, P = g.policy;
+    if (P.memory !== 'human') {
+      const rem = new Int32Array(n);
+      for (let i = 0; i < n; i++) rem[i] = g.totalCodes[i] - g.resolvedCodes[i];
+      return rem;
+    }
+    if (!g.memTracked) {
+      const vals = [];
+      for (let v = 63; v >= 0 && vals.length < P.memTopE; v--) if (g.totalCodes[T.ENEMY * 64 + v] > 0) vals.push(v);
+      g.memTracked = new Set(vals.map((v) => T.ENEMY * 64 + v));
+    }
+    const rem = new Float64Array(n);
+    let restNow = 0, rest0 = 0;
+    for (let i = 0; i < n; i++) {
+      if (!g.totalCodes[i]) continue;
+      const left = g.totalCodes[i] - g.resolvedCodes[i];
+      if (g.memTracked.has(i)) rem[i] = left;
+      else { restNow += left; rest0 += g.totalCodes[i]; }
+    }
+    const f = rest0 ? restNow / rest0 : 0;
+    for (let i = 0; i < n; i++) if (g.totalCodes[i] && !g.memTracked.has(i)) rem[i] = g.totalCodes[i] * f;
+    return rem;
+  }
+
+  // Bottom-of-deck cards the player knows by identity: all of them with a perfect
+  // memory, none with a human one (humans only keep a rough impression, see bottomPosNeg).
+  function knownIds(g) {
+    return g.policy.memory === 'human' ? [] : g.known;
+  }
+
+  // Number of imagined copies of a card for sampling: fractional (human) counts are
+  // rounded at random so that the expected number is kept.
+  function bagCount(g, x) {
+    if (Number.isInteger(x)) return x;
+    if (x <= 0) return 0;
+    const k = Math.floor(x);
+    return k + (g.aiRng.next() < x - k ? 1 : 0);
+  }
+
   function makeCtx(g, mode) {
     const P = g.policy, cfg = g.cfg;
-    const rem = new Int32Array(config.CODE_SPACE);
-    for (let i = 0; i < rem.length; i++) rem[i] = g.totalCodes[i] - g.resolvedCodes[i];
+    const rem = perceivedRemaining(g);
     const exact = mode === 'resolve' && P.resolveExact && g.piles;
-    if (exact) for (const pile of g.piles) for (const c of pile) rem[code(c)]--;
+    if (exact) for (const pile of g.piles) for (const c of pile) { const k = code(c); rem[k] = Math.max(0, rem[k] - 1); }
     let maxV = 1;
     for (const e of cfg.deckCards || cfg.cards) if (e.value > maxV) maxV = e.value;
     const W = maxV + 1;
@@ -244,7 +298,9 @@
       P, maxHp: cfg.hp, thiefDmg: cfg.thiefDamage, W, ww, mw, bw, rem, meanE, badFrac: remCards ? remBad / remCards : 0,
       deckFrac: g.deck.length / Math.max(1, g.total),
       deckLeft: g.deck.length,
-      endLook: mode !== 'resolve' && P.endLook && !g.lastHand && g.deck.length > 0 && g.deck.length <= g.nP * (g.handSize - 1),
+      // last-hand lookahead only while the number of ways to split the last cards stays small
+      endLook: mode !== 'resolve' && P.endLook && !g.lastHand && g.deck.length > 0 && g.deck.length <= g.nP * (g.handSize - 1) &&
+        Math.pow(g.nP, g.deck.length + g.nP) <= P.endLookMax,
       viewer: 0,
       numericKeys: cfg.hp < 128 && maxV < 64,
       pileCache: [], impactCache: new Map(), states: g.players.map(stateOf), phantomCard: null, nPh: 0,
@@ -391,12 +447,12 @@
           case T.ENEMY: {
             r = soft || hp > v ? dfs(nm, hp - v, wv, lim, mg, hu, stk) : DEATH;
             if (r > best) { best = r; bc = i * 4; }
-            if (wv > 0 && (lim === 0 || v < lim)) {
+            if (v > 0 && wv > 0 && (lim === 0 || v < lim)) {
               const nh = hp - (v > wv ? v - wv : 0);
               r = soft || nh > 0 ? dfs(nm, nh, wv, v, mg, hu, stk ? stk.concat(v) : null) : DEATH;
               if (r > best) { best = r; bc = i * 4 + 1; }
             }
-            if (mg > 0) {
+            if (v > 0 && mg > 0) {
               const nh = hp - (v > mg ? v - mg : 0);
               r = soft || nh > 0 ? dfs(nm, nh, wv, lim, 0, hu, stk) : DEATH;
               if (r > best) { best = r; bc = i * 4 + 2; }
@@ -509,8 +565,8 @@
     switch (c.t) {
       case T.ENEMY: {
         let b = evalSoft(ctx, hp - v, wv, lim, mg);
-        if (wv > 0 && (lim === 0 || v < lim)) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - wv), wv, v, mg));
-        if (mg > 0) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - mg), wv, lim, 0));
+        if (v > 0 && wv > 0 && (lim === 0 || v < lim)) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - wv), wv, v, mg));
+        if (v > 0 && mg > 0) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - mg), wv, lim, 0));
         return b;
       }
       case T.THIEF: {
@@ -577,11 +633,11 @@
     const ctx = g.ctx;
     ctx.future = ctx.future || [];
     if (ctx.future[p]) return ctx.future[p];
-    const known = [], pool = Int32Array.from(ctx.rem);
+    const known = [], pool = Float64Array.from(ctx.rem);
     for (const c of g.players[p].hand) pool[code(c)]--;
-    for (const id of g.known) { const c = g.cards[id]; known.push(c); pool[code(c)]--; }
+    for (const id of knownIds(g)) { const c = g.cards[id]; known.push(c); pool[code(c)]--; }
     const bag = [];
-    for (let cd = 0; cd < pool.length; cd++) for (let k = 0; k < pool[cd]; k++) bag.push({ id: -1000 - bag.length, t: cd >> 6, v: cd & 63 });
+    for (let cd = 0; cd < pool.length; cd++) for (let k = 0, m = bagCount(g, pool[cd]); k < m; k++) bag.push({ id: -1000 - bag.length, t: cd >> 6, v: cd & 63 });
     const need = Math.max(0, g.deck.length - known.length);
     for (let i = 0; i < need && bag.length; i++) { const j = g.aiRng.int(bag.length); known.push(bag[j]); bag[j] = bag[bag.length - 1]; bag.pop(); }
     ctx.future[p] = known;
@@ -591,44 +647,59 @@
   function stateKey(e) { return e.hp + ',' + e.wv + ',' + e.lim + ',' + e.mg + ',' + (e.kills ? e.kills.join('.') : ''); }
 
   // Best joint split of the last-hand cards between the players (all must be played).
+  // Every player's pile is valued once per card subset (bitmask table), then the splits
+  // are enumerated as subset chains with only numbers; bad cards must end up balanced
+  // (counts differ by at most 1), so unbalanced subsets are skipped right away.
   function finalRoundValue(g, ends, cards) {
-    const fc = finalCtx(g), P = g.policy, n = ends.length;
-    const key = ends.map(stateKey).join('|') + '#' + pileKey(cards) + '#' + cards.length;
+    const fc = finalCtx(g), P = g.policy, n = ends.length, m = cards.length;
+    const key = ends.map(stateKey).join('|') + '#' + pileKey(cards) + '#' + m;
     const hit = fc.frCache.get(key);
     if (hit !== undefined) return hit;
-    const piles = ends.map(() => []), bc = new Array(n).fill(0);
-    let best = -Infinity;
-    const res = (t) => {
-      const k = stateKey(ends[t]) + '#' + pileKey(piles[t]) + '#' + piles[t].length;
-      let r = fc.resCache.get(k);
-      if (!r) {
-        r = resolvePile(fc, ends[t], piles[t]);
-        if (r.dead) r.softHp = resolvePile(fc, ends[t], piles[t], true).end.hp;
-        fc.resCache.set(k, r);
+    const size = 1 << m, full = size - 1;
+    const badCnt = new Uint8Array(size);
+    let badMask = 0;
+    for (let i = 0; i < m; i++) if (isBad(cards[i])) badMask |= 1 << i;
+    for (let s = 1; s < size; s++) badCnt[s] = badCnt[s & (s - 1)] + ((badMask & (s & -s)) ? 1 : 0);
+    const B = badCnt[full], lo = Math.floor(B / n), hi = Math.ceil(B / n);
+    // per player and subset: 0 = not computed, 1 = alive (hp), 2 = dead (penalty)
+    const kind = ends.map(() => new Uint8Array(size)), num = ends.map(() => new Float64Array(size));
+    const sKeys = ends.map(stateKey);
+    const val = (t, s) => {
+      if (!kind[t][s]) {
+        const pile = [];
+        for (let i = 0; i < m; i++) if (s & (1 << i)) pile.push(cards[i]);
+        const k = sKeys[t] + '#' + pileKey(pile) + '#' + pile.length;
+        let r = fc.resCache.get(k);
+        if (!r) {
+          r = resolvePile(fc, ends[t], pile);
+          if (r.dead) r.softHp = resolvePile(fc, ends[t], pile, true).end.hp;
+          fc.resCache.set(k, r);
+        }
+        if (r.dead) { kind[t][s] = 2; num[t][s] = 1000 * Math.min(0, r.softHp - 1); } else { kind[t][s] = 1; num[t][s] = r.end.hp; }
       }
-      return r;
+      return kind[t][s];
     };
-    (function rec(i) {
-      if (i === cards.length) {
-        let mn = Infinity, mx = -Infinity;
-        for (const b of bc) { if (b < mn) mn = b; if (b > mx) mx = b; }
-        if (mx - mn > 1) return;
+    let best = -Infinity;
+    const chosen = new Int32Array(n);
+    (function rec(t, rest) {
+      if (t === n - 1) {
+        if (badCnt[rest] < lo || badCnt[rest] > hi) return;
+        chosen[t] = rest;
         let v = 0, minHp = Infinity, dead = false;
-        for (let t = 0; t < n; t++) {
-          const r = res(t);
-          if (r.dead) { dead = true; v += 1000 * Math.min(0, r.softHp - 1); } else { v += r.end.hp; if (r.end.hp < minHp) minHp = r.end.hp; }
+        for (let u = 0; u < n; u++) {
+          const s = chosen[u];
+          if (val(u, s) === 2) dead = true; else if (num[u][s] < minHp) minHp = num[u][s];
+          v += num[u][s];
         }
         v = dead ? DEATH_STEP / 2 + v : 100000 + v + P.wMinHp * minHp;
         if (v > best) best = v;
         return;
       }
-      const c = cards[i], bad = isBad(c);
-      for (let t = 0; t < n; t++) {
-        piles[t].push(c); if (bad) bc[t]++;
-        rec(i + 1);
-        piles[t].pop(); if (bad) bc[t]--;
+      for (let s = rest; ; s = (s - 1) & rest) {
+        if (badCnt[s] >= lo && badCnt[s] <= hi) { chosen[t] = s; rec(t + 1, rest ^ s); }
+        if (s === 0) break;
       }
-    })(0);
+    })(0, full);
     fc.frCache.set(key, best);
     return best;
   }
@@ -648,7 +719,9 @@
       return v;
     }
     const endF = Math.max(0, 1 - ctx.deckLeft / P.holdEndDeck);
-    return best * (P.holdBad + P.holdBadEnd * endF);
+    // a held thief can be played later onto a weapon that is worn by then
+    const hb = c.t === T.THIEF && P.holdThief >= 0 ? P.holdThief : P.holdBad;
+    return best * (hb + P.holdBadEnd * endF);
   }
 
   function teamValue(g, piles, held) {
@@ -794,12 +867,12 @@
   // for each, and pick the own move that is best on average.
   function pimcMove(g, p, moves) {
     const P = g.policy, ctx = g.ctx;
-    const pool = Int32Array.from(ctx.rem);
+    const pool = Float64Array.from(ctx.rem);
     for (const c of g.players[p].hand) pool[code(c)]--;
     for (const pile of g.piles) for (const c of pile) pool[code(c)]--;
-    for (const id of g.known) pool[code(g.cards[id])]--;
+    for (const id of knownIds(g)) pool[code(g.cards[id])]--;
     const bag = [];
-    for (let cd = 0; cd < pool.length; cd++) for (let k = 0; k < pool[cd]; k++) bag.push({ id: -2 - bag.length, t: cd >> 6, v: cd & 63 });
+    for (let cd = 0; cd < pool.length; cd++) for (let k = 0, m = bagCount(g, pool[cd]); k < m; k++) bag.push({ id: -2 - bag.length, t: cd >> 6, v: cd & 63 });
     const mine = g.players[p].hand;
     const score = new Map(); // move index -> summed value
     const moveIdx = new Map();
@@ -1033,10 +1106,11 @@
 
   function fleeDeltaHand(g, hand) {
     const P = g.policy, ctx = g.ctx;
-    const pool = Int32Array.from(ctx.rem);
+    const pool = Float64Array.from(ctx.rem);
     for (const c of hand) pool[code(c)]--;
     let B = 0;
-    for (const id of g.known) {
+    if (P.memory === 'human') { const bot = bottomPosNeg(g); B = bot.pos - bot.neg; }
+    for (const id of knownIds(g)) {
       const c = g.cards[id];
       pool[code(c)]--;
       B += staticValue(g, c);
@@ -1101,10 +1175,34 @@
     return { pos: pos / cnt, neg: neg / cnt };
   }
   function bottomPosNeg(g) {
+    if (g.policy.memory === 'human') return humanBottom(g);
     const cs = [];
     for (const id of g.known) cs.push(g.cards[id]);
     return posNeg(g, cs);
   }
+  // Human memory of the deck bottom: of the last few fled hands only a rough impression
+  // is kept ("many enemies", "mixed", "many heals/weapons") and how many of their cards
+  // are still in the deck (that follows from the deck size). The impression is turned
+  // into pos/neg values of a typical hand of that kind.
+  function humanBottom(g) {
+    const P = g.policy, hist = g.fleeHist || [];
+    if (!g.memAvg) {
+      let gp = 0, gn = 0, bp = 0, bn = 0;
+      for (const c of g.cards) { const v = staticValue(g, c); if (isBad(c)) { bp += -v; bn++; } else { gp += v; gn++; } }
+      g.memAvg = { pos: gn ? gp / gn : 0, neg: bn ? bp / bn : 0 };
+    }
+    let pos = 0, neg = 0;
+    for (let i = hist.length - 1; i >= 0 && i >= hist.length - P.memFlees; i--) {
+      let n = 0, bad = 0;
+      for (const id of hist[i]) if (g.known.has(id)) { n++; if (isBad(g.cards[id])) bad++; }
+      if (!n) continue;
+      const share = bad / n, f = share >= 0.6 ? 0.75 : share <= 0.4 ? 0.25 : 0.5;
+      pos += n * (1 - f) * g.memAvg.pos;
+      neg += n * f * g.memAvg.neg;
+    }
+    return { pos, neg };
+  }
+
   function averagePosNeg(g) {
     const pn = posNeg(g, g.cards);
     return { pos: pn.pos / g.cards.length, neg: pn.neg / g.cards.length };

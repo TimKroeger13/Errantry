@@ -1,0 +1,4 @@
+﻿Strategien: humanfast | humanfast,endLookMax=20000 | human | human,endLookMax=20000 · 600 Spiele je Konfiguration · Seed 3131
+  wild3   humanfast                    Sieg  32.3%                          Fortschritt 95.6%  Tiefpunkt Ø 0.4  Fluchten 10.27  · 3s · Rest ~0min 9s
+  wild3   humanfast,endLookMax=20000   Sieg  32.2%  Δ -0.2 Pkt. (z -0.2)    Fortschritt 95.7%  Tiefpunkt Ø 0.4  Fluchten 10.27  · 6s · Rest ~0min 9s
+  wild3   human                        Sieg  48.3%  Δ +16.0 Pkt. (z 6.3)    Fortschritt 93.6%  Tiefpunkt Ø 0.7  Fluchten 10.55  · 825s · Rest ~4min 38s

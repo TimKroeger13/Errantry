@@ -2,323 +2,427 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Errantry Simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Errantry Balancing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
+/* Layout: Kartentisch – das Deck ist die große Arbeitsfläche links, Partie/KI/Simulation daneben,
+   die Auswertung darunter über die volle Breite. Kartentypen tragen durchgehend dieselbe Farbe. */
 :root {
   color-scheme: light;
-  --bg: #f4f3ef;
-  --surface: #fcfcfb;
-  --surface-2: #f0efec;
-  --border: #e2e1dc;
-  --text: #0b0b0b;
-  --text-2: #52514e;
-  --muted: #84837d;
-  --accent: #2a78d6;
+  --bg: #eef1ed;
+  --surface: #fafbf9;
+  --surface-2: #e9ede8;
+  --line: #d5dcd4;
+  --grid: #e3e8e2;
+  --ink: #121814;
+  --ink-2: #48534b;
+  --muted: #758078;
+  --accent: #1d6b57;
   --accent-ink: #ffffff;
+  --accent-soft: #d6e9e2;
   --series-1: #2a78d6;
   --series-2: #eb6834;
-  --grid: #e8e7e2;
   --good: #0ca30c;
   --critical: #d03b3b;
-  --radius: 10px;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --t-enemy: #e34948;
+  --t-thief: #6250d6;
+  --t-heal: #008300;
+  --t-weapon: #2a78d6;
+  --t-magic: #e87ba4;
+  --t-smith: #eda100;
+  --font-display: 'Alegreya SC', 'Palatino Linotype', Palatino, Georgia, serif;
+  --font-body: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-data: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  --r: 10px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #121211;
-    --surface: #1a1a19;
-    --surface-2: #232321;
-    --border: #34342f;
-    --text: #f0efec;
-    --text-2: #c3c2b7;
-    --muted: #8f8e86;
-    --accent: #3987e5;
+    --bg: #0d1311;
+    --surface: #141c19;
+    --surface-2: #1b2521;
+    --line: #2a3631;
+    --grid: #222d29;
+    --ink: #e6ede8;
+    --ink-2: #b4c0b8;
+    --muted: #7e8c84;
+    --accent: #4fb596;
+    --accent-ink: #08130f;
+    --accent-soft: #1d3a31;
     --series-1: #3987e5;
     --series-2: #d95926;
-    --grid: #2c2c29;
+    --t-enemy: #e66767;
+    --t-thief: #9085e9;
+    --t-heal: #008300;
+    --t-weapon: #3987e5;
+    --t-magic: #d55181;
+    --t-smith: #c98500;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #121211;
-  --surface: #1a1a19;
-  --surface-2: #232321;
-  --border: #34342f;
-  --text: #f0efec;
-  --text-2: #c3c2b7;
-  --muted: #8f8e86;
-  --accent: #3987e5;
+  --bg: #0d1311;
+  --surface: #141c19;
+  --surface-2: #1b2521;
+  --line: #2a3631;
+  --grid: #222d29;
+  --ink: #e6ede8;
+  --ink-2: #b4c0b8;
+  --muted: #7e8c84;
+  --accent: #4fb596;
+  --accent-ink: #08130f;
+  --accent-soft: #1d3a31;
   --series-1: #3987e5;
   --series-2: #d95926;
-  --grid: #2c2c29;
+  --t-enemy: #e66767;
+  --t-thief: #9085e9;
+  --t-heal: #008300;
+  --t-weapon: #3987e5;
+  --t-magic: #d55181;
+  --t-smith: #c98500;
 }
+/* names used by the chart code */
+:root { --surface-1: var(--surface); --text: var(--ink); --text-2: var(--ink-2); --border: var(--line); }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { background: var(--bg); color: var(--text); font: 14px/1.45 var(--sans); }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--font-body); }
 button, input, select, textarea { font: inherit; color: inherit; }
-header.top { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 18px 20px 6px; }
-header.top h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
-header.top .sub { color: var(--text-2); }
-nav.tabs { display: flex; gap: 4px; padding: 6px 20px 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
-nav.tabs button { border: 0; background: none; padding: 10px 12px; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
-nav.tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
-main { padding: 16px 20px 40px; }
-.layout { display: grid; grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); gap: 16px; align-items: start; }
-@media (max-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr); } main { padding: 12px 16px 32px; } header.top, nav.tabs { padding-left: 16px; padding-right: 16px; } }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); max-width: 1480px; margin: 0 auto; }
+
+/* header */
+header.top { border-bottom: 1px solid var(--line); background: var(--surface); }
+header.top .wrap { display: flex; align-items: flex-end; gap: 28px; flex-wrap: wrap; padding-block: 14px 0; }
+.brand { display: flex; flex-direction: column; padding-bottom: 12px; }
+.brand h1 { margin: 0; font: 700 28px/1 var(--font-display); letter-spacing: 0.02em; }
+.brand span { color: var(--ink-2); font-size: 13px; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; }
+nav.tabs button { border: 0; background: none; padding: 10px 14px 12px; color: var(--ink-2); cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-weight: 500; }
+nav.tabs button:hover { color: var(--ink); }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+main { padding-block: 18px 48px; }
+
+/* generic pieces */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; }
+.panel + .panel { margin-top: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; min-width: 0; }
 .card + .card { margin-top: 12px; }
-.card h2 { font-size: 13px; font-weight: 650; margin: 0 0 10px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; }
-.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.row + .row { margin-top: 8px; }
-label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-2); }
-input[type=number], input[type=text], select, textarea { background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; min-width: 0; }
-input[type=number] { width: 84px; }
-textarea { width: 100%; font-family: var(--mono); font-size: 12px; }
-button.btn { border: 1px solid var(--border); background: var(--surface-2); border-radius: 7px; padding: 6px 12px; cursor: pointer; }
-button.btn:hover { border-color: var(--muted); }
-button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-button.primary:disabled { opacity: 0.55; cursor: default; }
-button.ghost { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 2px 6px; }
-.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
-.seg button { border: 0; background: var(--surface-2); padding: 6px 12px; cursor: pointer; }
-.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
-table.cards { width: 100%; border-collapse: collapse; font-size: 13px; }
-table.cards th { text-align: left; font-weight: 600; color: var(--text-2); font-size: 12px; padding: 4px 4px; border-bottom: 1px solid var(--border); }
-table.cards td { padding: 3px 4px; border-bottom: 1px solid var(--grid); }
-table.cards input[type=number] { width: 64px; padding: 3px 6px; }
-table.cards select { padding: 3px 4px; }
-.scroll { max-height: 320px; overflow: auto; }
-.summary { font-size: 12px; color: var(--text-2); margin-top: 8px; }
-.summary b { color: var(--text); font-weight: 600; }
-details summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
+h2, .card h2, .panel h2 { font: 700 15px/1.2 var(--font-display); letter-spacing: 0.06em; margin: 0 0 12px; color: var(--ink); text-transform: none; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row + .row { margin-top: 10px; }
+label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
+input[type=number], input[type=text], select, textarea { background: var(--surface-2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; min-width: 0; }
+input[type=number] { width: 84px; font-variant-numeric: tabular-nums; }
+textarea { width: 100%; font: 12px/1.4 var(--font-data); }
+.btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 7px; padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--muted); }
+.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.primary:hover { border-color: var(--accent); filter: brightness(1.05); }
+.primary:disabled { opacity: 0.55; cursor: default; }
+button.ghost { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+button.ghost:hover { color: var(--ink); background: var(--surface-2); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface-2); padding: 6px 14px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+.eta { font-variant-numeric: tabular-nums; color: var(--ink-2); }
 .progress { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-top: 10px; }
 .progress > div { height: 100%; width: 0; background: var(--accent); transition: width 0.15s; }
-.hint { color: var(--muted); font-size: 12px; }
-.hero { display: flex; align-items: flex-end; gap: 22px; flex-wrap: wrap; }
-.hero .big { font-size: 52px; font-weight: 650; line-height: 1; letter-spacing: -0.02em; }
-.hero .ci { color: var(--text-2); }
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 14px; }
+details summary { cursor: pointer; color: var(--ink-2); font-size: 13px; }
+.mono { font-family: var(--font-data); }
+[hidden] { display: none !important; }
+
+/* ===== workspace: deck left, controls right ===== */
+.workspace { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1050px) { .workspace { grid-template-columns: minmax(0, 1fr); } }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.side .panel + .panel { margin-top: 0; }
+
+/* ===== deck editor ===== */
+.deck-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.deck-head h2 { margin: 0; font-size: 22px; }
+.deck-head .count { font: 500 14px var(--font-body); color: var(--ink-2); margin-left: 8px; letter-spacing: 0; }
+.composition { margin: 4px 0 16px; }
+.comp-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 2px; background: var(--surface); }
+.comp-bar span { display: block; height: 100%; min-width: 2px; }
+.comp-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+.comp-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.comp-legend b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.trow { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--grid); align-items: start; }
+@media (max-width: 640px) { .trow { grid-template-columns: minmax(0, 1fr); } }
+.tinfo { display: flex; flex-direction: column; gap: 4px; }
+.tname { display: flex; align-items: center; gap: 8px; font: 700 16px var(--font-display); letter-spacing: 0.04em; }
+.tname i { width: 12px; height: 12px; border-radius: 3px; background: var(--tc); flex: none; }
+.tsum { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.tquick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.tquick button { font-size: 12px; padding: 2px 8px; }
+.cells { display: flex; gap: 6px; flex-wrap: wrap; padding: 2px 2px 6px; }
+.cell { flex: none; width: 46px; border: 1px solid var(--line); border-top: 4px solid var(--tc); border-radius: 7px; background: var(--surface); display: flex; flex-direction: column; align-items: center; padding: 4px 3px 5px; gap: 2px; }
+.cell.zero { border-top-color: var(--line); opacity: 0.62; }
+.cell.zero:hover, .cell.zero:focus-within { opacity: 1; }
+.cell .cv { font: 700 18px/1 var(--font-display); }
+.cell .cl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.cell input { width: 40px; text-align: center; padding: 2px 0; font-size: 14px; border-radius: 5px; }
+.cell.add { justify-content: center; border-style: dashed; border-top: 1px dashed var(--line); background: none; cursor: pointer; color: var(--muted); font-size: 20px; min-height: 62px; }
+.cell.add:hover { color: var(--ink); border-color: var(--muted); }
+.plain-count { display: flex; align-items: center; gap: 8px; }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface-2); }
+.stepper button { border: 0; background: none; width: 30px; height: 32px; cursor: pointer; font-size: 16px; color: var(--ink-2); }
+.stepper button:hover { color: var(--ink); background: var(--grid); }
+.stepper input { width: 52px; text-align: center; border: 0; border-left: 1px solid var(--line); border-right: 1px solid var(--line); border-radius: 0; background: var(--surface); }
+.list-note { font-size: 13px; color: var(--ink-2); background: var(--accent-soft); border-radius: 8px; padding: 8px 12px; margin: 0 0 12px; }
+
+/* run panel / headline */
+.headline { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+.headline .big { font: 700 44px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.headline .sub { color: var(--ink-2); font-size: 13px; }
+.headline .sub b { color: var(--ink); font-weight: 600; }
+/* live estimate: interval bar + convergence curve */
+.ci-wrap { margin-top: 10px; }
+.ci-bar { position: relative; height: 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
+.ci-band { position: absolute; top: 0; bottom: 0; background: var(--accent-soft); border-left: 2px solid var(--accent); border-right: 2px solid var(--accent); transition: left .25s, width .25s; }
+.ci-dot { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--accent); transition: left .25s; }
+.ci-scale { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 2px; }
+svg.conv { width: 100%; height: auto; display: block; margin-top: 8px; }
+svg.conv .grid { stroke: var(--grid); stroke-width: 1; }
+svg.conv .tick { font-size: 10px; fill: var(--muted); font-family: var(--font-mono, monospace); }
+svg.conv .band { fill: var(--accent-soft); stroke: none; }
+svg.conv .est { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+svg.conv .est-dot { fill: var(--accent); }
+
+/* results */
+.hero { display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+.hero .big { font: 700 56px/1 var(--font-display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.hero .ci { color: var(--ink-2); display: flex; flex-direction: column; gap: 2px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 16px; }
+.deck-detail { margin-top: 14px; font-size: 13px; }
+.deck-detail summary { cursor: pointer; color: var(--muted); }
+.deck-detail .dd-row { margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; overflow-wrap: anywhere; }
+.deck-detail .dd-row b { font-family: 'Alegreya Sans', sans-serif; }
 .tile { background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
-.tile .l { font-size: 12px; color: var(--text-2); }
-.tile .v { font-size: 20px; font-weight: 650; margin-top: 2px; }
+.tile .l { font-size: 12px; color: var(--ink-2); }
+.tile .v { font: 700 22px/1.2 var(--font-display); font-variant-numeric: tabular-nums; margin-top: 2px; }
 .tile .d { font-size: 12px; color: var(--muted); }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; margin-top: 12px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; margin-top: 14px; }
 .grid2 .card { margin-top: 0; }
+#results > .card:first-child { margin-top: 16px; }
 .chart { position: relative; width: 100%; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
-.chart text { fill: var(--text-2); font-size: 11px; }
-.legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-2); margin-bottom: 6px; flex-wrap: wrap; }
+.chart text { fill: var(--ink-2); font: 11px var(--font-body); }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-2); margin-bottom: 6px; flex-wrap: wrap; }
 .legend i { display: inline-block; width: 14px; height: 2px; vertical-align: middle; margin-right: 6px; border-radius: 1px; }
-.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); white-space: nowrap; z-index: 5; display: none; }
-.tip b { font-weight: 650; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.14); white-space: nowrap; z-index: 5; display: none; }
+.tip b { font-weight: 700; }
 .tip .k { display: inline-block; width: 12px; height: 2px; vertical-align: middle; margin-right: 6px; }
 table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
-table.data th, table.data td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--grid); }
-table.data th { color: var(--text-2); font-weight: 600; font-size: 12px; }
+table.data th, table.data td { text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--grid); }
+table.data th { color: var(--ink-2); font-weight: 700; font-size: 12px; }
 table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.runs .run { display: flex; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--grid); font-size: 13px; }
-.runs .run .w { font-weight: 650; min-width: 58px; font-variant-numeric: tabular-nums; }
-.runs .run .lbl { flex: 1; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.badge { font-size: 11px; padding: 1px 6px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.runs .run { display: flex; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--grid); font-size: 13px; }
+.runs .run .w { font-weight: 700; min-width: 62px; font-variant-numeric: tabular-nums; }
+.runs .run .lbl { flex: 1; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
 .badge.ref { background: var(--series-2); color: #fff; }
-.log { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; line-height: 1.5; max-height: 70vh; overflow: auto; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
-.log .round { color: var(--text); font-weight: 700; }
-.log .win { color: var(--good); font-weight: 700; }
-.log .loss { color: var(--critical); font-weight: 700; }
-.chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
-.chips button { border: 1px solid var(--border); background: var(--surface-2); border-radius: 999px; padding: 2px 9px; font-size: 12px; cursor: pointer; }
-.empty { color: var(--muted); padding: 30px 10px; text-align: center; }
-[hidden] { display: none !important; }
 .delta-up { color: var(--good); }
 .delta-down { color: var(--critical); }
-.mono { font-family: var(--mono); }
-.subhead { font-size: 12px; font-weight: 600; color: var(--text-2); margin: 12px 0 4px; }
-.eta { font-variant-numeric: tabular-nums; }
-.versions .v { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--grid); }
-.versions .v .name { font-weight: 600; }
-.versions .v .meta { color: var(--text-2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.empty { color: var(--muted); padding: 26px 10px; text-align: center; }
+
+/* versions */
+.versions .v { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--grid); }
+.versions .v .name { font-weight: 700; }
+.versions .v .meta { color: var(--ink-2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .versions .v .acts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
-.pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.confirm { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--critical); }
+
+/* single game */
+.log { font: 12px/1.55 var(--font-data); white-space: pre-wrap; max-height: 70vh; overflow: auto; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.log .round { color: var(--ink); font-weight: 600; margin-top: 4px; }
+.log .win { color: var(--good); font-weight: 600; }
+.log .loss { color: var(--critical); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0; }
+.chips button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 2px 9px; font-size: 12px; cursor: pointer; }
+.helptext { max-width: 70ch; }
+.helptext li { margin: 4px 0; }
+@media (prefers-reduced-motion: reduce) { .progress > div { transition: none; } }
 </style>
 </head>
 <body>
 <header class="top">
-  <h1>Errantry · Balancing-Simulator</h1>
-  <span class="sub">Decks und Versionen definieren, tausende Partien von einer trainierten KI spielen lassen, vergleichen</span>
+  <div class="wrap">
+    <div class="brand"><h1>Errantry</h1><span>Balancing-Simulator</span></div>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="sim" aria-selected="true">Deck &amp; Simulation</button>
+      <button role="tab" data-tab="versions" aria-selected="false">Versionen</button>
+      <button role="tab" data-tab="sweep" aria-selected="false">Parameter-Sweep</button>
+      <button role="tab" data-tab="game" aria-selected="false">Einzelspiel</button>
+      <button role="tab" data-tab="help" aria-selected="false">Regeln &amp; KI</button>
+    </nav>
+  </div>
 </header>
-<nav class="tabs" role="tablist">
-  <button role="tab" data-tab="sim" aria-selected="true">Simulation</button>
-  <button role="tab" data-tab="versions" aria-selected="false">Versionen</button>
-  <button role="tab" data-tab="sweep" aria-selected="false">Parameter-Sweep</button>
-  <button role="tab" data-tab="game" aria-selected="false">Einzelspiel</button>
-  <button role="tab" data-tab="help" aria-selected="false">Regeln &amp; KI</button>
-</nav>
-<main>
-<div class="layout">
-  <!-- ======================== configuration ======================== -->
-  <aside>
-    <section class="card">
-      <h2>Spiel</h2>
+<main class="wrap">
+  <!-- ======================== deck & simulation ======================== -->
+  <div data-panel="sim">
+    <div class="workspace">
+      <section class="panel" aria-labelledby="deckTitle">
+        <div class="deck-head">
+          <h2 id="deckTitle">Deck <span class="count" id="deckCount"></span></h2>
+          <span class="seg" id="listSel" role="group" aria-label="Welche Kartenliste bearbeiten">
+            <button data-list="cards" aria-pressed="true">Grunddeck</button>
+            <button data-list="cards3" aria-pressed="false">Zusatz bei 3 Spielern</button>
+          </span>
+        </div>
+        <p class="list-note" id="listNote" hidden>Diese Karten kommen nur bei 3 Spielern zusätzlich ins Deck.</p>
+        <div class="composition" id="composition"></div>
+        <div id="typeRows"></div>
+        <div class="row" style="margin-top:14px;border-top:1px solid var(--grid);padding-top:12px">
+          <button class="btn" id="presetStd">Standarddeck laden</button>
+          <button class="btn" id="presetEmpty">Diese Liste leeren</button>
+          <button class="btn" id="exportCfg">Deck exportieren</button>
+          <label class="btn" style="cursor:pointer">Deck importieren<input type="file" id="importCfg" accept=".json,application/json" hidden></label>
+          <span class="hint" id="deckMsg" style="margin:0"></span>
+        </div>
+      </section>
+
+      <div class="side">
+        <section class="panel">
+          <h2>Partie</h2>
+          <div class="row">
+            <label class="f">Spieler
+              <span class="seg" id="players"><button data-v="2">2</button><button data-v="3">3</button></span>
+            </label>
+            <label class="f">Leben je Spieler<input type="number" id="hp" min="1" max="99"></label>
+            <label class="f">Diebschaden<input type="number" id="thiefDamage" min="0" max="99"></label>
+            <label class="f">Keine Flucht ab ≤<input type="number" id="fleeBlockDeck" min="0" max="99" title="Karten im Deck"></label>
+          </div>
+          <p class="hint" id="handInfo"></p>
+        </section>
+
+        <section class="panel">
+          <h2>Spieler-KI</h2>
+          <select id="policy" style="width:100%">
+            <option value="human">Mensch · Experte mit menschlichem Gedächtnis</option>
+            <option value="humanfast">Mensch schnell · ca. 100× schneller</option>
+            <option value="expert">Experte · zählt alle Karten perfekt</option>
+            <option value="fast">Schnell · zählt perfekt, ca. 100× schneller</option>
+            <option value="untrained">Untrainiert · Vergleich</option>
+            <option value="random">Zufall · Vergleich</option>
+          </select>
+          <p class="hint" id="policyHint"></p>
+          <details style="margin-top:8px"><summary>KI-Parameter anpassen (JSON)</summary>
+            <p class="hint">Überschreibt einzelne Werte der gewählten KI, z. B. <span class="mono">{"flee":"never"}</span> oder <span class="mono">{"pimcSamples":8}</span>.</p>
+            <textarea id="policyJson" rows="3" placeholder="{}"></textarea>
+          </details>
+        </section>
+
+        <section class="panel">
+          <h2>Simulation</h2>
+          <div class="row">
+            <label class="f">Spiele<input type="number" id="games" value="1000" min="10" max="1000000" step="500"></label>
+            <label class="f">Seed<input type="number" id="seed" value="1" min="0"></label>
+            <button class="primary btn" id="runBtn" style="align-self:flex-end">Simulieren</button>
+            <button class="btn" id="stopBtn" style="align-self:flex-end" hidden>Abbrechen</button>
+          </div>
+          <div class="progress"><div id="bar"></div></div>
+          <p class="hint eta" id="runInfo"></p>
+          <div id="quickResult"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Als Version speichern</h2>
+          <div class="row">
+            <input type="text" id="verName" placeholder="z. B. v2 mit Magie 3–8" style="flex:1;min-width:150px">
+            <button class="btn" id="verSave">Speichern</button>
+          </div>
+          <p class="hint">Speichert Deck und Partie-Einstellungen. Im Reiter „Versionen“ lassen sich mehrere Stände vergleichen.</p>
+        </section>
+      </div>
+    </div>
+
+    <div id="results"></div>
+    <div class="card runs" id="runsCard" hidden>
+      <h2>Bisherige Läufe</h2>
+      <div id="runs"></div>
+      <p class="hint">Ein Lauf als Referenz wird in den Diagrammen orange mit angezeigt.</p>
+    </div>
+  </div>
+
+  <!-- ======================== versions ======================== -->
+  <div data-panel="versions" hidden>
+    <div class="card versions">
+      <h2>Versionen</h2>
       <div class="row">
-        <label class="f">Spieler
-          <span class="seg" id="players"><button data-v="2">2</button><button data-v="3">3</button></span>
-        </label>
-        <label class="f">Leben je Spieler<input type="number" id="hp" min="1" max="99"></label>
-        <label class="f">Diebschaden<input type="number" id="thiefDamage" min="0" max="99"></label>
-        <label class="f">Flucht gesperrt ab ≤ Karten<input type="number" id="fleeBlockDeck" min="0" max="99"></label>
+        <button class="btn" id="verExport">Alle exportieren</button>
+        <label class="btn" style="cursor:pointer">Importieren<input type="file" id="verImport" accept=".json,application/json" hidden></label>
+        <span class="hint" style="margin:0">Versionen werden im Browser gespeichert. Zum Sichern oder Weitergeben exportieren.</span>
       </div>
-      <p class="hint" id="handInfo"></p>
-    </section>
-
-    <section class="card">
-      <h2>Karten</h2>
+      <div id="verList" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h2>Ausgewählte Versionen vergleichen</h2>
       <div class="row">
-        <button class="btn" id="presetStd">Standarddeck</button>
-        <button class="btn" id="presetEmpty">Alles leeren</button>
-        <button class="btn" id="exportCfg">Export</button>
-        <label class="btn" style="cursor:pointer">Import<input type="file" id="importCfg" accept=".json,application/json" hidden></label>
+        <label class="f">Spieleranzahl<select id="cmpPlayers">
+          <option value="saved">wie gespeichert</option><option value="2">immer 2</option><option value="3">immer 3</option><option value="both">2 und 3</option></select></label>
+        <label class="f">Spiele je Version<input type="number" id="cmpGames" value="1000" min="50" step="500"></label>
+        <button class="primary btn" id="cmpRun" style="align-self:flex-end">Vergleich starten</button>
+        <button class="btn" id="cmpStop" style="align-self:flex-end" hidden>Abbrechen</button>
       </div>
-      <div class="row" style="margin-top:10px">
-        <label class="f">Liste<select id="genList"><option value="cards">Grunddeck</option><option value="cards3">Zusatz bei 3 Spielern</option></select></label>
-        <label class="f">Typ<select id="genType"></select></label>
-        <label class="f">von<input type="number" id="genFrom" value="2" min="1" max="63"></label>
-        <label class="f">bis<input type="number" id="genTo" value="10" min="1" max="63"></label>
-        <label class="f">je Anzahl<input type="number" id="genCount" value="2" min="0" max="99"></label>
-        <button class="btn" id="genAdd" style="align-self:flex-end">Setzen</button>
-      </div>
-      <p class="hint">„Setzen“ legt für jeden Wert im Bereich die Anzahl fest (0 entfernt). Typen ohne Wert (Dieb, Schmied) nutzen nur die Anzahl.</p>
-      <div class="subhead">Grunddeck (immer im Spiel)</div>
-      <div class="scroll"><table class="cards"><thead><tr><th>Typ</th><th>Wert</th><th>Anzahl</th><th></th></tr></thead><tbody id="cardRows"></tbody></table></div>
-      <div class="row" style="margin-top:6px"><button class="btn" id="addRow">+ Karte</button></div>
-      <div class="subhead">Zusatzkarten nur bei 3 Spielern</div>
-      <div class="scroll" style="max-height:180px"><table class="cards"><thead><tr><th>Typ</th><th>Wert</th><th>Anzahl</th><th></th></tr></thead><tbody id="cardRows3"></tbody></table></div>
-      <div class="row" style="margin-top:6px"><button class="btn" id="addRow3">+ Zusatzkarte</button></div>
-      <div class="summary" id="deckSummary"></div>
-    </section>
+      <div class="progress"><div id="cmpBar"></div></div>
+      <p class="hint eta" id="cmpInfo"></p>
+      <p class="hint">Alle Versionen nutzen denselben Seed. Unterschiede kommen damit vom Deck und nicht vom Zufall der Mischung. Die KI ist die im Reiter „Deck &amp; Simulation“ gewählte.</p>
+    </div>
+    <div id="cmpResults"></div>
+  </div>
 
-    <section class="card">
-      <h2>Spieler-KI</h2>
+  <!-- ======================== sweep ======================== -->
+  <div data-panel="sweep" hidden>
+    <div class="card">
+      <h2>Parameter-Sweep</h2>
+      <p class="hint">Variiert einen Wert des aktuellen Decks und misst die Siegquote für jeden Schritt. Alle anderen Einstellungen kommen aus dem Reiter „Deck &amp; Simulation“ – die Spieleranzahl kannst du hier extra wählen (bei 3 Spielern kommen die Zusatzkarten dazu).</p>
+      <div class="row" style="margin-top:8px">
+        <label class="f">Parameter<select id="swParam"></select></label>
+        <label class="f">Spieler<select id="swPlayers">
+          <option value="deck">wie im Deck</option><option value="2">2 Spieler</option><option value="3">3 Spieler</option><option value="both">2 und 3 (zwei Kurven)</option>
+        </select></label>
+        <label class="f">von<input type="number" id="swFrom" value="14"></label>
+        <label class="f">bis<input type="number" id="swTo" value="30"></label>
+        <label class="f">Schritt<input type="number" id="swStep" value="2" min="1"></label>
+        <label class="f">Spiele je Punkt<input type="number" id="swGames" value="1000" min="50" step="500"></label>
+        <button class="primary btn" id="swRun" style="align-self:flex-end">Sweep starten</button>
+        <button class="btn" id="swStop" style="align-self:flex-end" hidden>Abbrechen</button>
+      </div>
+      <div class="progress"><div id="swBar"></div></div>
+      <p class="hint eta" id="swInfo"></p>
+    </div>
+    <div id="swResults"></div>
+  </div>
+
+  <!-- ======================== single game ======================== -->
+  <div data-panel="game" hidden>
+    <div class="card">
+      <h2>Einzelspiel nachverfolgen</h2>
       <div class="row">
-        <select id="policy" style="max-width:100%">
-          <option value="expert">Experte (stark, langsamer)</option>
-          <option value="fast">Schnell (ca. 100× schneller)</option>
-          <option value="untrained">Untrainiert (Vergleich)</option>
-          <option value="random">Zufall (Vergleich)</option>
-        </select>
+        <label class="f">Seed<input type="number" id="gSeed" value="1" min="0"></label>
+        <label class="f">Spiel Nr.<input type="number" id="gIndex" value="0" min="0"></label>
+        <button class="primary btn" id="gRun" style="align-self:flex-end">Spiel zeigen</button>
+        <button class="btn" id="gNextLoss" style="align-self:flex-end">Nächste Niederlage</button>
+        <button class="btn" id="gNextWin" style="align-self:flex-end">Nächster Sieg</button>
+        <span class="hint" id="gInfo" style="align-self:flex-end;margin:0"></span>
       </div>
-      <p class="hint" id="policyHint"></p>
-      <details style="margin-top:6px"><summary>KI-Parameter anpassen (JSON)</summary>
-        <p class="hint">Überschreibt einzelne Parameter der gewählten KI, z. B. <span class="mono">{"flee":"never"}</span> (nie fliehen) oder <span class="mono">{"pimcSamples":8}</span>.</p>
-        <textarea id="policyJson" rows="4" placeholder="{}"></textarea>
-      </details>
-    </section>
-
-    <section class="card">
-      <h2>Als Version speichern</h2>
-      <div class="row">
-        <input type="text" id="verName" placeholder="z. B. v2 – mit Magie 3–8" style="flex:1;min-width:160px">
-        <button class="btn" id="verSave">Speichern</button>
-      </div>
-      <p class="hint">Gespeicherte Versionen findest du im Reiter „Versionen“ – dort lassen sie sich laden und gegeneinander simulieren.</p>
-    </section>
-  </aside>
-
-  <!-- ======================== tabs ======================== -->
-  <section>
-    <!-- simulation -->
-    <div data-panel="sim">
-      <div class="card">
-        <div class="row">
-          <label class="f">Spiele<input type="number" id="games" value="1000" min="10" max="1000000" step="500"></label>
-          <label class="f">Seed<input type="number" id="seed" value="1" min="0"></label>
-          <button class="primary btn" id="runBtn" style="align-self:flex-end">Simulieren</button>
-          <button class="btn" id="stopBtn" style="align-self:flex-end" hidden>Abbrechen</button>
-          <span class="hint eta" id="runInfo" style="align-self:flex-end"></span>
-        </div>
-        <div class="progress"><div id="bar"></div></div>
-      </div>
-      <div id="results"><div class="card empty">Noch keine Simulation. Deck einstellen und „Simulieren“ drücken.</div></div>
-      <div class="card runs" id="runsCard" hidden>
-        <h2>Bisherige Läufe</h2>
-        <div id="runs"></div>
-        <p class="hint">Ein Lauf als Referenz wird in den Diagrammen orange mit angezeigt.</p>
-      </div>
+      <p class="hint">Gleicher Seed und gleiche Spielnummer ergeben dasselbe Spiel wie in der Massensimulation. G = Gegner, D = Dieb, H = Heilung, W = Waffe, M = Magie, S = Schmied. „W8&lt;12“: Waffe 8, blockt nur noch Gegner unter 12. „Hand +12/−25“: Positiv- und Negativwert der Hand.</p>
+      <div class="chips" id="gChips"></div>
+      <div class="log" id="gLog">–</div>
     </div>
+  </div>
 
-    <!-- versions -->
-    <div data-panel="versions" hidden>
-      <div class="card versions">
-        <h2>Versionen</h2>
-        <div class="row">
-          <button class="btn" id="verExport">Alle exportieren</button>
-          <label class="btn" style="cursor:pointer">Importieren<input type="file" id="verImport" accept=".json,application/json" hidden></label>
-          <span class="hint">Versionen werden im Browser gespeichert. Zum Sichern oder Weitergeben exportieren.</span>
-        </div>
-        <div id="verList" style="margin-top:8px"></div>
-      </div>
-      <div class="card">
-        <h2>Ausgewählte Versionen vergleichen</h2>
-        <div class="row">
-          <label class="f">Spieleranzahl<select id="cmpPlayers">
-            <option value="saved">wie gespeichert</option><option value="2">immer 2</option><option value="3">immer 3</option><option value="both">2 und 3</option></select></label>
-          <label class="f">Spiele je Version<input type="number" id="cmpGames" value="1000" min="50" step="500"></label>
-          <button class="primary btn" id="cmpRun" style="align-self:flex-end">Vergleich starten</button>
-          <button class="btn" id="cmpStop" style="align-self:flex-end" hidden>Abbrechen</button>
-          <span class="hint eta" id="cmpInfo" style="align-self:flex-end"></span>
-        </div>
-        <div class="progress"><div id="cmpBar"></div></div>
-        <p class="hint">Alle Versionen nutzen denselben Seed. Unterschiede kommen damit vom Deck und nicht vom Zufall der Mischung.</p>
-      </div>
-      <div id="cmpResults"></div>
-    </div>
-
-    <!-- sweep -->
-    <div data-panel="sweep" hidden>
-      <div class="card">
-        <h2>Parameter-Sweep</h2>
-        <p class="hint">Variiert einen Wert der aktuellen Konfiguration und misst die Siegquote für jeden Schritt.</p>
-        <div class="row">
-          <label class="f">Parameter<select id="swParam"></select></label>
-          <label class="f">von<input type="number" id="swFrom" value="14"></label>
-          <label class="f">bis<input type="number" id="swTo" value="30"></label>
-          <label class="f">Schritt<input type="number" id="swStep" value="2" min="1"></label>
-          <label class="f">Spiele je Punkt<input type="number" id="swGames" value="1000" min="50" step="500"></label>
-          <button class="primary btn" id="swRun" style="align-self:flex-end">Sweep starten</button>
-          <button class="btn" id="swStop" style="align-self:flex-end" hidden>Abbrechen</button>
-          <span class="hint eta" id="swInfo" style="align-self:flex-end"></span>
-        </div>
-        <div class="progress"><div id="swBar"></div></div>
-      </div>
-      <div id="swResults"></div>
-    </div>
-
-    <!-- single game -->
-    <div data-panel="game" hidden>
-      <div class="card">
-        <h2>Einzelspiel nachverfolgen</h2>
-        <div class="row">
-          <label class="f">Seed<input type="number" id="gSeed" value="1" min="0"></label>
-          <label class="f">Spiel Nr.<input type="number" id="gIndex" value="0" min="0"></label>
-          <button class="primary btn" id="gRun" style="align-self:flex-end">Spiel zeigen</button>
-          <button class="btn" id="gNextLoss" style="align-self:flex-end">Nächste Niederlage</button>
-          <button class="btn" id="gNextWin" style="align-self:flex-end">Nächster Sieg</button>
-          <span class="hint" id="gInfo" style="align-self:flex-end"></span>
-        </div>
-        <p class="hint">Gleicher Seed und gleiche Spielnummer ergeben dasselbe Spiel wie in der Massensimulation. Legende: G = Gegner, D = Dieb, H = Heilung, W = Waffe, M = Magie, S = Schmied. „W8&lt;12“ = Waffe 8, blockt nur noch Gegner unter 12. „Hand +12/−25“ = Positiv- und Negativwert der Hand.</p>
-        <div class="chips" id="gChips"></div>
-        <div class="log" id="gLog">–</div>
-      </div>
-    </div>
-
-    <!-- help -->
-    <div data-panel="help" hidden>
-      <div class="card" id="helpText"></div>
-    </div>
-  </section>
-</div>
+  <!-- ======================== help ======================== -->
+  <div data-panel="help" hidden>
+    <div class="card helptext" id="helpText"></div>
+  </div>
 </main>
 <script id="engine">
 // ---- src/rng.js
@@ -457,7 +561,8 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
         if (!ti) throw new Error('Unbekannter Kartentyp: ' + e.type);
         const count = Math.max(0, Math.floor(Number(e.count) || 0));
         const value = ti.hasValue ? Math.floor(Number(e.value)) : 0;
-        if (ti.hasValue && !(value >= 1 && value <= 63)) throw new Error('Kartenwert muss zwischen 1 und 63 liegen: ' + e.type + ' ' + e.value);
+        const minV = ti.t === T.ENEMY ? 0 : 1; // enemies may have strength 0
+        if (ti.hasValue && !(value >= minV && value <= 63)) throw new Error('Kartenwert muss zwischen ' + minV + ' und 63 liegen: ' + ti.name + ' ' + e.value);
         if (count > 0) out.push({ type: e.type, value, count });
       }
       return out;
@@ -750,7 +855,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
 ;
 // ---- src/tuned.js
 // Trained AI parameters (generated by cli/bake.js – do not edit by hand).
-// Champion aus robust-champion.json, validiert 81.6% Ø (std2 72.5%, std3 93.3%, magic2 95.0%, smith2 83.5%, mix2 89.8%, mix3 99.8%, hp16 47.9%)
+// Champion aus robust-champion2.json, validiert 81.7% Ø (std2 71.1%, std3 93.2%, magic2 95.6%, smith2 84.7%, mix2 90.5%, mix3 99.8%, hp16 46.5%)
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else (root.Errantry = root.Errantry || {}).tuned = factory();
@@ -774,16 +879,16 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     "futureHeld": 0.6141,
     "phantom": 0.0816,
     "phantomScale": 0.9567,
-    "badMix": 0.3247,
+    "badMix": 0.1232,
     "fleeT1": 1.5086,
     "fleeT2": 9.6471,
     "fleeBottomW": 0.4034,
-    "bottomFree": 40.3711,
+    "bottomFree": 51.0327,
     "bottomScale": 35.8979,
     "fleeDangerW": 0.0585,
     "fleeDangerFrac": 1.4218,
     "fleeRelW": 1.0084,
-    "svThief": 8.367,
+    "svThief": 7.9654,
     "svHeal": 0.7796,
     "svWeapon": 0.5565,
     "start": "signals",
@@ -798,14 +903,17 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     "hpTopW": 0.0584,
     "hpTop": 6.5499,
     "fleeEarlyW": -0.0031,
-    "wMagic": 0.8762,
+    "wMagic": 0.8576,
     "bottomMode": "ratio",
     "hpEndW": 0.0807,
+    "fleeRounds": 2,
+    "startRounds": 0,
+    "startEsc": 18.45,
     "fleePosW": 0.7493,
     "fleeNegW": 0.8215,
     "endLook": 1,
     "fleeHorizon": 0.8805,
-    "fleeLatePen": 0.965,
+    "fleeLatePen": 1.5237,
     "imbW": 0.0144,
     "imbFree": 27.7257,
     "imbScale": 23.9058
@@ -847,6 +955,11 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     pimcUseFinal: 1, // pimc: also match the adjusted (second) flee signal
     flee: 'signals', // signals | never | fullInfo
     start: 'signals', // signals | rotate | random | strongest
+    // card memory: 'perfect' counts every card exactly; 'human' only tracks the strongest
+    // enemies exactly and remembers the last fled hands only roughly
+    memory: 'perfect',
+    memTopE: 2, // human: number of strongest enemy strengths that are counted (14 and 13)
+    memFlees: 2, // human: number of last fled hands remembered (only "many enemies / mixed / many good")
     // value function
     riskHp: 8, // below this HP, losing HP costs extra (quadratic)
     riskW: 1,
@@ -869,6 +982,9 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     holdWeaponAbs: 0, // a held weapon is a fresh reserve: value >= this * worth(fresh weapon)
     holdHealAbs: 0, // a held heal is a reserve against later damage: value >= this * heal value
     holdBadEnd: 0, // extra cost factor for holding bad cards near the end of the deck
+    // cost factor for holding a thief (-1 = like other bad cards, holdBad). 0.3: held thieves
+    // go onto worn or about-to-be-replaced weapons later; holdout decks +0.6 pts (2026-10-19)
+    holdThief: 0.3,
     holdEndDeck: 16, // "near the end" = fewer than this many cards in the deck
     futureHeld: 1, // held cards count as future cards for weapon worth
     // planner: expected bad cards the partner(s) will still play (phantom enemies)
@@ -884,6 +1000,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     heldResW: 0, // resolution keeps the own held card in mind (cost of facing it next round)
     endLook: 0, // 1 = in the second-to-last round, judge plans by whether the last hand is survivable
     endLookRes: 1, // ... and also use it when resolving the cards at the end of that round
+    endLookMax: 1024, // max. ways to split the last-hand cards (2 players: 2^10; keeps 3 players fast)
     fleeHorizon: 0, // fleeing with fewer deck cards than this is scaled down (cards return soon)
     fleeLatePen: 0, // ... and penalised by up to this much
     // bottom of the deck as positive/negative balance relative to the deck's average mix
@@ -928,6 +1045,8 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
   const PRESETS = {
     expert: { play: 'pimc', pimcSamples: 4 }, // trained values + partner-hand inference (strongest, slower)
     fast: {}, // trained values, plain planner (about 100x faster)
+    human: { play: 'pimc', pimcSamples: 4, memory: 'human' }, // like expert, but with a human card memory
+    humanfast: { memory: 'human' },
     untrained: Object.assign({}, UNTRAINED),
     planner: {},
     greedy: { play: 'greedy' },
@@ -951,12 +1070,55 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
 
   // mode 'resolve': built after all cards of the round are on the table, so the
   // future (deck + held cards) is known exactly as a multiset.
+  // Cards not yet resolved (deck + hands + table) as the player believes them to be.
+  // 'perfect': exact counts. 'human': the strongest enemy strengths are counted exactly;
+  // for all other cards the player only knows how many cards are left and assumes the
+  // original mix of the deck (fractional counts).
+  function perceivedRemaining(g) {
+    const n = config.CODE_SPACE, P = g.policy;
+    if (P.memory !== 'human') {
+      const rem = new Int32Array(n);
+      for (let i = 0; i < n; i++) rem[i] = g.totalCodes[i] - g.resolvedCodes[i];
+      return rem;
+    }
+    if (!g.memTracked) {
+      const vals = [];
+      for (let v = 63; v >= 0 && vals.length < P.memTopE; v--) if (g.totalCodes[T.ENEMY * 64 + v] > 0) vals.push(v);
+      g.memTracked = new Set(vals.map((v) => T.ENEMY * 64 + v));
+    }
+    const rem = new Float64Array(n);
+    let restNow = 0, rest0 = 0;
+    for (let i = 0; i < n; i++) {
+      if (!g.totalCodes[i]) continue;
+      const left = g.totalCodes[i] - g.resolvedCodes[i];
+      if (g.memTracked.has(i)) rem[i] = left;
+      else { restNow += left; rest0 += g.totalCodes[i]; }
+    }
+    const f = rest0 ? restNow / rest0 : 0;
+    for (let i = 0; i < n; i++) if (g.totalCodes[i] && !g.memTracked.has(i)) rem[i] = g.totalCodes[i] * f;
+    return rem;
+  }
+
+  // Bottom-of-deck cards the player knows by identity: all of them with a perfect
+  // memory, none with a human one (humans only keep a rough impression, see bottomPosNeg).
+  function knownIds(g) {
+    return g.policy.memory === 'human' ? [] : g.known;
+  }
+
+  // Number of imagined copies of a card for sampling: fractional (human) counts are
+  // rounded at random so that the expected number is kept.
+  function bagCount(g, x) {
+    if (Number.isInteger(x)) return x;
+    if (x <= 0) return 0;
+    const k = Math.floor(x);
+    return k + (g.aiRng.next() < x - k ? 1 : 0);
+  }
+
   function makeCtx(g, mode) {
     const P = g.policy, cfg = g.cfg;
-    const rem = new Int32Array(config.CODE_SPACE);
-    for (let i = 0; i < rem.length; i++) rem[i] = g.totalCodes[i] - g.resolvedCodes[i];
+    const rem = perceivedRemaining(g);
     const exact = mode === 'resolve' && P.resolveExact && g.piles;
-    if (exact) for (const pile of g.piles) for (const c of pile) rem[code(c)]--;
+    if (exact) for (const pile of g.piles) for (const c of pile) { const k = code(c); rem[k] = Math.max(0, rem[k] - 1); }
     let maxV = 1;
     for (const e of cfg.deckCards || cfg.cards) if (e.value > maxV) maxV = e.value;
     const W = maxV + 1;
@@ -1060,7 +1222,9 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
       P, maxHp: cfg.hp, thiefDmg: cfg.thiefDamage, W, ww, mw, bw, rem, meanE, badFrac: remCards ? remBad / remCards : 0,
       deckFrac: g.deck.length / Math.max(1, g.total),
       deckLeft: g.deck.length,
-      endLook: mode !== 'resolve' && P.endLook && !g.lastHand && g.deck.length > 0 && g.deck.length <= g.nP * (g.handSize - 1),
+      // last-hand lookahead only while the number of ways to split the last cards stays small
+      endLook: mode !== 'resolve' && P.endLook && !g.lastHand && g.deck.length > 0 && g.deck.length <= g.nP * (g.handSize - 1) &&
+        Math.pow(g.nP, g.deck.length + g.nP) <= P.endLookMax,
       viewer: 0,
       numericKeys: cfg.hp < 128 && maxV < 64,
       pileCache: [], impactCache: new Map(), states: g.players.map(stateOf), phantomCard: null, nPh: 0,
@@ -1207,12 +1371,12 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
           case T.ENEMY: {
             r = soft || hp > v ? dfs(nm, hp - v, wv, lim, mg, hu, stk) : DEATH;
             if (r > best) { best = r; bc = i * 4; }
-            if (wv > 0 && (lim === 0 || v < lim)) {
+            if (v > 0 && wv > 0 && (lim === 0 || v < lim)) {
               const nh = hp - (v > wv ? v - wv : 0);
               r = soft || nh > 0 ? dfs(nm, nh, wv, v, mg, hu, stk ? stk.concat(v) : null) : DEATH;
               if (r > best) { best = r; bc = i * 4 + 1; }
             }
-            if (mg > 0) {
+            if (v > 0 && mg > 0) {
               const nh = hp - (v > mg ? v - mg : 0);
               r = soft || nh > 0 ? dfs(nm, nh, wv, lim, 0, hu, stk) : DEATH;
               if (r > best) { best = r; bc = i * 4 + 2; }
@@ -1325,8 +1489,8 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     switch (c.t) {
       case T.ENEMY: {
         let b = evalSoft(ctx, hp - v, wv, lim, mg);
-        if (wv > 0 && (lim === 0 || v < lim)) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - wv), wv, v, mg));
-        if (mg > 0) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - mg), wv, lim, 0));
+        if (v > 0 && wv > 0 && (lim === 0 || v < lim)) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - wv), wv, v, mg));
+        if (v > 0 && mg > 0) b = Math.max(b, evalSoft(ctx, hp - Math.max(0, v - mg), wv, lim, 0));
         return b;
       }
       case T.THIEF: {
@@ -1393,11 +1557,11 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     const ctx = g.ctx;
     ctx.future = ctx.future || [];
     if (ctx.future[p]) return ctx.future[p];
-    const known = [], pool = Int32Array.from(ctx.rem);
+    const known = [], pool = Float64Array.from(ctx.rem);
     for (const c of g.players[p].hand) pool[code(c)]--;
-    for (const id of g.known) { const c = g.cards[id]; known.push(c); pool[code(c)]--; }
+    for (const id of knownIds(g)) { const c = g.cards[id]; known.push(c); pool[code(c)]--; }
     const bag = [];
-    for (let cd = 0; cd < pool.length; cd++) for (let k = 0; k < pool[cd]; k++) bag.push({ id: -1000 - bag.length, t: cd >> 6, v: cd & 63 });
+    for (let cd = 0; cd < pool.length; cd++) for (let k = 0, m = bagCount(g, pool[cd]); k < m; k++) bag.push({ id: -1000 - bag.length, t: cd >> 6, v: cd & 63 });
     const need = Math.max(0, g.deck.length - known.length);
     for (let i = 0; i < need && bag.length; i++) { const j = g.aiRng.int(bag.length); known.push(bag[j]); bag[j] = bag[bag.length - 1]; bag.pop(); }
     ctx.future[p] = known;
@@ -1407,44 +1571,59 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
   function stateKey(e) { return e.hp + ',' + e.wv + ',' + e.lim + ',' + e.mg + ',' + (e.kills ? e.kills.join('.') : ''); }
 
   // Best joint split of the last-hand cards between the players (all must be played).
+  // Every player's pile is valued once per card subset (bitmask table), then the splits
+  // are enumerated as subset chains with only numbers; bad cards must end up balanced
+  // (counts differ by at most 1), so unbalanced subsets are skipped right away.
   function finalRoundValue(g, ends, cards) {
-    const fc = finalCtx(g), P = g.policy, n = ends.length;
-    const key = ends.map(stateKey).join('|') + '#' + pileKey(cards) + '#' + cards.length;
+    const fc = finalCtx(g), P = g.policy, n = ends.length, m = cards.length;
+    const key = ends.map(stateKey).join('|') + '#' + pileKey(cards) + '#' + m;
     const hit = fc.frCache.get(key);
     if (hit !== undefined) return hit;
-    const piles = ends.map(() => []), bc = new Array(n).fill(0);
-    let best = -Infinity;
-    const res = (t) => {
-      const k = stateKey(ends[t]) + '#' + pileKey(piles[t]) + '#' + piles[t].length;
-      let r = fc.resCache.get(k);
-      if (!r) {
-        r = resolvePile(fc, ends[t], piles[t]);
-        if (r.dead) r.softHp = resolvePile(fc, ends[t], piles[t], true).end.hp;
-        fc.resCache.set(k, r);
+    const size = 1 << m, full = size - 1;
+    const badCnt = new Uint8Array(size);
+    let badMask = 0;
+    for (let i = 0; i < m; i++) if (isBad(cards[i])) badMask |= 1 << i;
+    for (let s = 1; s < size; s++) badCnt[s] = badCnt[s & (s - 1)] + ((badMask & (s & -s)) ? 1 : 0);
+    const B = badCnt[full], lo = Math.floor(B / n), hi = Math.ceil(B / n);
+    // per player and subset: 0 = not computed, 1 = alive (hp), 2 = dead (penalty)
+    const kind = ends.map(() => new Uint8Array(size)), num = ends.map(() => new Float64Array(size));
+    const sKeys = ends.map(stateKey);
+    const val = (t, s) => {
+      if (!kind[t][s]) {
+        const pile = [];
+        for (let i = 0; i < m; i++) if (s & (1 << i)) pile.push(cards[i]);
+        const k = sKeys[t] + '#' + pileKey(pile) + '#' + pile.length;
+        let r = fc.resCache.get(k);
+        if (!r) {
+          r = resolvePile(fc, ends[t], pile);
+          if (r.dead) r.softHp = resolvePile(fc, ends[t], pile, true).end.hp;
+          fc.resCache.set(k, r);
+        }
+        if (r.dead) { kind[t][s] = 2; num[t][s] = 1000 * Math.min(0, r.softHp - 1); } else { kind[t][s] = 1; num[t][s] = r.end.hp; }
       }
-      return r;
+      return kind[t][s];
     };
-    (function rec(i) {
-      if (i === cards.length) {
-        let mn = Infinity, mx = -Infinity;
-        for (const b of bc) { if (b < mn) mn = b; if (b > mx) mx = b; }
-        if (mx - mn > 1) return;
+    let best = -Infinity;
+    const chosen = new Int32Array(n);
+    (function rec(t, rest) {
+      if (t === n - 1) {
+        if (badCnt[rest] < lo || badCnt[rest] > hi) return;
+        chosen[t] = rest;
         let v = 0, minHp = Infinity, dead = false;
-        for (let t = 0; t < n; t++) {
-          const r = res(t);
-          if (r.dead) { dead = true; v += 1000 * Math.min(0, r.softHp - 1); } else { v += r.end.hp; if (r.end.hp < minHp) minHp = r.end.hp; }
+        for (let u = 0; u < n; u++) {
+          const s = chosen[u];
+          if (val(u, s) === 2) dead = true; else if (num[u][s] < minHp) minHp = num[u][s];
+          v += num[u][s];
         }
         v = dead ? DEATH_STEP / 2 + v : 100000 + v + P.wMinHp * minHp;
         if (v > best) best = v;
         return;
       }
-      const c = cards[i], bad = isBad(c);
-      for (let t = 0; t < n; t++) {
-        piles[t].push(c); if (bad) bc[t]++;
-        rec(i + 1);
-        piles[t].pop(); if (bad) bc[t]--;
+      for (let s = rest; ; s = (s - 1) & rest) {
+        if (badCnt[s] >= lo && badCnt[s] <= hi) { chosen[t] = s; rec(t + 1, rest ^ s); }
+        if (s === 0) break;
       }
-    })(0);
+    })(0, full);
     fc.frCache.set(key, best);
     return best;
   }
@@ -1464,7 +1643,9 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
       return v;
     }
     const endF = Math.max(0, 1 - ctx.deckLeft / P.holdEndDeck);
-    return best * (P.holdBad + P.holdBadEnd * endF);
+    // a held thief can be played later onto a weapon that is worn by then
+    const hb = c.t === T.THIEF && P.holdThief >= 0 ? P.holdThief : P.holdBad;
+    return best * (hb + P.holdBadEnd * endF);
   }
 
   function teamValue(g, piles, held) {
@@ -1610,12 +1791,12 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
   // for each, and pick the own move that is best on average.
   function pimcMove(g, p, moves) {
     const P = g.policy, ctx = g.ctx;
-    const pool = Int32Array.from(ctx.rem);
+    const pool = Float64Array.from(ctx.rem);
     for (const c of g.players[p].hand) pool[code(c)]--;
     for (const pile of g.piles) for (const c of pile) pool[code(c)]--;
-    for (const id of g.known) pool[code(g.cards[id])]--;
+    for (const id of knownIds(g)) pool[code(g.cards[id])]--;
     const bag = [];
-    for (let cd = 0; cd < pool.length; cd++) for (let k = 0; k < pool[cd]; k++) bag.push({ id: -2 - bag.length, t: cd >> 6, v: cd & 63 });
+    for (let cd = 0; cd < pool.length; cd++) for (let k = 0, m = bagCount(g, pool[cd]); k < m; k++) bag.push({ id: -2 - bag.length, t: cd >> 6, v: cd & 63 });
     const mine = g.players[p].hand;
     const score = new Map(); // move index -> summed value
     const moveIdx = new Map();
@@ -1849,10 +2030,11 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
 
   function fleeDeltaHand(g, hand) {
     const P = g.policy, ctx = g.ctx;
-    const pool = Int32Array.from(ctx.rem);
+    const pool = Float64Array.from(ctx.rem);
     for (const c of hand) pool[code(c)]--;
     let B = 0;
-    for (const id of g.known) {
+    if (P.memory === 'human') { const bot = bottomPosNeg(g); B = bot.pos - bot.neg; }
+    for (const id of knownIds(g)) {
       const c = g.cards[id];
       pool[code(c)]--;
       B += staticValue(g, c);
@@ -1917,10 +2099,34 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     return { pos: pos / cnt, neg: neg / cnt };
   }
   function bottomPosNeg(g) {
+    if (g.policy.memory === 'human') return humanBottom(g);
     const cs = [];
     for (const id of g.known) cs.push(g.cards[id]);
     return posNeg(g, cs);
   }
+  // Human memory of the deck bottom: of the last few fled hands only a rough impression
+  // is kept ("many enemies", "mixed", "many heals/weapons") and how many of their cards
+  // are still in the deck (that follows from the deck size). The impression is turned
+  // into pos/neg values of a typical hand of that kind.
+  function humanBottom(g) {
+    const P = g.policy, hist = g.fleeHist || [];
+    if (!g.memAvg) {
+      let gp = 0, gn = 0, bp = 0, bn = 0;
+      for (const c of g.cards) { const v = staticValue(g, c); if (isBad(c)) { bp += -v; bn++; } else { gp += v; gn++; } }
+      g.memAvg = { pos: gn ? gp / gn : 0, neg: bn ? bp / bn : 0 };
+    }
+    let pos = 0, neg = 0;
+    for (let i = hist.length - 1; i >= 0 && i >= hist.length - P.memFlees; i--) {
+      let n = 0, bad = 0;
+      for (const id of hist[i]) if (g.known.has(id)) { n++; if (isBad(g.cards[id])) bad++; }
+      if (!n) continue;
+      const share = bad / n, f = share >= 0.6 ? 0.75 : share <= 0.4 ? 0.25 : 0.5;
+      pos += n * (1 - f) * g.memAvg.pos;
+      neg += n * f * g.memAvg.neg;
+    }
+    return { pos, neg };
+  }
+
   function averagePosNeg(g) {
     const pn = posNeg(g, g.cards);
     return { pos: pn.pos / g.cards.length, neg: pn.neg / g.cards.length };
@@ -2057,6 +2263,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
       weaponEquip: 0, weaponDiscard: 0, weaponStolen: 0,
       magicEquip: 0, magicDiscard: 0, magicUsed: 0, smithUsed: 0, smithDiscard: 0,
       thiefDamage: 0, thiefSteal: 0, passes: 0, flees: 0, fights: 0,
+      stealWeaponSum: 0, stealCanBlock: 0, stealFresh: 0, stealRemE: 0, stealAltWorn: 0, thiefHeld: 0, stealReplaced: 0, // what the stolen weapons were still worth; thieves held back
       startSeat: new Array(nP).fill(0),
     };
   }
@@ -2082,6 +2289,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
       players: [],
       round: 0, fledLast: false, lastStart: -1,
       known: new Set(), // ids of cards in the deck whose identity is public (put under by fleeing)
+      fleeHist: [], // card ids per flee, oldest first (for players with a human-like memory)
       totalCodes, resolvedCodes: new Int32Array(config.CODE_SPACE),
       resolvedCount: 0, totalEnemySum, resolvedEnemySum: 0,
       piles: null, badCount: null, passed: null, lastHand: false, ctx: null,
@@ -2129,6 +2337,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     g.fleeRng.shuffle(all);
     g.deck.unshift(...all); // under the deck
     for (const c of all) g.known.add(c.id);
+    g.fleeHist.push(all.map((c) => c.id));
     g.fledLast = true;
     g.st.flees++;
     if (g.log) g.log.push('  → FLUCHT. Unter das Deck: ' + fmtCards(all));
@@ -2152,6 +2361,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
       if (g.lastHand) throw new Error('In der letzten Hand darf nicht gepasst werden');
       g.passed[p] = true;
       g.st.passes++;
+      if (pl.hand[0].t === T.THIEF) g.st.thiefHeld++;
       if (g.log) g.log.push('  ' + SEAT[p] + ' passt (hält ' + label(pl.hand[0]) + ')');
       return;
     }
@@ -2179,7 +2389,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
       if (pile.indexOf(a.card) < 0 || seen.has(a.card.id)) throw new Error('Ungültige Karte in der Abhandlung');
       seen.add(a.card.id);
     }
-    let healUsed = false;
+    let healUsed = false, stolen = false;
     const parts = [];
     for (const a of actions) {
       const c = a.card, v = c.v;
@@ -2194,6 +2404,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
           } else if (a.opt === 1) {
             const w = pl.weapon;
             if (!w) throw new Error('Keine Waffe zum Blocken');
+            if (v === 0) throw new Error('Gegner der Stärke 0 werden ohne Waffe abgehandelt');
             const k = w.kills;
             if (k.length && !(v < k[k.length - 1])) throw new Error('Waffe kann ' + label(c) + ' nicht blocken (letzter Gegner ' + k[k.length - 1] + ')');
             dmg = Math.max(0, v - w.v); st.dmgWeapon += dmg; st.prevWeapon += v - dmg;
@@ -2201,6 +2412,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
             parts.push(label(c) + ' Waffe −' + dmg);
           } else if (a.opt === 2) {
             if (!pl.magic) throw new Error('Keine Magie');
+            if (v === 0) throw new Error('Gegner der Stärke 0 werden ohne Magie abgehandelt');
             dmg = Math.max(0, v - pl.magic); st.dmgMagic += dmg; st.prevMagic += v - dmg; st.magicUsed++;
             pl.magic = 0;
             parts.push(label(c) + ' Magie −' + dmg);
@@ -2214,7 +2426,17 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
           if (a.opt === 1) {
             if (!pl.weapon) throw new Error('Dieb: keine Waffe zum Stehlen');
             parts.push('D nimmt W' + pl.weapon.v);
-            pl.weapon = null; st.thiefSteal++; st.weaponStolen++;
+            { // how much the stolen weapon was still worth: fresh or not, enemies it could still block
+              const remE = (x) => g.totalCodes[T.ENEMY * 64 + x] - g.resolvedCodes[T.ENEMY * 64 + x];
+              const canBlock = (wp) => { const kk = wp.kills, l = kk.length ? kk[kk.length - 1] : Infinity; let n = 0; for (let x = 1; x < 64 && x < l; x++) n += remE(x); return n; };
+              const w = pl.weapon, k = w.kills, can = canBlock(w);
+              let all = 0;
+              for (let x = 1; x < 64; x++) all += remE(x);
+              st.stealWeaponSum += w.v; st.stealCanBlock += can; st.stealRemE += all; if (!k.length) st.stealFresh++;
+              // another player had a more worn weapon (could have taken the thief more cheaply)
+              if (g.players.some((o) => o !== pl && o.weapon && canBlock(o.weapon) < can)) st.stealAltWorn++;
+            }
+            pl.weapon = null; st.thiefSteal++; st.weaponStolen++; stolen = true;
           } else if (a.opt === 0) {
             pl.hp -= g.cfg.thiefDamage; st.dmgThief += g.cfg.thiefDamage; st.thiefDamage++;
             if (pl.hp < g.lowHp) g.lowHp = pl.hp;
@@ -2236,7 +2458,10 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
           break;
         }
         case T.WEAPON: {
-          if (a.opt === 0) { pl.weapon = { v, kills: [] }; st.weaponEquip++; parts.push(label(c) + ' angelegt'); }
+          if (a.opt === 0) {
+            pl.weapon = { v, kills: [] }; st.weaponEquip++; parts.push(label(c) + ' angelegt');
+            if (stolen) { st.stealReplaced++; stolen = false; } // thief took the old weapon, the new one follows: nearly free
+          }
           else if (a.opt === 1) { st.weaponDiscard++; parts.push(label(c) + ' verworfen'); }
           else throw new Error('Ungültige Aktion für Waffe');
           break;
@@ -2428,6 +2653,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     'healed', 'healOver', 'healDiscard', 'healDiscardValue',
     'weaponEquip', 'weaponDiscard', 'weaponStolen', 'magicEquip', 'magicDiscard', 'magicUsed',
     'smithUsed', 'smithDiscard', 'thiefDamage', 'thiefSteal', 'passes', 'flees', 'fights',
+    'stealReplaced', 'thiefHeld',
   ];
 
   function aggregate(results, maxHp) {
@@ -2593,16 +2819,17 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
   }
 
   // ------------------------------------------------------------------ state
-  const state = { cfg: clone(C.DEFAULT_CONFIG), policy: 'expert', policyJson: '', runs: [], refIdx: -1, versions: [], selected: new Set() };
+  const state = { cfg: clone(C.DEFAULT_CONFIG), policy: 'human', policyJson: '', runs: [], refIdx: -1, versions: [], selected: new Set() };
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
-    if (saved && saved.cfg) Object.assign(state, { cfg: saved.cfg, policy: saved.policy || state.policy, policyJson: saved.policyJson || '' });
+    // pv 2: "Mensch" became the default – older saved choices are switched over once
+    if (saved && saved.cfg) Object.assign(state, { cfg: saved.cfg, policy: saved.pv === 2 && saved.policy ? saved.policy : state.policy, policyJson: saved.policyJson || '' });
     state.versions = JSON.parse(localStorage.getItem(VERSIONS_KEY) || '[]');
   } catch (e) { /* storage unavailable */ }
   if (!state.cfg.cards3) state.cfg.cards3 = [];
-  if (!E.ai.PRESETS[state.policy]) state.policy = 'expert';
+  if (!E.ai.PRESETS[state.policy]) state.policy = 'human';
   function save() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify({ cfg: state.cfg, policy: state.policy, policyJson: state.policyJson })); } catch (e) { /* ignore */ }
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ pv: 2, cfg: state.cfg, policy: state.policy, policyJson: state.policyJson })); } catch (e) { /* ignore */ }
   }
   function saveVersions() {
     try { localStorage.setItem(VERSIONS_KEY, JSON.stringify(state.versions)); } catch (e) { /* ignore */ }
@@ -2614,7 +2841,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     return Object.assign({}, E.ai.PRESETS[state.policy] || {}, over);
   }
   function policyLabel() {
-    const names = { expert: 'Experte', fast: 'Schnell', untrained: 'Untrainiert', random: 'Zufall' };
+    const names = { human: 'Mensch', humanfast: 'Mensch schnell', expert: 'Experte', fast: 'Schnell', untrained: 'Untrainiert', random: 'Zufall' };
     return (names[state.policy] || state.policy) + (state.policyJson.trim() ? ' + Anpassung' : '');
   }
 
@@ -2651,7 +2878,10 @@ self.onmessage = function (e) {
   }
 
   // Runs games [0, games) – in workers if possible, else chunked on the main thread.
-  // onProgress(fraction) is called after every finished chunk.
+  // onProgress(fraction, added) is called after every finished chunk. "added" holds the
+  // results that just joined the unbroken prefix of finished chunks: only those are used
+  // for live estimates, because chunks with short (lost) games finish first and would
+  // otherwise bias the running numbers.
   function runBatch(cfg, policy, seed, games, onProgress, token) {
     const p = getPool();
     const slow = policy.play === 'pimc';
@@ -2660,16 +2890,25 @@ self.onmessage = function (e) {
     for (let from = 0; from < games; from += chunk) jobs.push({ from, to: Math.min(games, from + chunk) });
     const out = [];
     let done = 0;
+    const byJob = [];
+    let prefix = 0;
+    const finishJob = (ji, res) => {
+      byJob[ji] = res;
+      const added = [];
+      while (prefix < jobs.length && byJob[prefix]) { added.push(...byJob[prefix]); byJob[prefix] = true; prefix++; }
+      return added;
+    };
     if (!p.workers.length) {
       return new Promise((resolve, reject) => {
         let j = 0;
         (function step() {
           if (token.cancelled) return reject(new Error('abgebrochen'));
           try {
-            const job = jobs[j++];
-            out.push(...E.engine.runGames(cfg, policy, seed, job.from, job.to));
+            const ji = j++, job = jobs[ji];
+            const res = E.engine.runGames(cfg, policy, seed, job.from, job.to);
+            out.push(...res);
             done += job.to - job.from;
-            onProgress(done / games);
+            onProgress(done / games, finishJob(ji, res));
           } catch (e) { return reject(e); }
           if (j < jobs.length) setTimeout(step, 0); else resolve(out.sort((a, b) => a.index - b.index));
         })();
@@ -2681,14 +2920,14 @@ self.onmessage = function (e) {
       const feed = (w) => {
         if (failed) return;
         if (next >= jobs.length) { if (active === 0) resolve(out.sort((a, b) => a.index - b.index)); return; }
-        const job = jobs[next++];
+        const ji = next++, job = jobs[ji];
         active++;
         w.onmessage = (ev) => {
           active--;
           if (ev.data.error) { failed = true; killPool(); return reject(new Error(ev.data.error)); }
           out.push(...ev.data.res);
           done += job.to - job.from;
-          onProgress(done / games);
+          onProgress(done / games, finishJob(ji, ev.data.res));
           feed(w);
         };
         w.onerror = (ev) => { failed = true; killPool(); reject(new Error(ev.message || 'Worker-Fehler')); };
@@ -2713,108 +2952,261 @@ self.onmessage = function (e) {
     });
   }
 
-  // ------------------------------------------------------------------ config editor
-  function renderCardList(listKey, tbodyId) {
+  // ------------------------------------------------------------------ deck editor
+  // Matrix per card type: one small card per strength with its count. Thief and smith
+  // have no strength, only a count. Enemies may have strength 0.
+  const TYPE_COLOR = { enemy: '--t-enemy', thief: '--t-thief', heal: '--t-heal', weapon: '--t-weapon', magic: '--t-magic', smith: '--t-smith' };
+  const VALUE_RANGE = { enemy: [0, 14], heal: [1, 10], weapon: [1, 10], magic: [1, 10] };
+  const TYPE_HINT = { thief: 'Stiehlt eine Waffe oder macht Diebschaden.', smith: 'Entfernt den obersten Gegner von einer Waffe.' };
+  const ui = { list: 'cards', extra: {} }; // extra = additional strength columns per type (display only)
+  // display order: types with a strength first, then thief and smith (count only) together
+  const SHOW_ORDER = ['enemy', 'heal', 'weapon', 'magic', 'thief', 'smith'];
+  const TYPES_SHOWN = SHOW_ORDER.map((k) => C.TYPES.find((t) => t.key === k));
+
+  const listTotal = (list) => list.reduce((s, e) => s + Number(e.count || 0), 0);
+  function countOf(list, type, value) {
+    const e = list.find((x) => x.type === type && Number(x.value) === value);
+    return e ? Number(e.count) : 0;
+  }
+  function setCount(list, type, value, n) {
+    n = Math.max(0, Math.min(99, Math.floor(Number(n)) || 0));
+    const i = list.findIndex((x) => x.type === type && Number(x.value) === value);
+    if (i >= 0) { if (n) list[i].count = n; else list.splice(i, 1); } else if (n) list.push({ type, value, count: n });
+  }
+
+  function renderComposition() {
     const cfg = state.cfg;
-    const list = cfg[listKey];
-    const order = (e) => C.TYPE_BY_KEY[e.type].t * 100 + (Number(e.value) || 0);
-    list.sort((a, b) => order(a) - order(b));
-    const tb = $(tbodyId);
-    tb.textContent = '';
-    if (!list.length) tb.appendChild(el('tr', null, [el('td', { colspan: '4', class: 'hint', text: listKey === 'cards3' ? 'Keine Zusatzkarten – bei 3 Spielern wird das Grunddeck gespielt.' : 'Keine Karten.' })]));
-    list.forEach((e, i) => {
+    const players = ui.list === 'cards3' ? 3 : Number(cfg.players);
+    const comp = $('composition');
+    comp.textContent = '';
+    let n;
+    try { n = C.normalize(Object.assign(clone(cfg), { players })); } catch (e) { comp.appendChild(el('p', { class: 'hint', text: 'Fehler im Deck: ' + e.message })); return; }
+    const by = {};
+    let total = 0;
+    for (const e of n.deckCards) { by[e.type] = (by[e.type] || 0) + e.count; total += e.count; }
+    const extraN = listTotal(n.cards3);
+    $('deckCount').textContent = total + ' Karten bei ' + players + ' Spielern' + (players === 3 && extraN ? ' (davon ' + extraN + ' Zusatzkarten)' : '');
+    $('listSel').querySelector('[data-list="cards"]').textContent = 'Grunddeck · ' + listTotal(cfg.cards);
+    $('listSel').querySelector('[data-list="cards3"]').textContent = 'Zusatz bei 3 Spielern · ' + listTotal(cfg.cards3);
+    const shown = TYPES_SHOWN.filter((t) => by[t.key]);
+    const bar = el('div', { class: 'comp-bar', role: 'img', 'aria-label': 'Zusammensetzung: ' + shown.map((t) => t.name + ' ' + by[t.key]).join(', ') });
+    for (const t of shown) bar.appendChild(el('span', { style: 'flex:' + by[t.key] + ';background:var(' + TYPE_COLOR[t.key] + ')', title: t.name + ': ' + by[t.key] + ' Karten (' + pct(by[t.key] / total, 0) + ')' }));
+    const legend = el('div', { class: 'comp-legend' }, shown.map((t) => el('span', null, [el('i', { style: 'background:var(' + TYPE_COLOR[t.key] + ')' }), t.name + ' ', el('b', { text: String(by[t.key]) }), ' · ' + pct(by[t.key] / total, 0)])));
+    const sum = (type) => n.deckCards.filter((e) => e.type === type).reduce((s, e) => s + e.count * e.value, 0);
+    const facts = el('div', { class: 'comp-legend' }, [
+      el('span', null, ['Gegnerstärke gesamt ', el('b', { text: String(sum('enemy')) })]),
+      el('span', null, ['Heilung gesamt ', el('b', { text: String(sum('heal')) })]),
+      el('span', null, ['Waffenstärke gesamt ', el('b', { text: String(sum('weapon')) })]),
+      el('span', null, ['Leben gesamt ', el('b', { text: String(players * cfg.hp) })]),
+    ]);
+    if (total) comp.append(bar, legend, facts);
+    else comp.appendChild(el('p', { class: 'hint', text: 'Das Deck ist leer – unten Anzahlen eintragen oder „Standarddeck laden“.' }));
+  }
+
+  function rowSummary(t, list) {
+    const rows = list.filter((e) => e.type === t.key);
+    const n = listTotal(rows), sum = rows.reduce((s2, e) => s2 + Number(e.count) * Number(e.value), 0);
+    return n + (n === 1 ? ' Karte' : ' Karten') + (t.hasValue && n ? ' · Summe ' + sum : '');
+  }
+
+  // Count field: every keystroke is stored at once (no waiting for blur), on leaving the
+  // field the shown number is replaced by the stored one, and the mouse wheel never
+  // changes a count by accident while scrolling the page.
+  function bindCount(inp, commitFn) {
+    inp.addEventListener('input', () => { if (inp.value !== '') commitFn(inp.value); });
+    inp.addEventListener('change', () => { inp.value = String(commitFn(inp.value)); });
+    inp.addEventListener('wheel', () => { if (document.activeElement === inp) inp.blur(); });
+  }
+
+  function renderDeck() {
+    const cfg = state.cfg, list = cfg[ui.list];
+    for (const b of $('listSel').querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.list === ui.list));
+    $('listNote').hidden = ui.list !== 'cards3';
+    $('presetEmpty').textContent = ui.list === 'cards3' ? 'Zusatzkarten leeren' : 'Grunddeck leeren';
+    renderComposition();
+    const box = $('typeRows');
+    box.textContent = '';
+    for (const t of TYPES_SHOWN) {
+      const rows = list.filter((e) => e.type === t.key);
+      const n = listTotal(rows), sum = rows.reduce((s, e) => s + Number(e.count) * Number(e.value), 0);
+      const row = el('div', { class: 'trow', style: '--tc:var(' + TYPE_COLOR[t.key] + ')' });
+      const info = el('div', { class: 'tinfo' }, [
+        el('div', { class: 'tname' }, [el('i'), t.name]),
+        el('div', { class: 'tsum', text: rowSummary(t, state.cfg[ui.list]) }),
+      ]);
+      const tsum = info.querySelector('.tsum');
+      // a typed number only updates its own card, the row sum and the bar – no re-render,
+      // so Tab to the next field keeps working
+      const commit = (value, n2, cellEl) => {
+        setCount(state.cfg[ui.list], t.key, value, n2);
+        const now = countOf(state.cfg[ui.list], t.key, value);
+        if (cellEl) { cellEl.classList.toggle('zero', !now); cellEl.title = t.name + ' der Stärke ' + value + ': ' + now + '×'; }
+        tsum.textContent = rowSummary(t, state.cfg[ui.list]);
+        save();
+        renderComposition();
+        fillSweepParams();
+        return now;
+      };
+      if (t.hasValue) info.appendChild(el('div', { class: 'cl', style: 'font-size:11px;color:var(--muted)', text: 'Karte: oben Stärke, darunter Anzahl' }));
+      row.appendChild(info);
+      if (t.hasValue) {
+        const [lo, hiDefault] = VALUE_RANGE[t.key];
+        const vals = rows.map((e) => Number(e.value));
+        const from = Math.min(lo, ...vals), to = Math.max(hiDefault + (ui.extra[t.key] || 0), ...vals);
+        const allIn = el('input', { type: 'number', min: '0', max: '99', placeholder: 'Anz.', 'aria-label': t.name + ': Anzahl für alle Stärken', style: 'width:58px;padding:2px 6px;font-size:12px' });
+        info.appendChild(el('div', { class: 'tquick' }, [
+          allIn,
+          el('button', { class: 'btn', text: 'alle setzen', title: 'Jede angezeigte Stärke ' + from + '–' + to + ' auf diese Anzahl setzen', onclick: () => {
+            if (allIn.value === '') return;
+            for (let x = from; x <= to; x++) setCount(list, t.key, x, allIn.value);
+            changed(true);
+          } }),
+          el('button', { class: 'btn', text: 'leeren', onclick: () => { for (const v of vals) setCount(list, t.key, v, 0); ui.extra[t.key] = 0; changed(true); } }),
+        ]));
+        const cells = el('div', { class: 'cells' });
+        for (let x = from; x <= to; x++) {
+          const c = countOf(list, t.key, x);
+          const inp = el('input', { type: 'number', min: '0', max: '99', value: String(c), 'aria-label': t.name + ' Stärke ' + x + ': Anzahl' });
+          const cell = el('label', { class: 'cell' + (c ? '' : ' zero'), title: t.name + ' der Stärke ' + x + ': ' + c + '×' }, [
+            el('span', { class: 'cv', text: String(x) }), inp,
+          ]);
+          bindCount(inp, (v) => commit(x, v, cell));
+          cells.appendChild(cell);
+        }
+        cells.appendChild(el('button', { class: 'cell add', title: 'Stärke ' + (to + 1) + ' hinzufügen', 'aria-label': t.name + ': Stärke ' + (to + 1) + ' hinzufügen', text: '+', onclick: () => { ui.extra[t.key] = (ui.extra[t.key] || 0) + 1; renderDeck(); } }));
+        row.appendChild(cells);
+      } else {
+        const c = countOf(list, t.key, 0);
+        const inp = el('input', { type: 'number', min: '0', max: '99', value: String(c), 'aria-label': t.name + ': Anzahl' });
+        bindCount(inp, (v) => commit(0, v, null));
+        const step = (d) => () => { inp.value = String(commit(0, countOf(state.cfg[ui.list], t.key, 0) + d, null)); };
+        row.appendChild(el('div', { class: 'plain-count' }, [
+          el('span', { class: 'stepper' }, [el('button', { text: '−', 'aria-label': t.name + ' weniger', onclick: step(-1) }), inp, el('button', { text: '+', 'aria-label': t.name + ' mehr', onclick: step(1) })]),
+          el('span', { class: 'hint', style: 'margin:0', text: TYPE_HINT[t.key] }),
+        ]));
+      }
+      box.appendChild(row);
+    }
+  }
+
+  // One entry per card (type + strength): older saved decks could contain the same card
+  // several times – the counts are added up so every field shows the real number.
+  function mergeList(list) {
+    const out = [], idx = new Map();
+    for (const e of list || []) {
       const ti = C.TYPE_BY_KEY[e.type];
-      const typeSel = el('select', { 'aria-label': 'Typ' }, C.TYPES.map((t) => el('option', { value: t.key, text: t.name })));
-      typeSel.value = e.type;
-      typeSel.addEventListener('change', () => { e.type = typeSel.value; if (!C.TYPE_BY_KEY[e.type].hasValue) e.value = 0; else if (!e.value) e.value = 2; changed(true); });
-      const val = el('input', { type: 'number', min: '1', max: '63', value: String(e.value), 'aria-label': 'Wert' });
-      if (!ti.hasValue) { val.disabled = true; val.value = ''; }
-      val.addEventListener('change', () => { e.value = Math.max(1, Math.min(63, Number(val.value) || 1)); changed(true); });
-      const cnt = el('input', { type: 'number', min: '0', max: '99', value: String(e.count), 'aria-label': 'Anzahl' });
-      cnt.addEventListener('change', () => { e.count = Math.max(0, Number(cnt.value) || 0); changed(false); });
-      const del = el('button', { class: 'ghost', title: 'Entfernen', 'aria-label': 'Entfernen', text: '✕', onclick: () => { list.splice(i, 1); changed(true); } });
-      tb.appendChild(el('tr', null, [el('td', null, [typeSel]), el('td', null, [val]), el('td', null, [cnt]), el('td', null, [del])]));
-    });
+      if (!ti) continue;
+      const value = ti.hasValue ? Number(e.value) || 0 : 0, count = Math.max(0, Number(e.count) || 0);
+      const k = e.type + ':' + value;
+      if (idx.has(k)) out[idx.get(k)].count += count;
+      else if (count) { idx.set(k, out.length); out.push({ type: e.type, value, count }); }
+    }
+    return out;
   }
 
   function renderConfig() {
     const cfg = state.cfg;
-    if (!cfg.cards3) cfg.cards3 = [];
+    cfg.cards = mergeList(cfg.cards);
+    cfg.cards3 = mergeList(cfg.cards3);
+    save();
     for (const b of $('players').querySelectorAll('button')) b.setAttribute('aria-pressed', String(Number(b.dataset.v) === Number(cfg.players)));
     $('hp').value = cfg.hp;
     $('thiefDamage').value = cfg.thiefDamage;
     $('fleeBlockDeck').value = cfg.fleeBlockDeck;
-    $('handInfo').textContent = 'Handkarten je Spieler: ' + C.handSize(Number(cfg.players)) + ' (fest durch die Spieleranzahl)';
+    $('handInfo').textContent = 'Handkarten je Spieler: ' + C.handSize(Number(cfg.players)) + ' (fest durch die Spieleranzahl).';
     $('policy').value = state.policy;
     $('policyJson').value = state.policyJson;
-    renderCardList('cards', 'cardRows');
-    renderCardList('cards3', 'cardRows3');
-    renderSummary();
+    renderDeck();
     renderPolicyHint();
-  }
-
-  function deckStats(cfg, players) {
-    const n = C.normalize(Object.assign(clone(cfg), { players }));
-    const by = {};
-    let total = 0;
-    for (const e of n.deckCards) {
-      const b = by[e.type] || (by[e.type] = { n: 0, sum: 0 });
-      b.n += e.count; b.sum += e.count * (e.value || 0); total += e.count;
-    }
-    return { by, total };
-  }
-
-  function renderSummary() {
-    const cfg = state.cfg, s = $('deckSummary');
-    s.textContent = '';
-    try {
-      for (const players of [2, 3]) {
-        const { by, total } = deckStats(cfg, players);
-        const active = Number(cfg.players) === players;
-        s.appendChild(el('div', { style: active ? '' : 'opacity:.65' }, [
-          el('b', { text: players + ' Spieler: ' + total + ' Karten' }), ' · ' + C.TYPES.filter((t) => by[t.key] && by[t.key].n).map((t) => t.name + ' ' + by[t.key].n).join(' · ') +
-          ' · Gegnerstärke ' + (by.enemy ? by.enemy.sum : 0) + ' · Heilung ' + (by.heal ? by.heal.sum : 0) + ' · Leben gesamt ' + players * cfg.hp,
-        ]));
-      }
-    } catch (e) { s.appendChild(el('div', { text: 'Fehler: ' + e.message })); }
   }
 
   function renderPolicyHint() {
     const hints = {
-      expert: 'Schließt aus den Flucht- und Startsignalen auf die Partnerhand (PIMC). Ca. 0,4 s je Spiel und Prozessorkern, mit 3 Spielern ca. 2 s – 1000 Spiele dauern je nach Rechner etwa 1–4 Minuten.',
-      fast: 'Gleiche trainierte Bewertung, aber ohne Partnerhand-Schluss: einige tausend Spiele pro Sekunde, ideal für große Sweeps. Spielt etwas schwächer als der Experte.',
-      untrained: 'Die Bewertung vor der Evolution – zeigt, wie viel das Training gebracht hat.',
-      random: 'Spielt zufällige erlaubte Züge – untere Grenze zum Vergleich.',
+      human: 'Spielt wie der Experte, merkt sich aber nur, was Menschen sich merken: Die 2 stärksten Gegnerwerte werden mitgezählt, von den letzten 2 Fluchten bleibt nur ein grober Eindruck (viele Gegner / gemischt / viel Heilung oder Waffe). Für das Balancing gedacht.',
+      humanfast: 'Menschliches Gedächtnis wie „Mensch“, aber ohne Partnerhand-Schluss. Gut für große Sweeps, etwas schwächer.',
+      expert: 'Schließt aus den Flucht- und Startsignalen auf die Partnerhand. Ca. 0,4 s je Spiel und Prozessorkern, mit 3 Spielern ca. 2 s.',
+      fast: 'Gleiche trainierte Bewertung ohne Partnerhand-Schluss. Tausende Spiele pro Sekunde, gut für große Sweeps, etwas schwächer.',
+      untrained: 'Bewertung vor der Evolution. Zeigt, wie viel das Training gebracht hat.',
+      random: 'Spielt zufällige erlaubte Züge. Untere Grenze zum Vergleich.',
     };
     $('policyHint').textContent = hints[state.policy] || '';
   }
 
+  // ---- live estimate while a simulation runs
+  function newLive(total) { return { total, n: 0, wins: 0, prog: 0, winMin: 0, hist: [[0, NaN, 0, 1]] }; }
+  function addLive(L, added) {
+    for (const r of added) { L.n++; L.prog += r.progress; if (r.win) { L.wins++; L.winMin += r.minHp; } }
+    if (added.length) { const ci = E.stats.wilson(L.wins, L.n); L.hist.push([L.n, L.wins / L.n, ci[0], ci[1]]); }
+  }
+
+  // Win rate with its 95 % interval (Wilson), an interval bar and the convergence curve:
+  // the estimate and its band over the number of games counted so far.
+  function renderLive(L, done) {
+    const q = $('quickResult');
+    q.textContent = '';
+    if (!L || !L.n) { q.appendChild(el('p', { class: 'hint', text: 'Erste Spiele laufen …' })); return; }
+    const p = L.wins / L.n, ci = E.stats.wilson(L.wins, L.n), half = (ci[1] - ci[0]) / 2;
+    q.appendChild(el('div', { class: 'headline' }, [
+      el('span', { class: 'big', text: pct(p) }),
+      el('span', { class: 'sub' }, [
+        el('b', { text: '95 %-Konfidenz ' + pct(ci[0]) + ' – ' + pct(ci[1]) }),
+        ' (± ' + num(half * 100) + ' Pkt.) · ' + (done ? L.n + ' Spiele' : 'live aus ' + L.n + ' von ' + L.total + ' Spielen'),
+      ]),
+    ]));
+    // interval bar on 0–100 %
+    const bar = el('div', { class: 'ci-bar', role: 'img', 'aria-label': 'Siegquote ' + pct(p) + ', Konfidenz ' + pct(ci[0]) + ' bis ' + pct(ci[1]) }, [
+      el('span', { class: 'ci-band', style: 'left:' + ci[0] * 100 + '%;width:' + (ci[1] - ci[0]) * 100 + '%' }),
+      el('span', { class: 'ci-dot', style: 'left:' + p * 100 + '%' }),
+    ]);
+    q.appendChild(el('div', { class: 'ci-wrap' }, [bar, el('div', { class: 'ci-scale' }, [el('span', { text: '0 %' }), el('span', { text: '50 %' }), el('span', { text: '100 %' })])]));
+    // convergence curve
+    const H = L.hist.filter((h) => h[0] > 0);
+    if (H.length >= 2) {
+      const W = 420, Hh = 120, padL = 38, padR = 8, padT = 6, padB = 18;
+      let lo = 1, hi = 0;
+      const tail = H.slice(Math.floor(H.length * 0.15)); // ignore the wild first points for the scale
+      for (const h of tail) { if (h[2] < lo) lo = h[2]; if (h[3] > hi) hi = h[3]; }
+      lo = Math.max(0, lo - 0.02); hi = Math.min(1, hi + 0.02);
+      if (hi - lo < 0.06) { const m = (hi + lo) / 2; lo = Math.max(0, m - 0.03); hi = Math.min(1, m + 0.03); }
+      const X = (n) => padL + (n / L.total) * (W - padL - padR);
+      const Y = (v) => padT + (1 - (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (Hh - padT - padB);
+      const svg = sv('svg', { viewBox: '0 0 ' + W + ' ' + Hh, class: 'conv', role: 'img', 'aria-label': 'Verlauf der Schätzung' });
+      for (const v of [lo, (lo + hi) / 2, hi]) {
+        svg.appendChild(sv('line', { x1: padL, x2: W - padR, y1: Y(v), y2: Y(v), class: 'grid' }));
+        const t = sv('text', { x: padL - 4, y: Y(v) + 3, 'text-anchor': 'end', class: 'tick' }); t.textContent = Math.round(v * 100) + ' %'; svg.appendChild(t);
+      }
+      const band = H.map((h) => X(h[0]) + ',' + Y(h[3])).concat(H.slice().reverse().map((h) => X(h[0]) + ',' + Y(h[2])));
+      svg.appendChild(sv('polygon', { points: band.join(' '), class: 'band' }));
+      svg.appendChild(sv('polyline', { points: H.map((h) => X(h[0]) + ',' + Y(h[1])).join(' '), class: 'est' }));
+      const last = H[H.length - 1];
+      svg.appendChild(sv('circle', { cx: X(last[0]), cy: Y(last[1]), r: 3, class: 'est-dot' }));
+      const xl = sv('text', { x: W - padR, y: Hh - 4, 'text-anchor': 'end', class: 'tick' }); xl.textContent = L.total + ' Spiele'; svg.appendChild(xl);
+      const x0 = sv('text', { x: padL, y: Hh - 4, class: 'tick' }); x0.textContent = '0'; svg.appendChild(x0);
+      q.appendChild(svg);
+    }
+    q.appendChild(el('p', { class: 'hint', style: 'margin-top:4px', text:
+      'Ø Deckfortschritt ' + pct(L.prog / L.n, 0) + (L.wins ? ' · schwächster Spieler bei Sieg Ø ' + num(L.winMin / L.wins) + ' LP' : '') +
+      (done ? ' · Details unten' : ' · Band = 95 %-Konfidenz, wird mit jedem Block enger') }));
+  }
+
+  function deckMsg(t) {
+    $('deckMsg').textContent = t;
+    clearTimeout(deckMsg.t);
+    deckMsg.t = setTimeout(() => { $('deckMsg').textContent = ''; }, 2500);
+  }
+
   function changed(rerender) {
     save();
-    if (rerender) renderConfig(); else renderSummary();
+    if (rerender) renderConfig(); else renderComposition();
     fillSweepParams();
   }
 
   function setupConfig() {
+    for (const b of $('listSel').querySelectorAll('button')) b.addEventListener('click', () => { ui.list = b.dataset.list; renderDeck(); });
     for (const b of $('players').querySelectorAll('button')) b.addEventListener('click', () => { state.cfg.players = Number(b.dataset.v); changed(true); });
     for (const id of ['hp', 'thiefDamage', 'fleeBlockDeck']) $(id).addEventListener('change', () => { state.cfg[id] = Math.max(0, Number($(id).value) || 0); if (id === 'hp') state.cfg.hp = Math.max(1, state.cfg.hp); changed(true); });
-    $('presetStd').addEventListener('click', () => { state.cfg = clone(C.DEFAULT_CONFIG); changed(true); });
-    $('presetEmpty').addEventListener('click', () => { state.cfg.cards = []; state.cfg.cards3 = []; changed(true); });
-    $('addRow').addEventListener('click', () => { state.cfg.cards.push({ type: 'enemy', value: 2, count: 1 }); changed(true); });
-    $('addRow3').addEventListener('click', () => { state.cfg.cards3.push({ type: 'heal', value: 5, count: 1 }); changed(true); });
-    const gt = $('genType');
-    for (const t of C.TYPES) gt.appendChild(el('option', { value: t.key, text: t.name }));
-    $('genAdd').addEventListener('click', () => {
-      const list = state.cfg[$('genList').value];
-      const type = gt.value, ti = C.TYPE_BY_KEY[type], count = Math.max(0, Number($('genCount').value) || 0);
-      const from = ti.hasValue ? Math.max(1, Number($('genFrom').value) || 1) : 0, to = ti.hasValue ? Math.min(63, Number($('genTo').value) || from) : 0;
-      for (let v = from; v <= to; v++) {
-        const idx = list.findIndex((e) => e.type === type && Number(e.value) === v);
-        if (idx >= 0) { if (count) list[idx].count = count; else list.splice(idx, 1); }
-        else if (count) list.push({ type, value: v, count });
-      }
-      changed(true);
-    });
+    $('presetStd').addEventListener('click', () => { state.cfg = clone(C.DEFAULT_CONFIG); ui.extra = {}; changed(true); deckMsg('Standarddeck geladen.'); });
+    $('presetEmpty').addEventListener('click', () => { state.cfg[ui.list] = []; changed(true); deckMsg(ui.list === 'cards3' ? 'Zusatzkarten geleert.' : 'Grunddeck geleert.'); });
     $('policy').addEventListener('change', () => { state.policy = $('policy').value; save(); renderPolicyHint(); });
     $('policyJson').addEventListener('change', () => { state.policyJson = $('policyJson').value; save(); });
     $('exportCfg').addEventListener('click', () => download('errantry-deck.json', state.cfg));
@@ -2823,8 +3215,8 @@ self.onmessage = function (e) {
       if (!f) return;
       const r = new FileReader();
       r.onload = () => {
-        try { const cfg = JSON.parse(r.result); C.normalize(cfg); state.cfg = Object.assign(clone(C.DEFAULT_CONFIG), cfg); changed(true); }
-        catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
+        try { const cfg = JSON.parse(r.result); C.normalize(cfg); state.cfg = Object.assign(clone(C.DEFAULT_CONFIG), cfg); changed(true); deckMsg('Deck importiert.'); }
+        catch (e) { deckMsg('Import fehlgeschlagen: ' + e.message); }
       };
       r.readAsText(f);
       ev.target.value = '';
@@ -2981,7 +3373,7 @@ self.onmessage = function (e) {
   let runToken = null;
   async function runSimulation() {
     let policy;
-    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert('Konfiguration ungültig: ' + e.message); return; }
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { $('runInfo').textContent = 'Konfiguration ungültig: ' + e.message; return; }
     const games = Math.max(10, Math.floor(Number($('games').value) || 1000));
     const seed = Math.floor(Number($('seed').value) || 0);
     const cfg = clone(state.cfg);
@@ -2991,10 +3383,15 @@ self.onmessage = function (e) {
     const tok = runToken;
     $('bar').style.width = '0%';
     $('runInfo').textContent = 'startet …';
+    const L = newLive(games);
+    let drawPending = false;
+    renderLive(L, false);
     try {
-      const res = await runBatch(cfg, policy, seed, games, (f) => {
+      const res = await runBatch(cfg, policy, seed, games, (f, added) => {
         $('bar').style.width = (f * 100).toFixed(1) + '%';
         $('runInfo').textContent = etaText(t0, f, Math.round(f * games) + ' / ' + games + ' Spiele');
+        addLive(L, added);
+        if (added.length && !drawPending) { drawPending = true; requestAnimationFrame(() => { drawPending = false; if (!L.done) renderLive(L, false); }); }
       }, tok);
       const ms = performance.now() - t0;
       const s = E.stats.aggregate(res, cfg.hp);
@@ -3002,6 +3399,8 @@ self.onmessage = function (e) {
       state.runs.unshift(run);
       if (state.refIdx >= 0) state.refIdx++;
       $('runInfo').textContent = games + ' Spiele in ' + fmtTime(ms / 1000);
+      L.done = true;
+      renderLive(L, true);
       renderResults();
       renderRuns();
     } catch (e) {
@@ -3016,8 +3415,34 @@ self.onmessage = function (e) {
     const by = {};
     for (const e of n.deckCards) by[e.type] = (by[e.type] || 0) + Number(e.count);
     const extra = n.cards3.reduce((x, e) => x + e.count, 0);
-    return cfg.players + ' Sp. · ' + cfg.hp + ' LP · ' + C.TYPES.filter((t) => by[t.key]).map((t) => t.short + by[t.key]).join(' ') +
+    return cfg.players + ' Sp. · ' + cfg.hp + ' LP · ' + TYPES_SHOWN.filter((t) => by[t.key]).map((t) => t.short + by[t.key]).join(' ') +
       (extra ? (Number(cfg.players) === 3 ? ' (inkl. ' + extra + ' Zusatzkarten)' : ' · +' + extra + ' Zusatzkarten bei 3 Sp.') : '');
+  }
+
+  // The exact deck this run shuffled (built the same way as the engine does), so the
+  // input can be checked against what was really simulated.
+  function deckDetail(cfg) {
+    const n = C.normalize(clone(cfg));
+    const total = n.deckCards.reduce((x, e) => x + e.count, 0);
+    const d = el('details', { class: 'deck-detail' }, [
+      el('summary', { text: 'Simuliertes Deck: ' + total + ' Karten, ' + n.players + ' Spieler, ' + n.hp + ' LP (aufklappen zum Prüfen)' }),
+    ]);
+    for (const t of TYPES_SHOWN) {
+      const rows = n.deckCards.filter((e) => e.type === t.key).sort((a, b) => a.value - b.value);
+      if (!rows.length) continue;
+      const cnt = rows.reduce((x, e) => x + e.count, 0);
+      const parts = t.hasValue ? rows.map((e) => e.count + '× ' + e.value).join(' · ') : cnt + '×';
+      d.appendChild(el('div', { class: 'dd-row' }, [el('b', { text: t.name + ' (' + cnt + '): ' }), parts]));
+    }
+    return d;
+  }
+
+  // 95 % interval of the difference of two win rates in points (independent samples –
+  // with the same seed the true interval is narrower, so this errs on the safe side)
+  function diffCI(a, b) {
+    const se = Math.sqrt((a.winRate * (1 - a.winRate)) / Math.max(1, a.games) + (b.winRate * (1 - b.winRate)) / Math.max(1, b.games));
+    const d = a.winRate - b.winRate;
+    return { lo: (d - 1.96 * se) * 100, hi: (d + 1.96 * se) * 100 };
   }
 
   function tile(l, v, d) { return el('div', { class: 'tile' }, [el('div', { class: 'l', text: l }), el('div', { class: 'v', text: v }), d ? el('div', { class: 'd', text: d }) : null]); }
@@ -3026,7 +3451,7 @@ self.onmessage = function (e) {
     const box = $('results');
     box.textContent = '';
     const run = state.runs[0];
-    if (!run) { box.appendChild(el('div', { class: 'card empty', text: 'Noch keine Simulation.' })); return; }
+    if (!run) { box.appendChild(el('div', { class: 'card empty', text: 'Noch keine Simulation. Deck einstellen und rechts „Simulieren“ drücken – die Auswertung erscheint hier.' })); return; }
     const ref = state.refIdx > 0 ? state.runs[state.refIdx] : null;
     const s = run.s, rs = ref ? ref.s : null;
     const c1 = cssVar('--series-1'), c2 = cssVar('--series-2');
@@ -3040,7 +3465,11 @@ self.onmessage = function (e) {
         el('div', { text: '95 %-Konfidenz: ' + pct(s.winCI[0]) + ' – ' + pct(s.winCI[1]) }),
         el('div', { text: s.games + ' Spiele · ' + s.wins + ' Siege · KI: ' + run.policyLabel }),
         el('div', { text: run.label }),
-        dWin !== null ? el('div', { class: dWin >= 0 ? 'delta-up' : 'delta-down', text: (dWin >= 0 ? '▲ +' : '▼ ') + num(dWin) + ' Pkt. gegenüber Referenz (' + pct(rs.winRate) + ')' }) : null,
+        dWin !== null ? (() => {
+          const d = diffCI(s, rs), sure = d.lo > 0 || d.hi < 0;
+          return el('div', { class: !sure ? 'hint' : dWin >= 0 ? 'delta-up' : 'delta-down', text: (dWin >= 0 ? '▲ +' : '▼ ') + num(dWin) + ' Pkt. gegenüber Referenz (' + pct(rs.winRate) + ') · 95 %-KI des Unterschieds ' +
+            (d.lo >= 0 ? '+' : '') + num(d.lo) + ' bis ' + (d.hi >= 0 ? '+' : '') + num(d.hi) + ' Pkt. · ' + (sure ? 'sicher ' + (dWin >= 0 ? 'besser' : 'schlechter') : 'nicht sicher, kann Zufall sein') });
+        })() : null,
       ]),
     ]));
     const t = el('div', { class: 'tiles' });
@@ -3051,6 +3480,7 @@ self.onmessage = function (e) {
     t.appendChild(tile('Runden pro Spiel', num(s.avgRounds), 'davon Kämpfe ' + num(s.avgFights)));
     t.appendChild(tile('Score Ø', num(s.avgScore), 'Sieg = Restleben, Niederlage = −Restgegner'));
     hero.appendChild(t);
+    hero.appendChild(deckDetail(run.cfg));
     box.appendChild(hero);
 
     const grid = el('div', { class: 'grid2' });
@@ -3071,7 +3501,7 @@ self.onmessage = function (e) {
     const cs = [{ name: 'Aktuell', color: c1, values: s.lossProgress.map((k) => (k / lossN) * 100) }];
     if (rs) cs.push({ name: 'Referenz', color: c2, values: rs.lossProgress.map((k) => (k / Math.max(1, rs.games - rs.wins)) * 100) });
     if (rs) lb.card.insertBefore(legend(cs.map((x) => ({ name: x.name, color: x.color, rect: true }))), lb.wrap);
-    columnChart(lb, { cats: s.lossProgress.map((_, i) => i * 10 + '–' + (i * 10 + 10)), series: cs, yFmt: (y) => Math.round(y) + ' %', catTip: (c) => c + ' % des Decks', xLabel: 'Deckfortschritt (%)', aria: 'Niederlagen nach Fortschritt' });
+    columnChart(lb, { cats: s.lossProgress.map((_, i) => String(i * 10 + 10)), series: cs, yFmt: (y) => Math.round(y) + ' %', catTip: (c) => (Number(c) - 10) + '–' + c + ' % des Decks', xLabel: 'Deckfortschritt bis … %', aria: 'Niederlagen nach Fortschritt' });
 
     // death causes
     const db = chartBox('Todesursachen', 'Karte, die den letzten Treffer gesetzt hat (Anteil der Niederlagen)');
@@ -3096,6 +3526,7 @@ self.onmessage = function (e) {
       ['Schaden durch Faust', 'dmgFist'], ['Restschaden trotz Waffe', 'dmgWeapon'], ['Restschaden trotz Magie', 'dmgMagic'], ['Schaden durch Diebe', 'dmgThief'],
       ['Von Waffen verhindert', 'prevWeapon'], ['Von Magie verhindert', 'prevMagic'], ['Geheilt', 'healed'], ['Heilung über Maximum verschenkt', 'healOver'],
       ['Heilkarten verworfen', 'healDiscard'], ['Waffen angelegt', 'weaponEquip'], ['Waffen verworfen', 'weaponDiscard'], ['Waffen gestohlen', 'weaponStolen'],
+      ['… davon direkt durch neue Waffe ersetzt', 'stealReplaced'], ['Diebe 10 Schaden', 'thiefDamage'], ['Diebe zurückgehalten', 'thiefHeld'],
       ['Magie benutzt', 'magicUsed'], ['Schmied benutzt', 'smithUsed'], ['Karten gehalten (gepasst)', 'passes'], ['Fluchten', 'flees'],
     ].filter(([, k]) => c[k] || (rc && rc[k]));
     const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, [el('th', { text: 'Kennzahl' }), el('th', { text: 'Aktuell' }), rc ? el('th', { text: 'Referenz' }) : null])])]);
@@ -3147,6 +3578,17 @@ self.onmessage = function (e) {
     btn._flash = setTimeout(() => { btn.textContent = btn.dataset.label; }, 1500);
   }
 
+  // button that asks once more before acting (instead of a confirm dialog)
+  function twoStep(label, ask, title, act) {
+    const b = el('button', { class: 'btn', text: label, title });
+    b.addEventListener('click', () => {
+      if (b.dataset.armed) { act(); return; }
+      b.dataset.armed = '1'; b.textContent = ask; b.style.color = 'var(--critical)';
+      setTimeout(() => { delete b.dataset.armed; b.textContent = label; b.style.color = ''; }, 3000);
+    });
+    return b;
+  }
+
   function renderVersions() {
     const box = $('verList');
     box.textContent = '';
@@ -3166,19 +3608,15 @@ self.onmessage = function (e) {
         el('div', null, [el('div', { class: 'name', text: v.name }), el('div', { class: 'meta', title: meta, text: meta })]),
         el('div', { class: 'acts' }, [
           el('button', { class: 'btn', text: 'Laden', onclick: () => { state.cfg = clone(v.cfg); if (!state.cfg.cards3) state.cfg.cards3 = []; changed(true); } }),
-          el('button', { class: 'btn', text: 'Überschreiben', title: 'Mit dem aktuellen Stand links überschreiben', onclick: () => {
-            if (confirm('Version „' + v.name + '“ mit dem aktuellen Stand überschreiben?')) { v.cfg = clone(state.cfg); v.saved = Date.now(); delete v.lastResult; saveVersions(); renderVersions(); }
-          } }),
-          el('button', { class: 'ghost', text: '✕', title: 'Löschen', 'aria-label': 'Löschen', onclick: () => {
-            if (confirm('Version „' + v.name + '“ löschen?')) { state.versions.splice(i, 1); state.selected.delete(v.id); saveVersions(); renderVersions(); }
-          } }),
+          twoStep('Überschreiben', 'Wirklich überschreiben?', 'Mit dem aktuellen Deck überschreiben', () => { v.cfg = clone(state.cfg); v.saved = Date.now(); delete v.lastResult; saveVersions(); renderVersions(); }),
+          twoStep('Löschen', 'Wirklich löschen?', 'Version löschen', () => { state.versions.splice(i, 1); state.selected.delete(v.id); saveVersions(); renderVersions(); }),
         ]),
       ]));
     });
   }
 
   function saveVersion() {
-    try { C.normalize(state.cfg); } catch (e) { alert('Konfiguration ungültig: ' + e.message); return; }
+    try { C.normalize(state.cfg); } catch (e) { flash($('verSave'), 'Deck ungültig'); return; }
     const name = $('verName').value.trim() || 'Version ' + (state.versions.length + 1);
     const v = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name, cfg: clone(state.cfg), saved: Date.now() };
     state.versions.push(v);
@@ -3208,7 +3646,7 @@ self.onmessage = function (e) {
           }
           saveVersions();
           renderVersions();
-        } catch (e) { alert('Import fehlgeschlagen: ' + e.message); }
+        } catch (e) { $('cmpInfo').textContent = 'Import fehlgeschlagen: ' + e.message; }
       };
       r.readAsText(f);
       ev.target.value = '';
@@ -3220,9 +3658,9 @@ self.onmessage = function (e) {
   let cmpToken = null;
   async function runCompare() {
     const vs = state.versions.filter((v) => state.selected.has(v.id));
-    if (!vs.length) { alert('Bitte mindestens eine Version auswählen.'); return; }
+    if (!vs.length) { $('cmpInfo').textContent = 'Bitte mindestens eine Version auswählen (Häkchen links).'; return; }
     let policy;
-    try { policy = currentPolicy(); } catch (e) { alert('KI-Parameter ungültig: ' + e.message); return; }
+    try { policy = currentPolicy(); } catch (e) { $('cmpInfo').textContent = 'KI-Parameter ungültig: ' + e.message; return; }
     const mode = $('cmpPlayers').value;
     const games = Math.max(50, Number($('cmpGames').value) || 1000), seed = Math.floor(Number($('seed').value) || 0);
     const jobs = [];
@@ -3298,65 +3736,120 @@ self.onmessage = function (e) {
   }
 
   // ------------------------------------------------------------------ sweep
+  const VALUED = TYPES_SHOWN.filter((t) => t.hasValue);
   function fillSweepParams() {
     const sel = $('swParam');
     const prev = sel.value;
     sel.textContent = '';
     const g1 = el('optgroup', { label: 'Spiel' }, [
-      el('option', { value: 'hp', text: 'Leben je Spieler' }),
+      el('option', { value: 'hp', text: 'Leben je Spieler (Startleben = max. Leben)' }),
       el('option', { value: 'thiefDamage', text: 'Diebschaden' }),
       el('option', { value: 'fleeBlockDeck', text: 'Fluchtsperre (Karten im Deck)' }),
       el('option', { value: 'players', text: 'Spieleranzahl (2–3)' }),
     ]);
-    const g2 = el('optgroup', { label: 'Anzahl je Wert für alle Karten eines Typs' }, C.TYPES.map((t) => el('option', { value: 'copies:' + t.key, text: t.name + (t.hasValue ? ' (jeder Wert)' : ' (Anzahl)') })));
-    const g3 = el('optgroup', { label: 'Anzahl einer einzelnen Karte' }, state.cfg.cards.filter((e) => C.TYPE_BY_KEY[e.type].hasValue).map((e) => el('option', { value: 'count:' + e.type + ':' + e.value, text: C.TYPE_BY_KEY[e.type].name + ' ' + e.value })));
-    sel.append(g1, g2, g3);
+    const g2 = el('optgroup', { label: 'Wertebereich eines Typs (neue Werte mit der üblichen Anzahl)' }, VALUED.flatMap((t) => [
+      el('option', { value: 'max:' + t.key, text: t.name + ': höchste Stärke' }),
+      el('option', { value: 'min:' + t.key, text: t.name + ': niedrigste Stärke' }),
+    ]));
+    const g3 = el('optgroup', { label: 'Anzahl je Wert für alle Karten eines Typs' }, TYPES_SHOWN.map((t) => el('option', { value: 'copies:' + t.key, text: t.name + (t.hasValue ? ' (jeder vorhandene Wert)' : ' (Anzahl)') })));
+    // every single card, also strengths that are not in the deck yet (e.g. enemy 0 or 16)
+    const g4 = el('optgroup', { label: 'Anzahl einer einzelnen Karte' });
+    for (const t of VALUED) {
+      const [lo, hi] = VALUE_RANGE[t.key];
+      const present = state.cfg.cards.filter((e) => e.type === t.key).map((e) => Number(e.value));
+      const top = Math.max(hi, ...present, t.key === 'enemy' ? 18 : hi);
+      for (let v = Math.min(lo, ...present); v <= top; v++) {
+        const n = countOf(state.cfg.cards, t.key, v);
+        g4.appendChild(el('option', { value: 'count:' + t.key + ':' + v, text: t.name + ' ' + v + (n ? ' (jetzt ' + n + '×)' : ' (jetzt keine)') }));
+      }
+    }
+    sel.append(g1, g2, g3, g4);
     if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  }
+
+  const rowsOf = (cfg, type) => cfg.cards.filter((e) => e.type === type);
+  // the usual count of a type (most frequent count among its values), for new values
+  function usualCount(cfg, type) {
+    const freq = {};
+    for (const e of rowsOf(cfg, type)) freq[e.count] = (freq[e.count] || 0) + 1;
+    const best = Object.entries(freq).sort((a, b) => b[1] - a[1] || b[0] - a[0])[0];
+    return best ? Number(best[0]) : 1;
+  }
+
+  // sensible from/to/step when a parameter is picked
+  function sweepDefaults(param) {
+    const cfg = state.cfg;
+    const [kind, type, value] = param.split(':');
+    const vals = type ? rowsOf(cfg, type).map((e) => Number(e.value)) : [];
+    let d;
+    if (param === 'hp') d = [10, 30, 2];
+    else if (param === 'thiefDamage') d = [4, 16, 2];
+    else if (param === 'fleeBlockDeck') d = [0, 12, 2];
+    else if (param === 'players') d = [2, 3, 1];
+    else if (kind === 'max') { const cur = vals.length ? Math.max(...vals) : 8; d = [Math.max(VALUE_RANGE[type][0] + 1, cur - 4), cur + 4, 1]; }
+    else if (kind === 'min') { const cur = vals.length ? Math.min(...vals) : 2; d = [VALUE_RANGE[type][0], cur + 4, 1]; }
+    else if (kind === 'copies') d = C.TYPE_BY_KEY[type].hasValue ? [0, 6, 1] : [0, 10, 1];
+    else if (kind === 'count') { const cur = countOf(cfg.cards, type, Number(value)); d = [0, Math.max(6, cur + 3), 1]; }
+    if (d) { $('swFrom').value = d[0]; $('swTo').value = d[1]; $('swStep').value = d[2]; }
+    $('swPlayers').disabled = param === 'players';
   }
 
   function applySweep(cfg, param, v) {
     if (param === 'hp' || param === 'thiefDamage' || param === 'fleeBlockDeck' || param === 'players') { cfg[param] = v; return; }
     const [kind, type, value] = param.split(':');
+    const ti = C.TYPE_BY_KEY[type];
     if (kind === 'copies') {
-      const ti = C.TYPE_BY_KEY[type];
-      const rows = cfg.cards.filter((e) => e.type === type);
+      const rows = rowsOf(cfg, type);
       if (!ti.hasValue && !rows.length) cfg.cards.push({ type, value: 0, count: v });
       for (const e of rows) e.count = v;
     } else if (kind === 'count') {
       const row = cfg.cards.find((e) => e.type === type && Number(e.value) === Number(value));
       if (row) row.count = v; else cfg.cards.push({ type, value: Number(value), count: v });
+    } else if (kind === 'max' || kind === 'min') {
+      // strengths beyond v are removed, missing ones up to v are added with the usual count
+      const k = usualCount(cfg, type), vals = rowsOf(cfg, type).map((e) => Number(e.value));
+      const lo = kind === 'max' ? (vals.length ? Math.min(...vals) : 2) : v;
+      const hi = kind === 'max' ? v : (vals.length ? Math.max(...vals) : VALUE_RANGE[type][1]);
+      cfg.cards = cfg.cards.filter((e) => e.type !== type || (Number(e.value) >= lo && Number(e.value) <= hi));
+      for (let x = lo; x <= hi; x++) if (!cfg.cards.some((e) => e.type === type && Number(e.value) === x)) cfg.cards.push({ type, value: x, count: k });
     }
+    cfg.cards = cfg.cards.filter((e) => e.count > 0);
   }
 
   let swToken = null;
   async function runSweep() {
     let policy;
-    try { policy = currentPolicy(); } catch (e) { alert('KI-Parameter ungültig: ' + e.message); return; }
+    try { policy = currentPolicy(); } catch (e) { $('swInfo').textContent = 'KI-Parameter ungültig: ' + e.message; return; }
     const param = $('swParam').value, from = Number($('swFrom').value), to = Number($('swTo').value), step = Math.max(1, Number($('swStep').value) || 1);
     const games = Math.max(50, Number($('swGames').value) || 1000), seed = Math.floor(Number($('seed').value) || 0);
     const xs = [];
     for (let v = from; from <= to ? v <= to : v >= to; v += from <= to ? step : -step) xs.push(v);
-    if (!xs.length || xs.length > 60) { alert('Bitte 1 bis 60 Messpunkte wählen.'); return; }
+    if (!xs.length || xs.length > 60) { $('swInfo').textContent = 'Bitte 1 bis 60 Messpunkte wählen.'; return; }
+    const pSel = $('swPlayers').value;
+    const playerSets = param === 'players' ? [null] : pSel === 'both' ? [2, 3] : pSel === 'deck' ? [Number(state.cfg.players)] : [Number(pSel)];
     const label = $('swParam').selectedOptions[0].textContent;
     $('swRun').disabled = true; $('swStop').hidden = false;
     const t0 = performance.now();
     swToken = { cancelled: false };
     const tok = swToken;
-    const pts = [];
+    const curves = playerSets.map((pl) => ({ players: pl, pts: [] }));
     const out = $('swResults');
+    const jobs = [];
+    for (const c of curves) for (const x of xs) jobs.push({ c, x });
     try {
-      for (let i = 0; i < xs.length; i++) {
+      for (let i = 0; i < jobs.length; i++) {
+        const { c, x } = jobs[i];
         const cfg = clone(state.cfg);
-        applySweep(cfg, param, xs[i]);
-        C.normalize(cfg);
+        if (c.players) cfg.players = c.players;
+        applySweep(cfg, param, x);
+        const n = C.normalize(cfg);
         const res = await runBatch(cfg, policy, seed, games, (f) => {
-          const tf = (i + f) / xs.length;
+          const tf = (i + f) / jobs.length;
           $('swBar').style.width = (tf * 100).toFixed(1) + '%';
-          $('swInfo').textContent = etaText(t0, tf, 'Punkt ' + (i + 1) + '/' + xs.length + ' (' + xs[i] + ')');
+          $('swInfo').textContent = etaText(t0, tf, 'Punkt ' + (i + 1) + '/' + jobs.length + ' (' + x + (c.players ? ', ' + c.players + ' Spieler' : '') + ')');
         }, tok);
-        const s = E.stats.aggregate(res, cfg.hp);
-        pts.push({ x: xs[i], s });
-        renderSweep(out, label, pts, games);
+        c.pts.push({ x, s: E.stats.aggregate(res, cfg.hp), cards: n.deckCards.reduce((a, e) => a + e.count, 0) });
+        renderSweep(out, label, curves, games);
       }
       $('swInfo').textContent = 'fertig in ' + fmtTime((performance.now() - t0) / 1000);
     } catch (e) {
@@ -3366,27 +3859,45 @@ self.onmessage = function (e) {
     }
   }
 
-  function renderSweep(out, label, pts, games) {
+  function renderSweep(out, label, curves, games) {
     out.textContent = '';
-    const c1 = cssVar('--series-1');
-    const box = chartBox('Siegquote abhängig von: ' + label, games + ' Spiele je Punkt · Fläche = 95 %-Konfidenzintervall');
+    const colors = [cssVar('--series-1'), cssVar('--series-2')];
+    const shown = curves.filter((c) => c.pts.length);
+    const all = shown.flatMap((c) => c.pts);
+    const sub = (shown.length === 1 && shown[0].players ? shown[0].players + ' Spieler · ' : '') + games + ' Spiele je Punkt · Fläche = 95 %-Konfidenzintervall';
+    const box = chartBox('Siegquote abhängig von: ' + label, sub);
     out.appendChild(box.card);
-    const xs = pts.map((p) => p.x);
-    const yMax = Math.min(100, niceMax(Math.max(5, ...pts.map((p) => p.s.winCI[1] * 100))));
+    const series = shown.map((c, i) => ({
+      name: c.players ? c.players + ' Spieler' : 'Siegquote', color: colors[i % 2], markers: true,
+      pts: c.pts.map((p) => [p.x, p.s.winRate * 100]), band: c.pts.map((p) => [p.x, p.s.winCI[0] * 100, p.s.winCI[1] * 100]),
+    }));
+    if (series.length > 1) box.card.insertBefore(legend(series), box.wrap);
+    const xs = [...new Set(all.map((p) => p.x))].sort((a, b) => a - b);
+    const yMax = Math.min(100, niceMax(Math.max(5, ...all.map((p) => p.s.winCI[1] * 100))));
     lineChart(box, {
-      series: [{ name: 'Siegquote', color: c1, markers: true, pts: pts.map((p) => [p.x, p.s.winRate * 100]), band: pts.map((p) => [p.x, p.s.winCI[0] * 100, p.s.winCI[1] * 100]) }],
-      xDomain: [Math.min(...xs), Math.max(...xs) === Math.min(...xs) ? Math.min(...xs) + 1 : Math.max(...xs)], yMax,
+      series,
+      xDomain: [xs[0], xs[xs.length - 1] === xs[0] ? xs[0] + 1 : xs[xs.length - 1]], yMax,
       xTicks: xs.length <= 12 ? xs : xs.filter((_, i) => i % Math.ceil(xs.length / 12) === 0),
-      xFmt: (x) => String(x), yFmt: (y) => Math.round(y) + ' %', yFmtTip: (y, s, x) => { const p = pts.find((q) => q.x === x); return num(y) + ' % (' + pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) + ')'; },
+      xFmt: (x) => String(x), yFmt: (y) => Math.round(y) + ' %',
+      yFmtTip: (y, s, x) => { const c = shown[series.indexOf(s)] || shown[0]; const p = c.pts.find((q) => q.x === x); return num(y) + ' %' + (p ? ' (' + pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) + ')' : ''); },
       xLabel: label, aria: 'Sweep',
     });
     const card = el('div', { class: 'card' });
     card.appendChild(el('h2', { text: 'Messpunkte' }));
-    const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, ['Wert', 'Siegquote', '95 %-KI', 'Ø Fortschritt', 'Ø Restleben (Sieg)', 'Fluchten/Spiel'].map((h) => el('th', { text: h })))])]);
+    const multi = shown.some((c) => c.players);
+    const heads = (multi ? ['Spieler'] : []).concat(['Wert', 'Karten', 'Siegquote', '95 %-KI', 'Ø Fortschritt', 'Ø Restleben (Sieg)', 'schwächster (Sieg)', 'Fluchten/Spiel']);
+    const tbl = el('table', { class: 'data' }, [el('thead', null, [el('tr', null, heads.map((h) => el('th', { text: h })))])]);
     const tb = el('tbody');
-    for (const p of pts) tb.appendChild(el('tr', null, [el('td', { text: String(p.x) }), el('td', { class: 'n', text: pct(p.s.winRate) }), el('td', { class: 'n', text: pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) }), el('td', { class: 'n', text: pct(p.s.avgProgress, 0) }), el('td', { class: 'n', text: num(p.s.avgWinSumHp) }), el('td', { class: 'n', text: num(p.s.counters.flees, 2) })]));
+    for (const c of shown) for (const p of c.pts) {
+      tb.appendChild(el('tr', null, (multi ? [el('td', { class: 'n', text: String(c.players) })] : []).concat([
+        el('td', { text: String(p.x) }), el('td', { class: 'n', text: String(p.cards) }),
+        el('td', { class: 'n', text: pct(p.s.winRate) }), el('td', { class: 'n', text: pct(p.s.winCI[0]) + ' – ' + pct(p.s.winCI[1]) }),
+        el('td', { class: 'n', text: pct(p.s.avgProgress, 0) }), el('td', { class: 'n', text: num(p.s.avgWinSumHp) }), el('td', { class: 'n', text: num(p.s.avgWinMinHp) }),
+        el('td', { class: 'n', text: num(p.s.counters.flees, 2) }),
+      ])));
+    }
     tbl.appendChild(tb);
-    card.appendChild(tbl);
+    card.appendChild(el('div', { style: 'overflow-x:auto' }, [tbl]));
     out.appendChild(card);
   }
 
@@ -3413,7 +3924,7 @@ self.onmessage = function (e) {
   async function showGame(index) {
     if (gBusy) return;
     let policy;
-    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return; }
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { $('gInfo').textContent = e.message; return; }
     const seed = Math.floor(Number($('gSeed').value) || 0);
     gBusy = true;
     $('gInfo').textContent = 'rechnet …';
@@ -3429,7 +3940,7 @@ self.onmessage = function (e) {
   async function findGame(wantWin) {
     if (gBusy) return;
     let policy;
-    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { alert(e.message); return; }
+    try { policy = currentPolicy(); C.normalize(state.cfg); } catch (e) { $('gInfo').textContent = e.message; return; }
     const seed = Math.floor(Number($('gSeed').value) || 0);
     gBusy = true;
     let i = Number($('gIndex').value) + 1;
@@ -3489,9 +4000,11 @@ self.onmessage = function (e) {
   renderVersions();
   fillSweepParams();
   renderHelp();
+  renderResults();
   $('runBtn').addEventListener('click', runSimulation);
   $('stopBtn').addEventListener('click', () => { if (runToken) { runToken.cancelled = true; if (runToken.cancel) runToken.cancel(); } });
   $('swRun').addEventListener('click', runSweep);
+  $('swParam').addEventListener('change', () => sweepDefaults($('swParam').value));
   $('swStop').addEventListener('click', () => { if (swToken) { swToken.cancelled = true; if (swToken.cancel) swToken.cancel(); } });
   $('gRun').addEventListener('click', () => showGame(Math.floor(Number($('gIndex').value) || 0)));
   $('gNextLoss').addEventListener('click', () => findGame(false));

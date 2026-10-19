@@ -4,6 +4,9 @@
 // re-tested on fresh games every generation, so lucky variants do not stick.
 //   node cli/evolve.js [--pop 48] [--elite 8] [--games 1000] [--gens 40] [--seed 500]
 //                      [--from tuning/evolve-best.json] [--out tuning/evolve-best.json]
+//   --cfgs rand:8   every generation 8 freshly drawn plausible decks (configs.randomDeck);
+//                   decks the reference policy almost never or almost always wins are
+//                   skipped (--band 0.1,0.95). --vcfgs: fixed decks for the final validation.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -126,6 +129,8 @@ function parseArgs(argv) {
     else if (k === '--fit') a.fit = next();
     else if (k === '--pol') a.pol = next();
     else if (k === '--cfgs') a.cfgs = next();
+    else if (k === '--vcfgs') a.vcfgs = next();
+    else if (k === '--band') a.band = next().split(',').map(Number);
     else throw new Error('Unbekannte Option: ' + k);
   }
   if (a.genes === 'rules') { GENES.length = 0; GENES.push(...RULE_GENES); }
@@ -190,8 +195,12 @@ async function main() {
   const a = parseArgs(process.argv.slice(2));
   const W = Object.assign({}, FIT_DEFAULT, parseKV(a.fit));
   const fixed = parseKV(a.pol); // policy settings that are not evolved (e.g. play=pimc)
-  const cfgs = configs.resolve(a.cfgs || 'std2');
+  const randM = /^rand:(\d+)$/.exec(a.cfgs || '');
+  const nRand = randM ? Number(randM[1]) : 0;
+  let cfgs = nRand ? [] : configs.resolve(a.cfgs || 'std2');
   for (const c of cfgs) for (const s of a.set) { const [k, v] = s.split('='); c.cfg[k] = Number(v); }
+  const vcfgs = a.vcfgs ? configs.resolve(a.vcfgs) : cfgs;
+  const band = a.band || [0.1, 0.95];
   const rng = rngMod.makeRng(a.seed * 7919 + 13);
   const base = ai.makePolicy({});
   const start = {};
@@ -210,13 +219,30 @@ async function main() {
   const memory = new Map(); // genome key -> { genome, sum, n, sumWin }
   let pop = [start];
   while (pop.length < a.pop) pop.push(mutate(start, rng, a.pm, 1));
-  const perCfg = Math.max(1, Math.round(a.games / cfgs.length));
-  log('Evolution: ' + a.pop + ' Varianten × ' + perCfg * cfgs.length + ' Spiele × ' + a.gens + ' Generationen · Konfigurationen: ' + cfgs.map((c) => c.name).join(', '));
+  const perCfg = Math.max(1, Math.round(a.games / (nRand || cfgs.length)));
+  log('Evolution: ' + a.pop + ' Varianten × ' + perCfg * (nRand || cfgs.length) + ' Spiele × ' + a.gens + ' Generationen · Konfigurationen: ' +
+    (nRand ? 'je Generation ' + nRand + ' neu gewürfelte Decks (Siegquote der Referenz ' + band.map((x) => Math.round(x * 100) + '%').join('–') + ')' : cfgs.map((c) => c.name).join(', ')));
   log('Fitness-Gewichte: ' + JSON.stringify(W) + (Object.keys(fixed).length ? ' · feste Einstellungen: ' + JSON.stringify(fixed) : ''));
   const t0 = Date.now();
   let totalGames = 0;
   const bar = progress.tracker('Errantry Evolution');
-  const perGen = a.pop * perCfg * cfgs.length;
+  const perGen = a.pop * perCfg * (nRand || cfgs.length);
+
+  // fresh plausible decks for one generation; only decks that tell good from bad play
+  // (reference policy wins between band[0] and band[1]) are kept
+  async function drawDecks(gen) {
+    const drng = rngMod.makeRng(a.seed * 31 + gen * 101);
+    const out = [];
+    let tries = 0, skipped = 0;
+    while (out.length < nRand && tries++ < nRand * 10) {
+      const d = configs.randomDeck(drng);
+      const res = await pool.run(d.cfg, pol(start), a.seed + gen * 131 + tries, 160, true);
+      const w = res.reduce((s, r) => s + r[0], 0) / res.length;
+      if (w >= band[0] && w <= band[1]) { d.name += ' (' + Math.round(w * 100) + '%)'; out.push(d); } else skipped++;
+    }
+    log('  Decks Gen ' + gen + ': ' + out.map((d) => d.name).join(' | ') + (skipped ? '  · ' + skipped + ' zu leicht/zu schwer verworfen' : ''));
+    return out;
+  }
   let genNo = 0, genDone = 0, bestTxt = '';
   const tick = () => bar.update(Math.min(1, (genNo - 1 + genDone / perGen) / a.gens), 'Generation ' + genNo + '/' + a.gens + bestTxt);
 
@@ -238,6 +264,7 @@ async function main() {
 
   for (let gen = 1; gen <= a.gens; gen++) {
     const seed = a.seed + gen * 1009;
+    if (nRand) cfgs = await drawDecks(gen);
     genNo = gen; genDone = 0;
     let done = 0;
     const tg = Date.now();
@@ -287,21 +314,23 @@ async function main() {
 
   // validation of the top veterans on fresh games
   const hof = [...memory.values()].filter((m) => m.n >= 2).sort((x, y) => y.sum / y.n - x.sum / x.n).slice(0, 5);
-  const vPer = Math.round(a.validate / cfgs.length);
-  log('\nValidierung der besten ' + hof.length + ' auf ' + vPer * cfgs.length + ' neuen Spielen:');
+  const vPer = Math.round(a.validate / vcfgs.length);
+  log('\nValidierung der besten ' + hof.length + ' auf ' + vPer * vcfgs.length + ' neuen Spielen' + (a.vcfgs ? ' (feste Prüfdecks, nie im Training)' : '') + ':');
+  // the starting point is validated too, so the gain is visible
+  const cands = [{ genome: start, label: 'Ausgangspunkt' }].concat(hof.map((m) => ({ genome: m.genome, label: 'Training Ø ' + (m.sumWin / m.n * 100).toFixed(1) + '% über ' + m.n + ' Gen.' })));
   let champion = null;
-  for (const m of hof) {
+  for (const m of cands) {
     const per = [];
-    for (let ci = 0; ci < cfgs.length; ci++) {
-      const res = await pool.run(cfgs[ci].cfg, pol(m.genome), a.seed + 999999 + ci, vPer, true);
+    for (let ci = 0; ci < vcfgs.length; ci++) {
+      const res = await pool.run(vcfgs[ci].cfg, pol(m.genome), a.seed + 999999 + ci, vPer, true);
       per.push(res.reduce((s, r) => s + r[0], 0) / res.length);
     }
     const win = per.reduce((x, y) => x + y, 0) / per.length;
-    log('  ' + (win * 100).toFixed(2) + '%  [' + per.map((w, i) => cfgs[i].name + ' ' + (w * 100).toFixed(1) + '%').join(', ') + ']  (Training Ø ' + (m.sumWin / m.n * 100).toFixed(1) + '% über ' + m.n + ' Gen.)');
-    if (!champion || win > champion.win) champion = { win, per, genome: m.genome };
+    log('  ' + (win * 100).toFixed(2) + '%  [' + per.map((w, i) => vcfgs[i].name + ' ' + (w * 100).toFixed(1) + '%').join(', ') + ']  (' + m.label + ')');
+    if (m.genome !== start && (!champion || win > champion.win)) champion = { win, per, genome: m.genome };
   }
   if (champion) {
-    fs.writeFileSync(a.out, JSON.stringify({ policy: Object.assign({}, fixed, champion.genome), validatedWin: champion.win, perConfig: Object.fromEntries(cfgs.map((c, i) => [c.name, champion.per[i]])), validateGames: a.validate }, null, 2));
+    fs.writeFileSync(a.out, JSON.stringify({ policy: Object.assign({}, fixed, champion.genome), validatedWin: champion.win, perConfig: Object.fromEntries(vcfgs.map((c, i) => [c.name, champion.per[i]])), validateGames: a.validate }, null, 2));
     log('Champion: ' + (champion.win * 100).toFixed(2) + '%\n' + JSON.stringify(champion.genome));
   }
   log('FERTIG nach ' + fmtTime((Date.now() - t0) / 1000));

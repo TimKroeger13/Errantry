@@ -72,7 +72,8 @@
         if (!ti) throw new Error('Unbekannter Kartentyp: ' + e.type);
         const count = Math.max(0, Math.floor(Number(e.count) || 0));
         const value = ti.hasValue ? Math.floor(Number(e.value)) : 0;
-        if (ti.hasValue && !(value >= 1 && value <= 63)) throw new Error('Kartenwert muss zwischen 1 und 63 liegen: ' + e.type + ' ' + e.value);
+        const minV = ti.t === T.ENEMY ? 0 : 1; // enemies may have strength 0
+        if (ti.hasValue && !(value >= minV && value <= 63)) throw new Error('Kartenwert muss zwischen ' + minV + ' und 63 liegen: ' + ti.name + ' ' + e.value);
         if (count > 0) out.push({ type: e.type, value, count });
       }
       return out;

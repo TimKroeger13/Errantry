@@ -1,0 +1,25 @@
+﻿Strategien: humanfast | humanfast,holdThief=0.3 · 3000 Spiele je Konfiguration · Seed 4711
+  std2    humanfast                    Sieg  70.8%                          Fortschritt 93.3%  Tiefpunkt Ø 1.7  Fluchten 5.34  · 9s · Rest ~3min 18s
+  std2    humanfast,holdThief=0.3      Sieg  72.2%  Δ +1.4 Pkt. (z 2.7)     Fortschritt 93.5%  Tiefpunkt Ø 1.7  Fluchten 5.35  · 8s · Rest ~2min 52s
+  std3    humanfast                    Sieg  94.4%                          Fortschritt 99.2%  Tiefpunkt Ø 3.7  Fluchten 6.19  · 4s · Rest ~2min 14s
+  std3    humanfast,holdThief=0.3      Sieg  95.1%  Δ +0.7 Pkt. (z 2.2)     Fortschritt 99.2%  Tiefpunkt Ø 3.7  Fluchten 6.14  · 4s · Rest ~1min 53s
+  magic2  humanfast                    Sieg  96.1%                          Fortschritt 97.8%  Tiefpunkt Ø 3.1  Fluchten 6.52  · 28s · Rest ~3min 2s
+  magic2  humanfast,holdThief=0.3      Sieg  95.7%  Δ -0.4 Pkt. (z -2.0)    Fortschritt 97.7%  Tiefpunkt Ø 3.1  Fluchten 6.49  · 29s · Rest ~3min 39s
+  smith2  humanfast                    Sieg  84.2%                          Fortschritt 94.8%  Tiefpunkt Ø 2.2  Fluchten 5.64  · 21s · Rest ~3min 40s
+  smith2  humanfast,holdThief=0.3      Sieg  84.8%  Δ +0.6 Pkt. (z 1.4)     Fortschritt 94.7%  Tiefpunkt Ø 2.2  Fluchten 5.63  · 20s · Rest ~3min 35s
+  thief10 humanfast                    Sieg  38.4%                          Fortschritt 87.5%  Tiefpunkt Ø 0.8  Fluchten 5.52  · 6s · Rest ~3min 6s
+  thief10 humanfast,holdThief=0.3      Sieg  40.0%  Δ +1.6 Pkt. (z 1.8)     Fortschritt 87.5%  Tiefpunkt Ø 0.8  Fluchten 5.49  · 6s · Rest ~2min 42s
+  smith10 humanfast                    Sieg  93.4%                          Fortschritt 96.3%  Tiefpunkt Ø 3.1  Fluchten 6.18  · 32s · Rest ~2min 47s
+  smith10 humanfast,holdThief=0.3      Sieg  93.4%  Δ -0.0 Pkt. (z -0.1)    Fortschritt 96.1%  Tiefpunkt Ø 3.1  Fluchten 6.19  · 32s · Rest ~2min 45s
+  magicW  humanfast                    Sieg  98.2%                          Fortschritt 98.9%  Tiefpunkt Ø 3.6  Fluchten 8.20  · 16s · Rest ~2min 28s
+  magicW  humanfast,holdThief=0.3      Sieg  98.3%  Δ +0.0 Pkt. (z 0.2)     Fortschritt 98.9%  Tiefpunkt Ø 3.6  Fluchten 8.15  · 16s · Rest ~2min 12s
+  hp30    humanfast                    Sieg  95.9%                          Fortschritt 99.1%  Tiefpunkt Ø 7.4  Fluchten 5.35  · 11s · Rest ~1min 53s
+  hp30    humanfast,holdThief=0.3      Sieg  96.1%  Δ +0.2 Pkt. (z 0.8)     Fortschritt 99.0%  Tiefpunkt Ø 7.5  Fluchten 5.33  · 11s · Rest ~1min 34s
+  zero    humanfast                    Sieg  73.0%                          Fortschritt 94.1%  Tiefpunkt Ø 1.8  Fluchten 5.68  · 9s · Rest ~1min 16s
+  zero    humanfast,holdThief=0.3      Sieg  75.0%  Δ +1.9 Pkt. (z 3.8)     Fortschritt 94.3%  Tiefpunkt Ø 1.8  Fluchten 5.65  · 9s · Rest ~1min 0s
+  wild2   humanfast                    Sieg  89.2%                          Fortschritt 93.3%  Tiefpunkt Ø 1.2  Fluchten 8.74  · 29s · Rest ~0min 47s
+  wild2   humanfast,holdThief=0.3      Sieg  89.1%  Δ -0.1 Pkt. (z -0.3)    Fortschritt 93.2%  Tiefpunkt Ø 1.2  Fluchten 8.68  · 29s · Rest ~0min 32s
+  wild3   humanfast                    Sieg  36.3%                          Fortschritt 95.8%  Tiefpunkt Ø 0.5  Fluchten 10.31  · 8s · Rest ~0min 16s
+  wild3   humanfast,holdThief=0.3      Sieg  37.3%  Δ +1.0 Pkt. (z 1.0)     Fortschritt 95.6%  Tiefpunkt Ø 0.5  Fluchten 10.26  · 8s · Rest ~0min 0s
+
+Ø über 11 Konfigurationen: humanfast 79.1% | humanfast,holdThief=0.3 79.7% · 5min 44s

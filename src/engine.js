@@ -17,6 +17,7 @@
       weaponEquip: 0, weaponDiscard: 0, weaponStolen: 0,
       magicEquip: 0, magicDiscard: 0, magicUsed: 0, smithUsed: 0, smithDiscard: 0,
       thiefDamage: 0, thiefSteal: 0, passes: 0, flees: 0, fights: 0,
+      stealWeaponSum: 0, stealCanBlock: 0, stealFresh: 0, stealRemE: 0, stealAltWorn: 0, thiefHeld: 0, stealReplaced: 0, // what the stolen weapons were still worth; thieves held back
       startSeat: new Array(nP).fill(0),
     };
   }
@@ -42,6 +43,7 @@
       players: [],
       round: 0, fledLast: false, lastStart: -1,
       known: new Set(), // ids of cards in the deck whose identity is public (put under by fleeing)
+      fleeHist: [], // card ids per flee, oldest first (for players with a human-like memory)
       totalCodes, resolvedCodes: new Int32Array(config.CODE_SPACE),
       resolvedCount: 0, totalEnemySum, resolvedEnemySum: 0,
       piles: null, badCount: null, passed: null, lastHand: false, ctx: null,
@@ -89,6 +91,7 @@
     g.fleeRng.shuffle(all);
     g.deck.unshift(...all); // under the deck
     for (const c of all) g.known.add(c.id);
+    g.fleeHist.push(all.map((c) => c.id));
     g.fledLast = true;
     g.st.flees++;
     if (g.log) g.log.push('  → FLUCHT. Unter das Deck: ' + fmtCards(all));
@@ -112,6 +115,7 @@
       if (g.lastHand) throw new Error('In der letzten Hand darf nicht gepasst werden');
       g.passed[p] = true;
       g.st.passes++;
+      if (pl.hand[0].t === T.THIEF) g.st.thiefHeld++;
       if (g.log) g.log.push('  ' + SEAT[p] + ' passt (hält ' + label(pl.hand[0]) + ')');
       return;
     }
@@ -139,7 +143,7 @@
       if (pile.indexOf(a.card) < 0 || seen.has(a.card.id)) throw new Error('Ungültige Karte in der Abhandlung');
       seen.add(a.card.id);
     }
-    let healUsed = false;
+    let healUsed = false, stolen = false;
     const parts = [];
     for (const a of actions) {
       const c = a.card, v = c.v;
@@ -154,6 +158,7 @@
           } else if (a.opt === 1) {
             const w = pl.weapon;
             if (!w) throw new Error('Keine Waffe zum Blocken');
+            if (v === 0) throw new Error('Gegner der Stärke 0 werden ohne Waffe abgehandelt');
             const k = w.kills;
             if (k.length && !(v < k[k.length - 1])) throw new Error('Waffe kann ' + label(c) + ' nicht blocken (letzter Gegner ' + k[k.length - 1] + ')');
             dmg = Math.max(0, v - w.v); st.dmgWeapon += dmg; st.prevWeapon += v - dmg;
@@ -161,6 +166,7 @@
             parts.push(label(c) + ' Waffe −' + dmg);
           } else if (a.opt === 2) {
             if (!pl.magic) throw new Error('Keine Magie');
+            if (v === 0) throw new Error('Gegner der Stärke 0 werden ohne Magie abgehandelt');
             dmg = Math.max(0, v - pl.magic); st.dmgMagic += dmg; st.prevMagic += v - dmg; st.magicUsed++;
             pl.magic = 0;
             parts.push(label(c) + ' Magie −' + dmg);
@@ -174,7 +180,17 @@
           if (a.opt === 1) {
             if (!pl.weapon) throw new Error('Dieb: keine Waffe zum Stehlen');
             parts.push('D nimmt W' + pl.weapon.v);
-            pl.weapon = null; st.thiefSteal++; st.weaponStolen++;
+            { // how much the stolen weapon was still worth: fresh or not, enemies it could still block
+              const remE = (x) => g.totalCodes[T.ENEMY * 64 + x] - g.resolvedCodes[T.ENEMY * 64 + x];
+              const canBlock = (wp) => { const kk = wp.kills, l = kk.length ? kk[kk.length - 1] : Infinity; let n = 0; for (let x = 1; x < 64 && x < l; x++) n += remE(x); return n; };
+              const w = pl.weapon, k = w.kills, can = canBlock(w);
+              let all = 0;
+              for (let x = 1; x < 64; x++) all += remE(x);
+              st.stealWeaponSum += w.v; st.stealCanBlock += can; st.stealRemE += all; if (!k.length) st.stealFresh++;
+              // another player had a more worn weapon (could have taken the thief more cheaply)
+              if (g.players.some((o) => o !== pl && o.weapon && canBlock(o.weapon) < can)) st.stealAltWorn++;
+            }
+            pl.weapon = null; st.thiefSteal++; st.weaponStolen++; stolen = true;
           } else if (a.opt === 0) {
             pl.hp -= g.cfg.thiefDamage; st.dmgThief += g.cfg.thiefDamage; st.thiefDamage++;
             if (pl.hp < g.lowHp) g.lowHp = pl.hp;
@@ -196,7 +212,10 @@
           break;
         }
         case T.WEAPON: {
-          if (a.opt === 0) { pl.weapon = { v, kills: [] }; st.weaponEquip++; parts.push(label(c) + ' angelegt'); }
+          if (a.opt === 0) {
+            pl.weapon = { v, kills: [] }; st.weaponEquip++; parts.push(label(c) + ' angelegt');
+            if (stolen) { st.stealReplaced++; stolen = false; } // thief took the old weapon, the new one follows: nearly free
+          }
           else if (a.opt === 1) { st.weaponDiscard++; parts.push(label(c) + ' verworfen'); }
           else throw new Error('Ungültige Aktion für Waffe');
           break;

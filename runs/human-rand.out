@@ -1,0 +1,212 @@
+﻿Evolution: 48 Varianten × 1000 Spiele × 40 Generationen · Konfigurationen: je Generation 8 neu gewürfelte Decks (Siegquote der Referenz 10%–95%)
+  Decks Gen 1: 2p13D6S1 (18%) | 2p13D10S2 M2-10x2 (70%) | 2p14D9S4 M3-6x1 W+ (70%) | 2p10D9S6 M2-10x1 W+ (51%) | 2p14D0S2 M4-7x1 (63%) | 2p26D2S9 G15-18 W+ (83%) | 2p12D3S9 M1-10x1 H- (67%) | 2p22D8 M1-7x2 G15-15 G0x5 W- (66%)  · 6 zu leicht/zu schwer verworfen
+    … Generation 1: 12/48 Varianten getestet (51s)
+    … Generation 1: 24/48 Varianten getestet (108s)
+    … Generation 1: 36/48 Varianten getestet (168s)
+Gen   1/40: beste 65.5% (Ø über 1 Gen. 65.5%, Fitness 0.7714)  Population Ø 50.9% · 224s/Gen · vergangen 4min 4s · Rest ~2h 38min 53s
+  Decks Gen 2: 2p21D9 M2-7x2 H- (69%) | 2p22D6 H- W+ (64%) | 2p29D5S3 M2-7x1 W- (89%) | 2p15D0S7 W- (60%) | 2p29D10S7 M2-6x2 G15-16 H- (71%) | 2p16D1S5 (75%) | 2p13D0S1 M4-6x1 H+ (73%) | 2p20D7S4 W- (48%)  · 12 zu leicht/zu schwer verworfen
+    … Generation 2: 12/48 Varianten getestet (44s)
+    … Generation 2: 24/48 Varianten getestet (88s)
+    … Generation 2: 36/48 Varianten getestet (143s)
+Gen   2/40: beste 72.2% (Ø über 2 Gen. 68.6%, Fitness 0.8052)  Population Ø 55.0% · 198s/Gen · vergangen 7min 54s · Rest ~2h 30min 11s
+  Decks Gen 3: 2p15D6 M4-9x2 (78%) | 2p29D0S5 G15-18 (64%) | 2p23D5 M2-8x1 H- (93%) | 2p16D7 (31%) | 2p15D1 M1-6x1 G0x5 (69%) | 3p19D9 W+ (94%) | 2p12D6S8 M3-8x1 (60%) | 2p23D5 (71%)  · 5 zu leicht/zu schwer verworfen
+    … Generation 3: 12/48 Varianten getestet (39s)
+    … Generation 3: 24/48 Varianten getestet (80s)
+    … Generation 3: 36/48 Varianten getestet (118s)
+Gen   3/40: beste 71.7% (Ø über 1 Gen. 71.7%, Fitness 0.8405)  Population Ø 56.6% · 159s/Gen · vergangen 10min 49s · Rest ~2h 13min 27s
+  Decks Gen 4: 2p22D9S6 M2-9x1 H- (91%) | 3p28D10 G0x3 W- (69%) | 2p19D7S3 M4-7x2 (87%) | 3p13D7S2 G0x5 (42%) | 2p10D3 M3-7x2 (22%) | 2p15D7 M3-6x1 G0x3 (37%) | 2p14D4 M4-8x2 (75%) | 3p13D5S6 H- (39%)  · 8 zu leicht/zu schwer verworfen
+    … Generation 4: 12/48 Varianten getestet (44s)
+    … Generation 4: 24/48 Varianten getestet (83s)
+    … Generation 4: 36/48 Varianten getestet (116s)
+Gen   4/40: beste 57.6% (Ø über 4 Gen. 67.1%, Fitness 0.7896)  Population Ø 44.3% · 144s/Gen · vergangen 13min 26s · Rest ~2h 1min 0s
+  Decks Gen 5: 2p24D3S2 M3-7x1 H- W- (81%) | 2p11D1S10 M3-10x1 H+ W- (81%) | 2p10D9 M1-7x1 G0x3 W+ (11%) | 3p12D4S10 M3-8x1 G15-18 W+ (51%) | 2p17D10 (31%) | 2p15D7S2 (33%) | 2p16D3S8 M1-7x2 G0x6 (93%) | 3p15D1S5 M3-10x2 G15-16 G0x3 H- W- (94%)  · 7 zu leicht/zu schwer verworfen
+    … Generation 5: 12/48 Varianten getestet (50s)
+    … Generation 5: 24/48 Varianten getestet (98s)
+    … Generation 5: 36/48 Varianten getestet (140s)
+Gen   5/40: beste 58.1% (Ø über 5 Gen. 65.3%, Fitness 0.7705)  Population Ø 47.5% · 173s/Gen · vergangen 16min 41s · Rest ~1h 56min 47s
+  Decks Gen 6: 2p12D8S1 M1-6x1 (16%) | 2p18D10S4 G15-15 (29%) | 2p10D8S9 M3-10x1 G0x5 (49%) | 2p20D3 M1-8x1 G15-15 W- (44%) | 2p26D0S8 G15-18 (64%) | 3p29D8 G15-15 (95%) | 2p17D9 H+ (39%) | 3p13D3S8 G15-15 G0x3 W+ (84%)  · 5 zu leicht/zu schwer verworfen
+    … Generation 6: 12/48 Varianten getestet (38s)
+    … Generation 6: 24/48 Varianten getestet (76s)
+    … Generation 6: 36/48 Varianten getestet (116s)
+Gen   6/40: beste 54.5% (Ø über 6 Gen. 63.5%, Fitness 0.7511)  Population Ø 39.2% · 148s/Gen · vergangen 19min 28s · Rest ~1h 50min 18s
+  Decks Gen 7: 2p14D5S5 M2-6x2 H- (67%) | 2p15D0S9 H+ (84%) | 2p17D7 M4-8x1 H- W+ (73%) | 2p13D10S6 M4-8x1 G0x6 (46%) | 3p21D5 M3-6x1 H- (95%) | 3p23D4S3 M1-8x1 G15-17 (94%) | 2p22D9 G0x5 (53%) | 3p18D9S4 H+ (80%)  · 5 zu leicht/zu schwer verworfen
+    … Generation 7: 12/48 Varianten getestet (40s)
+    … Generation 7: 24/48 Varianten getestet (76s)
+    … Generation 7: 36/48 Varianten getestet (116s)
+Gen   7/40: beste 71.0% (Ø über 1 Gen. 71.0%, Fitness 0.8327)  Population Ø 61.7% · 160s/Gen · vergangen 22min 20s · Rest ~1h 45min 17s
+  Decks Gen 8: 2p20D4S2 W- (64%) | 2p17D10S3 G0x4 (33%) | 3p17D6S9 H- (83%) | 3p10D4S9 M1-8x1 G15-15 H+ (68%) | 2p29D10S1 G0x1 (74%) | 3p18D9 M4-9x1 G15-16 H- (63%) | 2p19D8 M2-10x2 G15-16 (81%) | 3p18D9 M3-8x1 H- (89%)  · 11 zu leicht/zu schwer verworfen
+    … Generation 8: 12/48 Varianten getestet (31s)
+    … Generation 8: 24/48 Varianten getestet (64s)
+    … Generation 8: 36/48 Varianten getestet (95s)
+Gen   8/40: beste 70.9% (Ø über 1 Gen. 70.9%, Fitness 0.8292)  Population Ø 54.5% · 124s/Gen · vergangen 24min 43s · Rest ~1h 38min 53s
+  Decks Gen 9: 3p10D5S3 M3-9x1 (60%) | 3p16D1 G0x5 H+ (92%) | 2p12D0S9 G0x1 H- W- (20%) | 3p10D6 M2-10x1 H+ W+ (76%) | 2p18D9S10 M4-6x1 (76%) | 2p25D1S1 H- (79%) | 3p13D1S5 (76%) | 2p23D7 M4-8x2 W- (92%)  · 3 zu leicht/zu schwer verworfen
+    … Generation 9: 12/48 Varianten getestet (34s)
+    … Generation 9: 24/48 Varianten getestet (71s)
+    … Generation 9: 36/48 Varianten getestet (101s)
+Gen   9/40: beste 72.5% (Ø über 1 Gen. 72.5%, Fitness 0.8478)  Population Ø 58.3% · 131s/Gen · vergangen 27min 2s · Rest ~1h 33min 8s
+  Decks Gen 10: 2p22D0S7 M1-6x1 (94%) | 2p13D8S8 M4-6x2 G0x5 W+ (81%) | 2p19D5S10 M2-7x1 (94%) | 3p15D1 (76%) | 3p30D9 G15-17 (82%) | 2p18D10S5 M3-9x1 H+ W- (49%) | 2p20D8 (55%) | 3p14D1S8 G15-18 (12%)  · 4 zu leicht/zu schwer verworfen
+    … Generation 10: 12/48 Varianten getestet (49s)
+    … Generation 10: 24/48 Varianten getestet (94s)
+    … Generation 10: 36/48 Varianten getestet (144s)
+Gen  10/40: beste 69.5% (Ø über 3 Gen. 71.4%, Fitness 0.8399)  Population Ø 54.2% · 182s/Gen · vergangen 30min 21s · Rest ~1h 31min 3s
+  Decks Gen 11: 2p11D6S8 M3-10x1 G0x6 H- (62%) | 2p27D6 H- (84%) | 2p13D6S3 M3-10x1 W- (36%) | 2p14D6S9 M2-7x1 H+ (79%) | 2p15D2 W+ (50%) | 2p29D6S1 G15-16 H- (48%) | 2p14D9S4 (22%) | 2p13D7S7 M2-7x1 W- (54%)  · 9 zu leicht/zu schwer verworfen
+    … Generation 11: 12/48 Varianten getestet (34s)
+    … Generation 11: 24/48 Varianten getestet (63s)
+    … Generation 11: 36/48 Varianten getestet (96s)
+Gen  11/40: beste 58.2% (Ø über 4 Gen. 68.1%, Fitness 0.8033)  Population Ø 39.5% · 127s/Gen · vergangen 32min 47s · Rest ~1h 26min 26s
+  Decks Gen 12: 2p11D8S8 M4-10x2 W- (49%) | 2p12D1S1 M3-6x2 H- (41%) | 3p11D9S8 M3-7x2 G0x1 H+ (89%) | 2p10D10S7 M3-9x1 W- (13%) | 3p15D2 G0x4 (78%) | 2p11D8S8 (14%) | 3p12D7S7 M3-6x2 (91%) | 2p27D5S5 G0x6 W- (87%)  · 5 zu leicht/zu schwer verworfen
+    … Generation 12: 12/48 Varianten getestet (27s)
+    … Generation 12: 24/48 Varianten getestet (49s)
+    … Generation 12: 36/48 Varianten getestet (73s)
+Gen  12/40: beste 56.5% (Ø über 5 Gen. 65.8%, Fitness 0.7780)  Population Ø 44.7% · 98s/Gen · vergangen 34min 34s · Rest ~1h 20min 40s
+  Decks Gen 13: 2p20D3S3 M1-7x1 (91%) | 2p24D7 M4-9x1 H- W+ (93%) | 2p16D9S5 M4-9x2 G0x5 H- (79%) | 2p20D7S7 M3-6x2 G0x1 (91%) | 2p15D5S6 M4-6x2 G0x2 H- (79%) | 2p19D8 G15-15 (24%) | 2p22D7S4 M4-7x2 G15-15 H- (81%) | 2p21D3 M2-7x1 W- (76%)  · 7 zu leicht/zu schwer verworfen
+    … Generation 13: 12/48 Varianten getestet (50s)
+    … Generation 13: 24/48 Varianten getestet (96s)
+    … Generation 13: 36/48 Varianten getestet (146s)
+Gen  13/40: beste 78.9% (Ø über 1 Gen. 78.9%, Fitness 0.9175)  Population Ø 69.7% · 180s/Gen · vergangen 38min 1s · Rest ~1h 18min 58s
+  Decks Gen 14: 3p25D4 G0x1 W- (78%) | 2p27D5 M2-6x1 G15-15 G0x1 W+ (91%) | 2p15D9 M3-10x2 (81%) | 3p15D10S1 M3-6x2 H- (61%) | 3p17D3 G15-15 H+ (85%) | 2p18D6 M4-9x1 G15-16 G0x5 (57%) | 3p11D6S7 (36%) | 2p12D10S1 M2-6x2 (21%)  · 6 zu leicht/zu schwer verworfen
+    … Generation 14: 12/48 Varianten getestet (28s)
+    … Generation 14: 24/48 Varianten getestet (50s)
+    … Generation 14: 36/48 Varianten getestet (78s)
+Gen  14/40: beste 62.4% (Ø über 2 Gen. 70.7%, Fitness 0.8281)  Population Ø 48.7% · 106s/Gen · vergangen 39min 58s · Rest ~1h 14min 14s
+  Decks Gen 15: 2p28D5 W- (68%) | 2p17D8S4 G15-16 (21%) | 2p15D4S4 M1-7x2 G0x4 (87%) | 2p20D8S7 M2-6x1 G15-17 (38%) | 2p21D9S8 M4-6x1 (83%) | 2p14D5S7 M3-10x2 G0x1 (89%) | 2p18D5 G15-16 H+ (39%) | 2p10D0 M2-9x2 G15-15 W+ (59%)  · 7 zu leicht/zu schwer verworfen
+    … Generation 15: 12/48 Varianten getestet (45s)
+    … Generation 15: 24/48 Varianten getestet (97s)
+    … Generation 15: 36/48 Varianten getestet (140s)
+Gen  15/40: beste 61.0% (Ø über 3 Gen. 67.4%, Fitness 0.7939)  Population Ø 48.6% · 179s/Gen · vergangen 43min 13s · Rest ~1h 12min 2s
+  Decks Gen 16: 2p16D8 M3-8x1 (64%) | 2p13D0S7 M4-6x1 (71%) | 2p20D6S1 M1-10x1 (94%) | 2p16D5 (41%) | 3p13D0S8 (79%) | 2p25D7 M1-8x1 H- (80%) | 3p15D2 M3-10x2 G15-17 (87%) | 2p25D6 M3-7x2 W- (92%)  · 1 zu leicht/zu schwer verworfen
+    … Generation 16: 12/48 Varianten getestet (40s)
+    … Generation 16: 24/48 Varianten getestet (79s)
+    … Generation 16: 36/48 Varianten getestet (114s)
+Gen  16/40: beste 75.7% (Ø über 1 Gen. 75.7%, Fitness 0.8830)  Population Ø 61.0% · 145s/Gen · vergangen 45min 47s · Rest ~1h 8min 41s
+  Decks Gen 17: 2p26D5 (88%) | 3p10D2 M2-8x2 H- W- (27%) | 2p26D10 M3-9x1 H- W- (37%) | 2p15D3 M1-7x2 H- W- (12%) | 2p25D10S3 M3-8x2 H- (93%) | 2p10D10S7 M1-7x2 (28%) | 3p13D6 M1-7x1 H+ (77%) | 3p16D10 M2-9x2 G0x3 H- (83%)  · 5 zu leicht/zu schwer verworfen
+    … Generation 17: 12/48 Varianten getestet (29s)
+    … Generation 17: 24/48 Varianten getestet (67s)
+    … Generation 17: 36/48 Varianten getestet (104s)
+Gen  17/40: beste 52.5% (Ø über 2 Gen. 63.9%, Fitness 0.7553)  Population Ø 42.7% · 132s/Gen · vergangen 48min 12s · Rest ~1h 5min 13s
+  Decks Gen 18: 2p17D3 M4-6x2 W- (78%) | 3p14D5 M3-6x2 G0x5 H+ (94%) | 2p29D10S10 G15-16 W+ (92%) | 2p18D6 M4-9x1 W+ (90%) | 2p11D4 M4-10x2 W- (51%) | 2p11D5S6 M3-9x1 (54%) | 3p12D3S3 H+ (54%) | 2p24D7S2 H+ (89%)  · 1 zu leicht/zu schwer verworfen
+    … Generation 18: 12/48 Varianten getestet (36s)
+    … Generation 18: 24/48 Varianten getestet (73s)
+    … Generation 18: 36/48 Varianten getestet (108s)
+Gen  18/40: beste 72.2% (Ø über 1 Gen. 72.2%, Fitness 0.8473)  Population Ø 61.2% · 144s/Gen · vergangen 50min 44s · Rest ~1h 2min 1s
+  Decks Gen 19: 3p20D7S5 G15-16 G0x2 (75%) | 2p12D5S8 M2-7x1 G15-15 (44%) | 2p15D10 G0x3 (14%) | 2p14D2 M4-10x2 H- (81%) | 2p25D10S10 W+ (91%) | 3p25D7S10 G15-18 (83%) | 2p13D2S5 (49%) | 2p14D2S5 (56%)  · 6 zu leicht/zu schwer verworfen
+    … Generation 19: 12/48 Varianten getestet (35s)
+    … Generation 19: 24/48 Varianten getestet (62s)
+    … Generation 19: 36/48 Varianten getestet (93s)
+Gen  19/40: beste 60.2% (Ø über 2 Gen. 66.2%, Fitness 0.7819)  Population Ø 49.0% · 125s/Gen · vergangen 53min 0s · Rest ~58min 35s
+  Decks Gen 20: 3p15D8 G0x2 W+ (59%) | 2p18D1S4 (83%) | 2p16D8S7 M2-10x1 (86%) | 3p15D8S6 M3-8x1 (94%) | 3p16D6 M4-8x1 (92%) | 2p14D2 M4-7x1 G0x2 H- (61%) | 2p24D9 M4-9x2 G0x4 H+ W- (92%) | 2p10D3S4 M1-8x1 G15-15 (14%)  · 12 zu leicht/zu schwer verworfen
+    … Generation 20: 12/48 Varianten getestet (39s)
+    … Generation 20: 24/48 Varianten getestet (70s)
+    … Generation 20: 36/48 Varianten getestet (98s)
+Gen  20/40: beste 71.1% (Ø über 1 Gen. 71.1%, Fitness 0.8317)  Population Ø 59.2% · 141s/Gen · vergangen 55min 51s · Rest ~55min 51s
+  Decks Gen 21: 2p24D9 (69%) | 2p20D10S9 G0x6 H- (61%) | 2p11D4S3 M4-9x2 G15-16 (28%) | 2p19D6S1 G0x3 W- (23%) | 3p14D4S3 (72%) | 3p16D1S4 (93%) | 2p25D1 (94%) | 2p27D4 (91%)  · 6 zu leicht/zu schwer verworfen
+    … Generation 21: 12/48 Varianten getestet (28s)
+    … Generation 21: 24/48 Varianten getestet (54s)
+    … Generation 21: 36/48 Varianten getestet (78s)
+Gen  21/40: beste 64.4% (Ø über 2 Gen. 67.8%, Fitness 0.7963)  Population Ø 49.3% · 108s/Gen · vergangen 57min 49s · Rest ~52min 18s
+  Decks Gen 22: 3p10D3 M1-8x1 G15-16 W+ (13%) | 2p13D1S8 M3-9x1 (83%) | 2p17D10 H- (16%) | 3p18D3S5 G15-18 G0x2 (25%) | 2p16D5 M4-10x1 H- (62%) | 2p22D4 M3-7x1 (87%) | 2p23D1 (89%) | 3p11D9S7 M3-10x1 (79%)  · 4 zu leicht/zu schwer verworfen
+    … Generation 22: 12/48 Varianten getestet (34s)
+    … Generation 22: 24/48 Varianten getestet (61s)
+    … Generation 22: 36/48 Varianten getestet (88s)
+Gen  22/40: beste 59.5% (Ø über 3 Gen. 65.0%, Fitness 0.7671)  Population Ø 45.6% · 118s/Gen · vergangen 1h 0min 0s · Rest ~49min 5s
+  Decks Gen 23: 2p28D6S6 G15-15 H- (86%) | 3p13D5 (43%) | 2p20D5S9 W- (77%) | 2p21D10 G0x5 H+ (68%) | 2p14D1S6 M3-10x1 (86%) | 2p24D5 W- (56%) | 2p28D2 (93%) | 3p10D3 M2-7x1 G0x5 (27%)  · 4 zu leicht/zu schwer verworfen
+    … Generation 23: 12/48 Varianten getestet (38s)
+    … Generation 23: 24/48 Varianten getestet (75s)
+    … Generation 23: 36/48 Varianten getestet (105s)
+Gen  23/40: beste 67.5% (Ø über 4 Gen. 65.6%, Fitness 0.7740)  Population Ø 50.6% · 139s/Gen · vergangen 1h 2min 31s · Rest ~46min 12s
+  Decks Gen 24: 2p23D10 H+ W- (22%) | 3p12D3S6 G0x6 (64%) | 2p19D7S6 M1-6x1 (84%) | 2p24D7S5 M4-6x1 (89%) | 3p20D9 (78%) | 2p10D9S1 M2-10x2 G0x1 (38%) | 2p19D1S3 M4-10x1 (93%) | 2p17D4 G0x4 H- (38%)  · 10 zu leicht/zu schwer verworfen
+    … Generation 24: 12/48 Varianten getestet (40s)
+    … Generation 24: 24/48 Varianten getestet (74s)
+    … Generation 24: 36/48 Varianten getestet (108s)
+Gen  24/40: beste 66.1% (Ø über 1 Gen. 66.1%, Fitness 0.7812)  Population Ø 51.5% · 142s/Gen · vergangen 1h 5min 13s · Rest ~43min 28s
+  Decks Gen 25: 3p10D1S5 W- (26%) | 3p25D10 M3-6x1 G15-18 (39%) | 3p13D1S5 M3-7x1 (94%) | 2p19D6S3 M4-6x2 (90%) | 2p16D2S9 (84%) | 2p16D7 M2-8x1 G0x4 (71%) | 2p28D4 H- (86%) | 2p18D0S8 H- W+ (88%)  · 11 zu leicht/zu schwer verworfen
+    … Generation 25: 12/48 Varianten getestet (46s)
+    … Generation 25: 24/48 Varianten getestet (73s)
+    … Generation 25: 36/48 Varianten getestet (109s)
+Gen  25/40: beste 71.6% (Ø über 1 Gen. 71.6%, Fitness 0.8422)  Population Ø 57.1% · 138s/Gen · vergangen 1h 7min 59s · Rest ~40min 47s
+  Decks Gen 26: 2p22D10S5 (68%) | 2p13D0S5 (53%) | 3p22D3S3 G15-17 H+ W+ (94%) | 2p16D2S9 W- (37%) | 2p18D9S1 M3-10x2 G15-15 W+ (87%) | 2p18D7S9 M3-9x2 G0x2 (93%) | 3p11D1 M1-9x1 G0x6 (86%) | 2p18D9S7 H- W+ (41%)  · 10 zu leicht/zu schwer verworfen
+    … Generation 26: 12/48 Varianten getestet (50s)
+    … Generation 26: 24/48 Varianten getestet (95s)
+    … Generation 26: 36/48 Varianten getestet (145s)
+Gen  26/40: beste 71.5% (Ø über 2 Gen. 71.5%, Fitness 0.8400)  Population Ø 56.0% · 191s/Gen · vergangen 1h 11min 29s · Rest ~38min 29s
+  Decks Gen 27: 2p27D6 G0x3 (86%) | 2p30D7 M1-6x2 G15-18 (49%) | 2p26D9 M3-6x1 W- (88%) | 2p12D10S3 M3-9x1 (34%) | 3p24D9 G0x4 H- (84%) | 2p23D8S1 (69%) | 3p13D3 (38%) | 2p11D8S7 M4-7x1 (32%)  · 9 zu leicht/zu schwer verworfen
+    … Generation 27: 12/48 Varianten getestet (34s)
+    … Generation 27: 24/48 Varianten getestet (59s)
+    … Generation 27: 36/48 Varianten getestet (91s)
+Gen  27/40: beste 59.8% (Ø über 3 Gen. 67.6%, Fitness 0.7967)  Population Ø 46.2% · 120s/Gen · vergangen 1h 13min 50s · Rest ~35min 33s
+  Decks Gen 28: 2p17D9S10 M2-9x2 (91%) | 2p23D8 M3-10x1 W- (91%) | 3p25D7 M2-6x1 G15-16 (93%) | 2p17D2S7 M4-8x1 G15-15 G0x3 (84%) | 3p13D1 H+ (61%) | 3p13D7 M1-7x2 G0x1 H+ (93%) | 3p19D10S4 G0x1 H- (55%) | 2p23D9S5 M3-6x1 H+ (94%)  · 15 zu leicht/zu schwer verworfen
+    … Generation 28: 12/48 Varianten getestet (42s)
+    … Generation 28: 24/48 Varianten getestet (83s)
+    … Generation 28: 36/48 Varianten getestet (129s)
+Gen  28/40: beste 80.3% (Ø über 1 Gen. 80.3%, Fitness 0.9327)  Population Ø 70.5% · 168s/Gen · vergangen 1h 17min 5s · Rest ~33min 2s
+  Decks Gen 29: 2p17D2 M2-10x1 H- W+ (88%) | 3p12D7S2 M3-8x2 H- (76%) | 2p12D1S4 (43%) | 2p19D1S1 H- (71%) | 2p16D3S4 (68%) | 3p14D7 M3-10x1 (90%) | 2p21D8S7 M3-8x1 W- (89%) | 2p11D6S6 M3-7x1 G15-15 (21%)  · 7 zu leicht/zu schwer verworfen
+    … Generation 29: 12/48 Varianten getestet (39s)
+    … Generation 29: 24/48 Varianten getestet (68s)
+    … Generation 29: 36/48 Varianten getestet (103s)
+Gen  29/40: beste 62.7% (Ø über 2 Gen. 70.9%, Fitness 0.8329)  Population Ø 49.4% · 135s/Gen · vergangen 1h 19min 34s · Rest ~30min 10s
+  Decks Gen 30: 2p19D8S5 M2-8x2 H- (90%) | 2p10D2S2 M4-8x2 H- W+ (48%) | 3p15D3 (76%) | 2p15D5S5 G0x3 (55%) | 2p17D4S8 G15-15 (64%) | 2p23D7S3 (78%) | 2p23D6S4 G15-15 (71%) | 2p20D6S1 M2-8x1 (86%)  · 7 zu leicht/zu schwer verworfen
+    … Generation 30: 12/48 Varianten getestet (47s)
+    … Generation 30: 24/48 Varianten getestet (88s)
+    … Generation 30: 36/48 Varianten getestet (122s)
+Gen  30/40: beste 69.0% (Ø über 3 Gen. 70.2%, Fitness 0.8256)  Population Ø 56.3% · 160s/Gen · vergangen 1h 22min 30s · Rest ~27min 30s
+  Decks Gen 31: 3p23D9 M3-6x1 H+ W- (93%) | 2p18D10S9 M3-8x1 (80%) | 3p13D5 (34%) | 2p25D6S1 G15-15 W- (61%) | 2p24D8S4 M2-6x1 G0x2 W- (89%) | 3p19D9S3 G0x3 H+ (88%) | 2p12D2S8 M1-9x2 G15-16 (64%) | 2p13D1S3 (38%)  · 10 zu leicht/zu schwer verworfen
+    … Generation 31: 12/48 Varianten getestet (45s)
+    … Generation 31: 24/48 Varianten getestet (84s)
+    … Generation 31: 36/48 Varianten getestet (115s)
+Gen  31/40: beste 70.2% (Ø über 2 Gen. 70.0%, Fitness 0.8214)  Population Ø 54.4% · 150s/Gen · vergangen 1h 25min 19s · Rest ~24min 46s
+  Decks Gen 32: 2p11D1 W+ (37%) | 2p21D10S1 M3-6x2 H+ W- (53%) | 2p13D7S3 M4-10x2 (84%) | 2p18D9 M3-9x1 H+ W- (64%) | 3p10D4 G0x1 W+ (33%) | 3p16D7 (66%) | 3p12D7S1 M4-9x2 W+ (90%) | 2p22D5 M1-6x1 H- (82%)  · 6 zu leicht/zu schwer verworfen
+    … Generation 32: 12/48 Varianten getestet (31s)
+    … Generation 32: 24/48 Varianten getestet (64s)
+    … Generation 32: 36/48 Varianten getestet (99s)
+Gen  32/40: beste 60.4% (Ø über 5 Gen. 67.5%, Fitness 0.7944)  Population Ø 48.9% · 132s/Gen · vergangen 1h 27min 42s · Rest ~21min 55s
+  Decks Gen 33: 2p17D10S2 M2-6x2 G15-15 (48%) | 3p14D9 M3-9x1 W+ (91%) | 2p25D3S2 M4-10x2 G15-17 (95%) | 2p19D3S2 (76%) | 2p19D10 M3-7x2 G15-15 (53%) | 2p28D7 M4-6x1 (95%) | 2p11D1S7 (28%) | 3p14D5S9 M2-9x2 G15-16 W- (81%)  · 4 zu leicht/zu schwer verworfen
+    … Generation 33: 12/48 Varianten getestet (40s)
+    … Generation 33: 24/48 Varianten getestet (84s)
+    … Generation 33: 36/48 Varianten getestet (127s)
+Gen  33/40: beste 70.2% (Ø über 1 Gen. 70.2%, Fitness 0.8234)  Population Ø 57.9% · 168s/Gen · vergangen 1h 30min 46s · Rest ~19min 15s
+  Decks Gen 34: 2p15D0S5 M4-9x2 (94%) | 2p11D10S9 M1-9x1 H- W+ (24%) | 2p13D1S3 M1-10x1 (85%) | 2p14D8S1 M1-10x1 (64%) | 2p15D10 M3-8x1 W- (17%) | 2p13D10 M3-9x2 H- W- (39%) | 3p13D10S8 G15-15 H+ W+ (57%) | 2p23D6 M4-6x2 G0x1 (94%)  · 6 zu leicht/zu schwer verworfen
+    … Generation 34: 12/48 Varianten getestet (47s)
+    … Generation 34: 24/48 Varianten getestet (93s)
+    … Generation 34: 36/48 Varianten getestet (133s)
+Gen  34/40: beste 56.6% (Ø über 7 Gen. 66.2%, Fitness 0.7803)  Population Ø 49.5% · 180s/Gen · vergangen 1h 34min 6s · Rest ~16min 36s
+  Decks Gen 35: 3p10D0S10 W- (44%) | 2p23D10 G15-16 (13%) | 2p14D5S2 G15-16 W+ (19%) | 2p19D9S9 M4-6x2 (83%) | 2p12D1S4 G0x6 W- (14%) | 2p30D8S5 G0x5 (95%) | 2p11D10S7 M2-9x1 (43%) | 3p21D9 M2-6x2 G15-17 (69%)  · 8 zu leicht/zu schwer verworfen
+    … Generation 35: 12/48 Varianten getestet (28s)
+    … Generation 35: 24/48 Varianten getestet (54s)
+    … Generation 35: 36/48 Varianten getestet (83s)
+Gen  35/40: beste 45.7% (Ø über 8 Gen. 63.6%, Fitness 0.7526)  Population Ø 35.6% · 109s/Gen · vergangen 1h 36min 15s · Rest ~13min 45s
+  Decks Gen 36: 3p10D8 M1-10x2 W+ (89%) | 2p23D1 G15-17 (28%) | 2p16D1S2 H+ (79%) | 2p26D5S2 G0x3 (93%) | 2p28D6 G15-15 H+ (90%) | 2p17D10 W+ (48%) | 3p23D8 H+ (95%) | 2p23D6 (76%)  · 5 zu leicht/zu schwer verworfen
+    … Generation 36: 12/48 Varianten getestet (32s)
+    … Generation 36: 24/48 Varianten getestet (60s)
+    … Generation 36: 36/48 Varianten getestet (92s)
+Gen  36/40: beste 71.1% (Ø über 1 Gen. 71.1%, Fitness 0.8348)  Population Ø 60.8% · 128s/Gen · vergangen 1h 38min 34s · Rest ~10min 57s
+  Decks Gen 37: 2p19D8S3 M3-8x2 G15-15 (85%) | 2p14D8 M1-9x2 W+ (76%) | 2p18D2 W+ (69%) | 2p28D4 G0x6 H- (75%) | 2p28D6 M4-6x1 G15-17 G0x5 W- (63%) | 2p18D10S8 H- (49%) | 2p15D5S9 M1-7x1 (87%) | 2p17D10S10 G15-15 (48%)  · 5 zu leicht/zu schwer verworfen
+    … Generation 37: 12/48 Varianten getestet (63s)
+    … Generation 37: 24/48 Varianten getestet (125s)
+    … Generation 37: 36/48 Varianten getestet (177s)
+Gen  37/40: beste 64.4% (Ø über 2 Gen. 67.7%, Fitness 0.7964)  Population Ø 51.7% · 217s/Gen · vergangen 1h 42min 26s · Rest ~8min 18s
+  Decks Gen 38: 2p25D0S9 M4-10x1 G15-17 (95%) | 3p17D10 M2-6x1 (76%) | 3p12D5S7 M3-7x2 G0x1 (89%) | 2p24D8S8 H+ (92%) | 3p15D7S8 M4-6x1 H+ (93%) | 2p23D1S8 M4-7x2 G15-18 (74%) | 3p13D3 (41%) | 3p15D10S4 M2-7x1 W- (46%)  · 8 zu leicht/zu schwer verworfen
+    … Generation 38: 12/48 Varianten getestet (58s)
+    … Generation 38: 24/48 Varianten getestet (104s)
+    … Generation 38: 36/48 Varianten getestet (161s)
+Gen  38/40: beste 75.6% (Ø über 1 Gen. 75.6%, Fitness 0.8826)  Population Ø 64.3% · 206s/Gen · vergangen 1h 46min 14s · Rest ~5min 35s
+  Decks Gen 39: 2p17D4S7 (77%) | 2p16D5S5 M2-9x1 (92%) | 2p18D7S5 M3-9x2 G0x6 H+ W- (93%) | 3p10D5S6 M2-9x1 W- (56%) | 2p13D8S5 M1-7x2 W- (18%) | 2p25D6S2 M3-7x1 H- (92%) | 2p12D6S9 M4-10x2 G15-18 (15%) | 2p29D10S3 W- (68%)  · 9 zu leicht/zu schwer verworfen
+    … Generation 39: 12/48 Varianten getestet (47s)
+    … Generation 39: 24/48 Varianten getestet (99s)
+    … Generation 39: 36/48 Varianten getestet (139s)
+Gen  39/40: beste 61.8% (Ø über 2 Gen. 67.8%, Fitness 0.8015)  Population Ø 52.8% · 187s/Gen · vergangen 1h 49min 48s · Rest ~2min 48s
+  Decks Gen 40: 2p16D0S3 M4-6x1 W- (21%) | 2p26D6S8 H- (87%) | 2p15D6S7 M3-9x2 (87%) | 2p26D9S8 M4-6x1 (94%) | 3p17D10S3 G0x6 H- W+ (67%) | 2p25D8S8 G15-15 G0x6 (87%) | 3p18D6 (79%) | 2p15D0 M3-9x1 H+ (93%)  · 5 zu leicht/zu schwer verworfen
+    … Generation 40: 12/48 Varianten getestet (50s)
+    … Generation 40: 24/48 Varianten getestet (96s)
+    … Generation 40: 36/48 Varianten getestet (144s)
+Gen  40/40: beste 76.7% (Ø über 1 Gen. 76.7%, Fitness 0.8967)  Population Ø 68.7% · 189s/Gen · vergangen 1h 53min 15s · Rest ~0min 0s
+
+Validierung der besten 5 auf 22000 neuen Spielen (feste Prüfdecks, nie im Training):
+  78.94%  [std2 71.3%, std3 95.5%, magic2 95.5%, smith2 83.9%, thief10 37.6%, smith10 92.7%, magicW 98.7%, hp30 96.6%, zero 71.9%, wild2 86.9%, wild3 37.8%]  (Ausgangspunkt)
+  78.94%  [std2 72.4%, std3 95.0%, magic2 95.8%, smith2 84.2%, thief10 35.9%, smith10 92.0%, magicW 98.3%, hp30 95.7%, zero 73.5%, wild2 86.4%, wild3 39.5%]  (Training Ø 71.3% über 4 Gen.)
+  76.85%  [std2 69.1%, std3 94.3%, magic2 95.0%, smith2 83.0%, thief10 35.1%, smith10 92.3%, magicW 98.4%, hp30 94.5%, zero 68.8%, wild2 86.7%, wild3 28.0%]  (Training Ø 71.1% über 3 Gen.)
+  78.00%  [std2 70.5%, std3 94.7%, magic2 95.3%, smith2 83.4%, thief10 30.2%, smith10 91.8%, magicW 98.2%, hp30 95.3%, zero 70.0%, wild2 87.6%, wild3 41.2%]  (Training Ø 70.6% über 3 Gen.)
+  75.21%  [std2 69.2%, std3 94.8%, magic2 93.6%, smith2 81.5%, thief10 32.6%, smith10 90.3%, magicW 96.9%, hp30 95.0%, zero 67.5%, wild2 82.5%, wild3 23.4%]  (Training Ø 70.7% über 3 Gen.)
+  78.25%  [std2 70.0%, std3 95.9%, magic2 94.3%, smith2 81.8%, thief10 33.1%, smith10 91.7%, magicW 97.5%, hp30 94.9%, zero 70.5%, wild2 85.0%, wild3 46.3%]  (Training Ø 70.1% über 3 Gen.)
+Champion: 78.94%
+{"riskHp":0,"riskW":5,"weaponUses":2.0064,"horizonMode":"repl","replScale":0.5664,"kMax":8.3975,"wWeapon":0.6444,"wMinHp":0,"holdGood":0.8571,"holdBad":0.8351,"holdBadEnd":0.4119,"holdEndDeck":11.3548,"holdWeaponAbs":0.8443,"holdHealAbs":0.7977,"futureHeld":0.4433,"phantom":0.0122,"phantomScale":0.9567,"badMix":0.1278,"fleeT1":1.4646,"fleeT2":6.4525,"fleeBottomW":0.5515,"bottomFree":34.845,"bottomScale":24.4827,"fleeDangerW":0.0559,"fleeDangerFrac":1.3151,"fleeRelW":1.1834,"svThief":4.9157,"svHeal":1.0021,"svWeapon":0.3973,"start":"signals","startT0":3.2368,"startT1":18.3169,"startT2":23.7761,"orderPref":"bad","resolveExact":0,"catcherW":0.1356,"bigE":8.1328,"wBig":-0.0298,"hpTopW":0.1715,"hpTop":6.3783,"fleeEarlyW":-0.0841,"wMagic":0.829,"bottomMode":"ratio","hpEndW":0.1095,"fleeRounds":1,"startRounds":2,"startEsc":26.6783,"fleePosW":0.7493,"fleeNegW":0.7486,"endLook":0,"fleeHorizon":0,"fleeLatePen":0,"imbW":0.052,"imbFree":27.7257,"imbScale":36.9599}
+FERTIG nach 2h 0min 33s

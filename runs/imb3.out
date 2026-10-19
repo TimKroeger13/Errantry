@@ -1,0 +1,19 @@
+﻿Strategien: humanfast | humanfast,imbW=0.1 | humanfast,imbW=0.3 | humanfast,imbW=1 · 1500 Spiele je Konfiguration · Seed 5151
+  wild3   humanfast                    Sieg  35.9%                          Fortschritt 95.0%  Tiefpunkt Ø 0.5  Fluchten 10.16  · 9s · Rest ~2min 21s
+  wild3   humanfast,imbW=0.1           Sieg  34.3%  Δ -1.6 Pkt. (z -1.4)    Fortschritt 91.5%  Tiefpunkt Ø 0.4  Fluchten 8.73  · 8s · Rest ~1min 58s
+  wild3   humanfast,imbW=0.3           Sieg  31.7%  Δ -4.1 Pkt. (z -3.2)    Fortschritt 84.6%  Tiefpunkt Ø 0.4  Fluchten 6.93  · 7s · Rest ~1min 43s
+  wild3   humanfast,imbW=1             Sieg  29.4%  Δ -6.5 Pkt. (z -4.8)    Fortschritt 83.3%  Tiefpunkt Ø 0.4  Fluchten 6.44  · 6s · Rest ~1min 30s
+  std3    humanfast                    Sieg  94.4%                          Fortschritt 99.3%  Tiefpunkt Ø 3.6  Fluchten 6.19  · 4s · Rest ~1min 14s
+  std3    humanfast,imbW=0.1           Sieg  93.7%  Δ -0.7 Pkt. (z -1.4)    Fortschritt 98.7%  Tiefpunkt Ø 3.5  Fluchten 5.82  · 4s · Rest ~1min 2s
+  std3    humanfast,imbW=0.3           Sieg  90.9%  Δ -3.5 Pkt. (z -5.0)    Fortschritt 97.3%  Tiefpunkt Ø 3.4  Fluchten 5.54  · 3s · Rest ~0min 52s
+  std3    humanfast,imbW=1             Sieg  88.5%  Δ -5.9 Pkt. (z -6.9)    Fortschritt 95.5%  Tiefpunkt Ø 3.2  Fluchten 4.87  · 3s · Rest ~0min 44s
+  thief10 humanfast                    Sieg  38.1%                          Fortschritt 87.0%  Tiefpunkt Ø 0.8  Fluchten 5.38  · 6s · Rest ~0min 39s
+  thief10 humanfast,imbW=0.1           Sieg  35.9%  Δ -2.1 Pkt. (z -2.2)    Fortschritt 83.2%  Tiefpunkt Ø 0.7  Fluchten 4.66  · 6s · Rest ~0min 33s
+  thief10 humanfast,imbW=0.3           Sieg  33.5%  Δ -4.5 Pkt. (z -3.9)    Fortschritt 78.0%  Tiefpunkt Ø 0.7  Fluchten 4.03  · 5s · Rest ~0min 27s
+  thief10 humanfast,imbW=1             Sieg  29.3%  Δ -8.8 Pkt. (z -7.0)    Fortschritt 71.9%  Tiefpunkt Ø 0.5  Fluchten 3.65  · 5s · Rest ~0min 21s
+  std2    humanfast                    Sieg  71.6%                          Fortschritt 94.0%  Tiefpunkt Ø 1.6  Fluchten 5.36  · 7s · Rest ~0min 16s
+  std2    humanfast,imbW=0.1           Sieg  71.8%  Δ +0.2 Pkt. (z 0.2)     Fortschritt 92.3%  Tiefpunkt Ø 1.6  Fluchten 4.97  · 7s · Rest ~0min 11s
+  std2    humanfast,imbW=0.3           Sieg  68.3%  Δ -3.3 Pkt. (z -3.1)    Fortschritt 88.4%  Tiefpunkt Ø 1.5  Fluchten 4.57  · 7s · Rest ~0min 5s
+  std2    humanfast,imbW=1             Sieg  62.9%  Δ -8.7 Pkt. (z -7.3)    Fortschritt 84.3%  Tiefpunkt Ø 1.4  Fluchten 4.22  · 6s · Rest ~0min 0s
+
+Ø über 4 Konfigurationen: humanfast 60.0% | humanfast,imbW=0.1 58.9% | humanfast,imbW=0.3 56.1% | humanfast,imbW=1 52.5% · 1min 33s

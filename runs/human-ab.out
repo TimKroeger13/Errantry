@@ -1,0 +1,4 @@
+﻿base                                     Sieg  85.25%  Fortschritt 94.6%  129.4s
+memory=human                             Sieg  76.20%  Fortschritt 93.7%  z vs base  -8.22  308.7s
+memory=human,memTopE=0                   Sieg  74.50%  Fortschritt 93.1%  z vs base  -9.59  320.1s
+memory=human,memFlees=99                 Sieg  76.45%  Fortschritt 93.5%  z vs base  -8.22  314.6s

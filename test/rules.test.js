@@ -230,3 +230,50 @@ test('Zusatzkarten für 3 Spieler kommen nur bei 3 Spielern ins Deck', () => {
   // normalize ist idempotent
   assert.strictEqual(config.buildDeck(config.normalize(three)).length, 94);
 });
+
+test('Gegner der Stärke 0 sind erlaubt und setzen die Waffe nicht zurück', () => {
+  const cfg = config.clone(config.DEFAULT_CONFIG);
+  cfg.cards.push({ type: 'enemy', value: 0, count: 4 });
+  const res = engine.runGames(cfg, 'fast', 3, 0, 30);
+  assert.strictEqual(res.length, 30);
+  const g = setup();
+  g.players[0].weapon = { v: 8, kills: [12] };
+  const z = G(0);
+  g.piles[0] = [z];
+  assert.throws(() => engine.applyResolution(g, 0, act(g.piles[0], [1])), /Stärke 0/);
+  const r = ai.resolvePile(g.ctx, st(20, 8, [12]), [G(0)]);
+  assert.strictEqual(r.actions[0].opt, 0);
+  assert.strictEqual(r.end.lim, 12);
+});
+
+test('Menschliches Gedächtnis: zählt nur die stärksten Gegnerwerte des Decks', () => {
+  const cards = [{ type: 'enemy', value: 20, count: 2 }, { type: 'enemy', value: 19, count: 2 }, { type: 'enemy', value: 5, count: 4 }, { type: 'heal', value: 3, count: 4 }];
+  const g = engine.newGame({ players: 2, cards }, 'humanfast', 1);
+  // one G20 and two G5 are gone
+  g.resolvedCodes[config.code({ t: T.ENEMY, v: 20 })] = 1;
+  g.resolvedCodes[config.code({ t: T.ENEMY, v: 5 })] = 2;
+  const ctx = ai.makeCtx(g);
+  const rem = (t, v) => ctx.rem[config.code({ t, v })];
+  assert.strictEqual(rem(T.ENEMY, 20), 1); // counted exactly
+  assert.strictEqual(rem(T.ENEMY, 19), 2);
+  // not counted: 8 untracked cards, 6 left -> every card assumed at 75 %
+  assert.ok(Math.abs(rem(T.ENEMY, 5) - 3) < 1e-9);
+  assert.ok(Math.abs(rem(T.HEAL, 3) - 3) < 1e-9);
+  // perfect memory knows the exact counts
+  const gp = engine.newGame({ players: 2, cards }, 'fast', 1);
+  gp.resolvedCodes[config.code({ t: T.ENEMY, v: 5 })] = 2;
+  assert.strictEqual(ai.makeCtx(gp).rem[config.code({ t: T.ENEMY, v: 5 })], 2);
+});
+
+test('Menschliches Gedächtnis: nur die letzten 2 Fluchten, nur grob', () => {
+  const g = engine.newGame({ players: 2 }, 'humanfast', 1);
+  const pick = (pred, n) => g.cards.filter(pred).slice(0, n).map((c) => c.id);
+  const bad = pick((c) => c.t === T.ENEMY, 8), good = pick((c) => c.t === T.HEAL, 8);
+  g.fleeHist = [bad, good];
+  for (const id of bad.concat(good)) g.known.add(id);
+  const two = ai.bottomPosNeg(g);
+  assert.ok(two.neg > 0 && two.pos > 0);
+  g.fleeHist = [pick((c) => c.t === T.WEAPON, 8), bad, good]; // the oldest one is forgotten
+  const three = ai.bottomPosNeg(g);
+  assert.deepStrictEqual(three, two);
+});
