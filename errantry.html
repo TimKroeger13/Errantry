@@ -309,10 +309,9 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
             <option value="humanfast">Mensch schnell · ca. 100× schneller</option>
             <option value="expert">Experte · zählt alle Karten perfekt</option>
             <option value="fast">Schnell · zählt perfekt, ca. 100× schneller</option>
-            <option value="untrained">Untrainiert · Vergleich</option>
-            <option value="random">Zufall · Vergleich</option>
           </select>
           <p class="hint" id="policyHint"></p>
+          <p class="hint" style="margin-top:2px"><a href="#ki-spieler" id="policyCompare">Alle KI-Spieler im Vergleich →</a></p>
           <details style="margin-top:8px"><summary>KI-Parameter anpassen (JSON)</summary>
             <p class="hint">Überschreibt einzelne Werte der gewählten KI, z. B. <span class="mono">{"flee":"never"}</span> oder <span class="mono">{"pimcSamples":8}</span>.</p>
             <textarea id="policyJson" rows="3" placeholder="{}"></textarea>
@@ -2827,7 +2826,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     state.versions = JSON.parse(localStorage.getItem(VERSIONS_KEY) || '[]');
   } catch (e) { /* storage unavailable */ }
   if (!state.cfg.cards3) state.cfg.cards3 = [];
-  if (!E.ai.PRESETS[state.policy]) state.policy = 'human';
+  if (!['human', 'humanfast', 'expert', 'fast'].includes(state.policy)) state.policy = 'human'; // the page offers only these
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify({ pv: 2, cfg: state.cfg, policy: state.policy, policyJson: state.policyJson })); } catch (e) { /* ignore */ }
   }
@@ -2841,7 +2840,7 @@ table.data td.n { text-align: right; font-variant-numeric: tabular-nums; white-s
     return Object.assign({}, E.ai.PRESETS[state.policy] || {}, over);
   }
   function policyLabel() {
-    const names = { human: 'Mensch', humanfast: 'Mensch schnell', expert: 'Experte', fast: 'Schnell', untrained: 'Untrainiert', random: 'Zufall' };
+    const names = { human: 'Mensch', humanfast: 'Mensch schnell', expert: 'Experte', fast: 'Schnell' };
     return (names[state.policy] || state.policy) + (state.policyJson.trim() ? ' + Anpassung' : '');
   }
 
@@ -3126,8 +3125,6 @@ self.onmessage = function (e) {
       humanfast: 'Menschliches Gedächtnis wie „Mensch“, aber ohne Partnerhand-Schluss. Gut für große Sweeps, etwas schwächer.',
       expert: 'Schließt aus den Flucht- und Startsignalen auf die Partnerhand. Ca. 0,4 s je Spiel und Prozessorkern, mit 3 Spielern ca. 2 s.',
       fast: 'Gleiche trainierte Bewertung ohne Partnerhand-Schluss. Tausende Spiele pro Sekunde, gut für große Sweeps, etwas schwächer.',
-      untrained: 'Bewertung vor der Evolution. Zeigt, wie viel das Training gebracht hat.',
-      random: 'Spielt zufällige erlaubte Züge. Untere Grenze zum Vergleich.',
     };
     $('policyHint').textContent = hints[state.policy] || '';
   }
@@ -3960,7 +3957,32 @@ self.onmessage = function (e) {
     const h = $('helpText');
     const P = (t) => el('p', { text: t });
     const tunedNote = E.tuned ? 'Trainingsstand: ' + Object.keys(E.tuned).length + ' trainierte Parameter (siehe src/tuned.js).' : '';
+    const B = (bold, rest) => el('li', null, [el('b', { text: bold }), rest]);
+    const players = [
+      ['Mensch (Standard)', 'wie ein Mensch', 'ja', '~77 %', 'langsam'],
+      ['Mensch schnell', 'wie ein Mensch', 'nein', '~72 %', '~100× schneller'],
+      ['Experte', 'perfekt', 'ja', '~85 %', 'langsam'],
+      ['Schnell', 'perfekt', 'nein', '~71 %', '~100× schneller'],
+    ];
     h.append(
+      el('h2', { id: 'ki-spieler', text: 'Die KI-Spieler im Vergleich' }),
+      P('Alle sehen nur ihre eigene Hand, die offen gespielten Karten, wie viele Karten noch im Deck sind, und die Signale der Mitspieler (4 Stufen, ob man fliehen bzw. anfangen will). Die Hände der anderen sieht keiner. Beim Abhandeln der eigenen Karten rechnen alle jede Reihenfolge exakt durch.'),
+      el('div', { style: 'overflow-x:auto' }, [el('table', { class: 'data' }, [
+        el('thead', null, [el('tr', null, ['Spieler', 'Gedächtnis', 'denkt über Partnerhand nach', 'Standarddeck', 'Tempo'].map((x) => el('th', { text: x })))]),
+        el('tbody', null, players.map((r) => el('tr', null, r.map((x, i) => el('td', { class: i === 3 ? 'n' : null, text: x }))))),
+      ])]),
+      el('p', { class: 'hint', text: 'Siegquoten: Standarddeck, 2 Spieler, 20 Leben – grobe Werte aus Tausenden Spielen.' }),
+      el('ul', null, [
+        B('Gedächtnis „wie ein Mensch“: ', 'zählt nur die 2 stärksten Gegnerwerte mit; von den letzten 2 Fluchten bleibt nur grob „viele Gegner / gemischt / viel Gutes“; alles andere wird geschätzt. „Perfekt“ weiß genau, welche Karten noch kommen und was unter dem Deck liegt – das kann kein Mensch, deshalb nicht zum Balancen.'),
+        B('Partnerhand: ', 'mit – der Spieler überlegt bei jedem Zug, welche Karten der Partner nach seinen Signalen wahrscheinlich hat, und spielt mehrere mögliche Partnerhände gemeinsam durch (besseres Zusammenspiel, viel Rechenzeit). Ohne („schnell“) – er plant nur mit der eigenen Hand und reagiert auf das, was der Partner tatsächlich legt.'),
+        B('Mensch vs. Mensch schnell: ', 'gleiches menschliches Gedächtnis; „Mensch“ denkt zusätzlich mit, was der Partner auf der Hand haben könnte. Bringt ca. 5 Punkte, kostet ca. das Hundertfache an Rechenzeit.'),
+      ]),
+      el('h3', { text: 'Wofür was?' }),
+      el('ul', null, [
+        B('Mensch: ', 'Balancing-Ergebnisse, die man ernst nimmt.'),
+        B('Mensch schnell: ', 'große Sweeps und erste Tendenzen – Quoten etwas niedriger, Unterschiede zwischen Decks meist richtig.'),
+        B('Experte / Schnell: ', 'nur zum Vergleich, wie viel perfektes Kartenzählen bringen würde.'),
+      ]),
       el('h2', { text: 'Umgesetzte Regeln' }),
       el('ul', null, [
         'Alle Karten bilden ein gemeinsames Deck. Gewonnen ist, wenn alle Karten durchgespielt sind. Fällt ein Spieler auf 0 oder weniger Leben, verlieren alle.',
@@ -3970,12 +3992,12 @@ self.onmessage = function (e) {
         'Gegner und Diebe müssen an einen Spieler mit den bisher wenigsten Gegnern dieser Runde.',
         'Am Rundenende handelt jeder seine Karten in frei gewählter Reihenfolge ab.',
         'Gegner: Faust (voller Schaden), Waffe (Schaden = Gegner − Waffe, nur Gegner kleiner als der zuletzt geblockte) oder Magie (einmalig, wie eine Waffe, eigener Platz neben der Waffe).',
-        'Heilung: max. eine pro Runde, nicht über das Maximum. Schmied: entfernt den obersten Gegner von der Waffe. Dieb: nimmt die Waffe oder macht Diebschaden.',
+        'Heilung: max. eine pro Runde, nicht über das Maximum. Schmied: entfernt den obersten Gegner von der Waffe. Dieb: nimmt die gerade ausgerüstete Waffe oder macht Diebschaden – z. B. alte Waffe noch kämpfen lassen, dann stehlen lassen, dann sofort die neue anlegen.',
       ].map((t) => el('li', { text: t }))),
       el('h2', { text: 'Wie die KI spielt' }),
       P('Kommunikation: Beim Fliehen und beim Startspieler sagt jeder gleichzeitig eine von vier Stufen (will nicht / offen / will / will unbedingt). Danach gibt es bis zu zwei Reaktionsrunden, in denen jeder nachjustieren darf. Mehr darf nicht gesagt werden – kein „Morsen“.'),
       P('Fliehen: Jeder bewertet seine Hand – wie gut passt sie jetzt im Vergleich zu einer Durchschnittshand, wie wertvoll wären die Karten am Ende des Decks, und wie positiv oder negativ ist das, was schon unter dem Deck liegt.'),
-      P('Ausspielen: Wer am Zug ist, plant seine Resthand (Ziel je Karte oder Halten) und spielt den besten Plan an. Der Experte stellt sich dabei mehrere mögliche Partnerhände vor, die zu den Signalen des Partners passen (PIMC), und wählt den Zug, der im Schnitt am besten ist. Jeder sieht nur seine eigenen Karten.'),
+      P('Ausspielen: Wer am Zug ist, plant seine Resthand (Ziel je Karte oder Halten) und spielt den besten Plan an. „Mensch“ und „Experte“ stellen sich dabei mehrere mögliche Partnerhände vor, die zu den Signalen des Partners passen (PIMC), und wählen den Zug, der im Schnitt am besten ist. Jeder sieht nur seine eigenen Karten. Einen Dieb hält die KI gern zurück, bis eine Waffe verbraucht ist oder eine neue kommt.'),
       P('Abhandeln am Rundenende: Für die Karten vor einem Spieler wird die beste Reihenfolge exakt bestimmt (Faust/Waffe/Magie, Anlegen, Heilzeitpunkt, Dieb). In der vorletzten Runde wird zusätzlich geprüft, ob die letzte Hand überlebbar ist.'),
       P('Training: Die rund 60 Gewichte dieser Bewertung wurden per Evolution auf einer Mischung aus Decks (2 und 3 Spieler, mit und ohne Magie und Schmied, verschiedene Leben) mit Millionen Spielen optimiert. ' + tunedNote),
       el('h2', { text: 'Konsole' }),
@@ -4003,6 +4025,11 @@ self.onmessage = function (e) {
   renderResults();
   $('runBtn').addEventListener('click', runSimulation);
   $('stopBtn').addEventListener('click', () => { if (runToken) { runToken.cancelled = true; if (runToken.cancel) runToken.cancel(); } });
+  $('policyCompare').addEventListener('click', (ev) => {
+    ev.preventDefault();
+    document.querySelector('nav.tabs button[data-tab="help"]').click();
+    $('ki-spieler').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   $('swRun').addEventListener('click', runSweep);
   $('swParam').addEventListener('change', () => sweepDefaults($('swParam').value));
   $('swStop').addEventListener('click', () => { if (swToken) { swToken.cancelled = true; if (swToken.cancel) swToken.cancel(); } });
