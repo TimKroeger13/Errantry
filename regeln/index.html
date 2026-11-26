@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Errantry · How to play · Spielregeln</title>
+<meta name="description" content="Errantry: a cooperative card game for 2–3 players, played with two ordinary decks of cards. Ein kooperatives Kartenspiel für 2–3 Personen mit zwei normalen Kartenspielen.">
+<meta name="theme-color" content="#22140a">
+<script>window.__errs=[];addEventListener('error',function(e){__errs.push(e.message)});</script>
+<script src="js/i18n.js"></script>
+<link rel="stylesheet" href="style.css">
+<!--CARDDATA-->
+</head>
+<body>
+
+<button class="lang-switch" type="button">
+  <span class="en" lang="de">🌐 Deutsch</span><span class="de" lang="en">🌐 English</span>
+</button>
+
+<section class="hero" id="top">
+  <div class="wall" aria-hidden="true"></div>
+  <div class="inner">
+    <h1>Errantry</h1>
+    <p class="tagline en">A cooperative card game for 2 or 3 players. Fight your way through a deck full of enemies. Together, and with only four words to talk.</p>
+    <p class="tagline de">Ein kooperatives Kartenspiel für 2 oder 3 Personen. Kämpft euch gemeinsam durch ein Deck voller Gegner. Und reden dürft ihr nur mit vier Wörtern.</p>
+    <p class="by en">by <b>Tim Hochgreve</b> · based on <a href="http://stfj.net/art/2011/Scoundrel.pdf" target="_blank" rel="noopener">Scoundrel</a> by Zach Gage &amp; Kurt Bieg</p>
+    <p class="by de">von <b>Tim Hochgreve</b> · nach <a href="http://stfj.net/art/2011/Scoundrel.pdf" target="_blank" rel="noopener">Scoundrel</a> von Zach Gage &amp; Kurt Bieg</p>
+    <div class="fan" aria-label="Errantry"></div>
+    <div class="cta">
+      <a class="btn" href="#need"><span class="en">Learn to play · 10 min</span><span class="de">Spiel lernen · 10 Min.</span></a>
+    </div>
+  </div>
+</section>
+
+<main class="wrap">
+
+<!-- 1 ------------------------------------------------------------------ -->
+<section class="chapter" id="need">
+  <p class="eyebrow"><span class="en">Chapter 1</span><span class="de">Kapitel 1</span></p>
+  <h2><span class="en">What you need</span><span class="de">Was ihr braucht</span></h2>
+  <div class="needs">
+    <div class="need"><div class="cards-row" data-cards="B B"></div>
+      <p class="en"><b>2 ordinary decks</b> of playing cards, with their jokers.</p>
+      <p class="de"><b>2 normale Kartenspiele</b> (französisches Blatt) mit ihren Jokern.</p></div>
+    <div class="need"><div class="d20 big" aria-hidden="true"><span>20</span></div>
+      <p class="en"><b>1 twenty-sided die per player</b> to count your life. A life-counter app like <i>LifeElk</i> works too.</p>
+      <p class="de"><b>1 zwanzigseitiger Würfel pro Person</b> für eure Leben. Eine Lebenspunkte-App wie <i>LifeElk</i> geht auch.</p></div>
+    <div class="need"><div class="people" aria-hidden="true">👤👤<span class="opt">👤</span></div>
+      <p class="en"><b>2 or 3 players.</b> You win or lose together.</p>
+      <p class="de"><b>2 oder 3 Personen.</b> Ihr gewinnt oder verliert gemeinsam.</p></div>
+  </div>
+
+  <h3><span class="en">Sort the cards</span><span class="de">Karten sortieren</span></h3>
+  <p class="prose en">Every suit has one job: <b>♠ ♣</b> are <b class="kw e">enemies</b>, <b>♥</b> are <b class="kw p">potions</b>, <b>♦</b> are <b class="kw w">weapons</b>. Jokers are <b class="kw t">thieves</b> and only join the expansion. Pick a variant and watch which cards go back into the box:</p>
+  <p class="prose de">Jede Farbe hat eine Aufgabe: <b>♠ ♣</b> sind <b class="kw e">Gegner</b>, <b>♥</b> sind <b class="kw p">Heiltränke</b>, <b>♦</b> sind <b class="kw w">Waffen</b>. Joker sind <b class="kw t">Diebe</b> und kommen nur in der Erweiterung dazu. Wählt eine Variante und seht, welche Karten zurück in die Schachtel gehen:</p>
+  <div class="sorter"></div>
+  <p class="small en">First game? Play <b>Tutorial</b>.</p>
+  <p class="small de">Erstes Spiel? Spielt das <b>Tutorial</b>.</p>
+</section>
+
+<!-- 2 ------------------------------------------------------------------ -->
+<section class="chapter" id="cards">
+  <p class="eyebrow"><span class="en">Chapter 2</span><span class="de">Kapitel 2</span></p>
+  <h2><span class="en">The four kinds of cards</span><span class="de">Die vier Kartenarten</span></h2>
+  <p class="prose lead en">Every card is worth its number: <span class="k">J = 11</span>, <span class="k">Q = 12</span>, <span class="k">K = 13</span>, <span class="k">A = 14</span>.</p>
+  <p class="prose lead de">Jede Karte zählt ihren Wert: <span class="k">Bube (J) = 11</span>, <span class="k">Dame (Q) = 12</span>, <span class="k">König (K) = 13</span>, <span class="k">Ass (A) = 14</span>.</p>
+  <div class="kindcols">
+    <div class="kcol bad">
+      <div class="gb bad en"><b>Bad cards</b><span>Must always be resolved.</span></div>
+      <div class="gb bad de"><b>Schlechte Karten</b><span>Müssen immer abgehandelt werden.</span></div>
+      <article class="kind"><div class="stack" data-cards="KS 7C"></div>
+        <div class="en"><h3>Enemies <span class="small">♠ ♣</span></h3><p><b>Deal damage equal to their value.</b> A King hits you for <b>13</b>, unless a <b class="kw w">weapon</b> blocks it.</p></div>
+        <div class="de"><h3>Gegner <span class="small">♠ ♣</span></h3><p><b>Machen so viel Schaden, wie sie wert sind.</b> Ein König trifft dich mit <b>13</b>, außer eine <b class="kw w">Waffe</b> blockt ihn.</p></div></article>
+      <article class="kind"><div class="stack" data-cards="JK* JK"></div>
+        <div class="en"><h3>Thieves <span class="small">Joker · expansion</span></h3><p><b>Steal your weapon</b> or cost you <b>10</b> life.</p></div>
+        <div class="de"><h3>Diebe <span class="small">Joker · Erweiterung</span></h3><p><b>Stehlen deine Waffe</b> oder kosten dich <b>10</b> Leben.</p></div></article>
+    </div>
+    <div class="kcol good">
+      <div class="gb good en"><b>Good cards</b><span>May always be discarded instead.</span></div>
+      <div class="gb good de"><b>Gute Karten</b><span>Dürfen immer stattdessen abgelegt werden.</span></div>
+      <article class="kind"><div class="stack" data-cards="7H 4H"></div>
+        <div class="en"><h3 class="red">Potions <span class="small">♥</span></h3><p><b>Heal you by their value.</b> Only <b>1 potion per round</b>, and never above <b>20</b> life.</p></div>
+        <div class="de"><h3 class="red">Heiltränke <span class="small">♥</span></h3><p><b>Heilen dich um ihren Wert.</b> Nur <b>1 Trank pro Runde</b> und nie über <b>20</b> Leben.</p></div></article>
+      <article class="kind"><div class="stack" data-cards="9D 5D"></div>
+        <div class="en"><h3 class="red">Weapons <span class="small">♦</span></h3><p><b>Block enemies.</b> You only take the damage above the weapon’s value. Weapons <b>wear out</b>.</p></div>
+        <div class="de"><h3 class="red">Waffen <span class="small">♦</span></h3><p><b>Blocken Gegner.</b> Du bekommst nur den Schaden über dem Wert der Waffe. Waffen <b>nutzen sich ab</b>.</p></div></article>
+    </div>
+  </div>
+</section>
+
+<!-- 3 ------------------------------------------------------------------ -->
+<section class="chapter" id="goal">
+  <p class="eyebrow"><span class="en">Chapter 3</span><span class="de">Kapitel 3</span></p>
+  <h2><span class="en">Goal &amp; setup</span><span class="de">Ziel &amp; Aufbau</span></h2>
+  <div class="grid2">
+    <div class="prose en">
+      <div class="rule"><b>You win together</b> when the whole deck is played through and all hands are empty.</div>
+      <div class="rule"><b>You lose together</b> as soon as anyone drops to <b>0</b> life.</div>
+      <ol class="setup">
+        <li><b>Shuffle</b> all cards into one face-down deck.</li>
+        <li><b>Set</b> your die to <b>20</b>.</li>
+        <li><b>Draw</b> your hand: <b>4 cards</b> with 2 players, <b>3 cards</b> with 3 players.</li>
+      </ol>
+      <p><b>Your hand is secret.</b> Never show or name your cards. You may only talk with four words, see <a href="#talk">Talking</a>.</p>
+    </div>
+    <div class="prose de">
+      <div class="rule"><b>Ihr gewinnt gemeinsam</b>, wenn das ganze Deck durchgespielt ist und alle Hände leer sind.</div>
+      <div class="rule"><b>Ihr verliert gemeinsam</b>, sobald jemand auf <b>0</b> Leben fällt.</div>
+      <ol class="setup">
+        <li><b>Mischt</b> alle Karten zu einem verdeckten Deck.</li>
+        <li><b>Stellt</b> eure Würfel auf <b>20</b>.</li>
+        <li><b>Zieht</b> eure Hand: <b>4 Karten</b> zu zweit, <b>3 Karten</b> zu dritt.</li>
+      </ol>
+      <p><b>Deine Hand ist geheim.</b> Zeige oder nenne nie deine Karten. Reden dürft ihr nur mit vier Wörtern, siehe <a href="#talk">Absprache</a>.</p>
+    </div>
+    <div class="sketchbox"></div>
+  </div>
+</section>
+
+<!-- 4 ------------------------------------------------------------------ -->
+<section class="chapter" id="round">
+  <p class="eyebrow"><span class="en">Chapter 4</span><span class="de">Kapitel 4</span></p>
+  <h2><span class="en">A round at a glance</span><span class="de">Eine Runde im Überblick</span></h2>
+  <ol class="steps en">
+    <li><b>Refill</b>Draw back up to 4 cards (3 with 3 players).</li>
+    <li><b>Flee?</b>Before anyone plays, you may agree to flee. <a href="#talk">How</a></li>
+    <li><b>Who starts?</b>Agree on who plays the first card. <a href="#talk">How</a></li>
+    <li><b>Play</b>Clockwise, one card at a time, to any player. <a href="#play">How</a></li>
+    <li><b>Resolve</b>Everyone resolves the cards in front of them, in any order. <a href="#resolve">How</a></li>
+    <li><b>Repeat</b>Next round, until the deck is empty.</li>
+  </ol>
+  <ol class="steps de">
+    <li><b>Nachziehen</b>Zieht wieder auf 4 Karten auf (zu dritt auf 3).</li>
+    <li><b>Fliehen?</b>Bevor jemand spielt, könnt ihr gemeinsam fliehen. <a href="#talk">Wie</a></li>
+    <li><b>Wer beginnt?</b>Einigt euch, wer die erste Karte spielt. <a href="#talk">Wie</a></li>
+    <li><b>Ausspielen</b>Im Uhrzeigersinn, je eine Karte, an eine beliebige Person. <a href="#play">Wie</a></li>
+    <li><b>Abhandeln</b>Alle handeln die Karten vor sich ab, in beliebiger Reihenfolge. <a href="#resolve">Wie</a></li>
+    <li><b>Weiter</b>Nächste Runde, bis das Deck leer ist.</li>
+  </ol>
+</section>
+
+<!-- 5 ------------------------------------------------------------------ -->
+<section class="chapter" id="play">
+  <p class="eyebrow"><span class="en">Chapter 5</span><span class="de">Kapitel 5</span></p>
+  <h2><span class="en">Playing cards</span><span class="de">Karten ausspielen</span></h2>
+  <div class="prose en">
+    <p>Starting with the start player and going clockwise, everyone <b>plays one card</b> face up in front of <b>any player</b>: a partner or yourself. The card stays there until the end of the round.</p>
+    <div class="rule"><b>Play all your cards.</b> Only your <b>last card</b> may stay in your hand for the next round, if you want. You may also play it.<br><b>Exception:</b> in the <b>last hand</b> of the game, everything must be played.</div>
+    <div class="rule"><b>Share out the enemies evenly.</b> An <b class="kw e">enemy</b> (or <b class="kw t">thief</b>) must go to a player who has received the <b>fewest</b> this round. With 2 players: the 1st enemy goes anywhere, the 2nd to the other player, the 3rd anywhere again, and so on.</div>
+  </div>
+  <div class="prose de">
+    <p>Beginnend mit der Startperson und im Uhrzeigersinn <b>spielt</b> jede Person <b>eine Karte</b> offen vor <b>eine beliebige Person</b>: vor jemand anderen oder vor sich selbst. Die Karte bleibt dort bis zum Ende der Runde liegen.</p>
+    <div class="rule"><b>Spiele alle deine Karten aus.</b> Nur deine <b>letzte Karte</b> darf für die nächste Runde auf der Hand bleiben, wenn du willst. Du darfst sie auch ausspielen.<br><b>Ausnahme:</b> In der <b>letzten Hand</b> des Spiels muss alles ausgespielt werden.</div>
+    <div class="rule"><b>Verteilt die Gegner gleichmäßig.</b> Ein <b class="kw e">Gegner</b> (oder <b class="kw t">Dieb</b>) muss zu einer Person, die in dieser Runde die <b>wenigsten</b> bekommen hat. Zu zweit: Der 1. Gegner geht zu irgendwem, der 2. zur anderen Person, der 3. wieder zu irgendwem und so weiter.</div>
+  </div>
+  <div class="deal-scene"></div>
+</section>
+
+<!-- 6 ------------------------------------------------------------------ -->
+<section class="chapter" id="resolve">
+  <p class="eyebrow"><span class="en">Chapter 6</span><span class="de">Kapitel 6</span></p>
+  <h2><span class="en">Resolving your cards</span><span class="de">Karten abhandeln</span></h2>
+  <p class="prose lead en">When all cards are played, everyone resolves the cards in front of them, <b>in any order they choose</b>. The right order wins the game.</p>
+  <p class="prose lead de">Sind alle Karten gespielt, handelt jede Person die Karten vor sich ab, <b>in beliebiger Reihenfolge</b>. Die richtige Reihenfolge gewinnt das Spiel.</p>
+  <div class="grid2">
+    <div class="prose en">
+      <ul class="effects">
+        <li><b class="kw e">Enemy</b> <b>bare-handed:</b> take its full value as damage.</li>
+        <li><b class="kw e">Enemy</b> <b>with your weapon:</b> take only the damage <b>above</b> the weapon. A 12 against an 8 weapon: <b>4</b> damage.</li>
+        <li><b class="kw w">Weapon:</b> <b>equip it</b> or discard it. You hold <b>1 weapon</b> at a time. A new one replaces the old one.</li>
+        <li><b class="kw p">Potion:</b> <b>drink it</b> or discard it. <b>1 per round</b>, never above <b>20</b>.</li>
+      </ul>
+      <div class="rule"><b>Weapons wear out.</b> Put every enemy you block on top of the weapon. From now on it only blocks enemies <b>weaker</b> than the top one.</div>
+    </div>
+    <div class="prose de">
+      <ul class="effects">
+        <li><b class="kw e">Gegner</b> <b>mit Fäusten:</b> Du bekommst seinen vollen Wert als Schaden.</li>
+        <li><b class="kw e">Gegner</b> <b>mit Waffe:</b> Du bekommst nur den Schaden <b>über</b> der Waffe. Eine 12 gegen eine 8er-Waffe: <b>4</b> Schaden.</li>
+        <li><b class="kw w">Waffe:</b> <b>anlegen</b> oder ablegen. Du hast immer nur <b>1 Waffe</b>. Eine neue ersetzt die alte.</li>
+        <li><b class="kw p">Heiltrank:</b> <b>trinken</b> oder ablegen. <b>1 pro Runde</b>, nie über <b>20</b>.</li>
+      </ul>
+      <div class="rule"><b>Waffen nutzen sich ab.</b> Lege jeden geblockten Gegner oben auf die Waffe. Ab jetzt blockt sie nur noch Gegner, die <b>schwächer</b> sind als der oberste.</div>
+    </div>
+    <div class="wear-illu" aria-label="8 ♦ + Q ♠ 9 ♣ 7 ♠">
+      <div class="cards-row stacked" data-cards="8D QS 9C 7S"></div>
+      <p class="small en">This 8 weapon beat a 12, a 9 and a 7. Next it only blocks <b>6 or less</b>.</p>
+      <p class="small de">Diese 8er-Waffe hat eine 12, eine 9 und eine 7 besiegt. Als Nächstes blockt sie nur noch <b>6 oder weniger</b>.</p>
+    </div>
+  </div>
+  <div class="scene-a"></div>
+  <div class="scene-b"></div>
+  <p class="prose small en"><b>Tip:</b> you never <i>have</i> to use your weapon. Taking a small enemy bare-handed can keep the weapon ready for the big ones.</p>
+  <p class="prose small de"><b>Tipp:</b> Du <i>musst</i> deine Waffe nie benutzen. Einen kleinen Gegner mit den Fäusten zu nehmen, hält die Waffe für die großen bereit.</p>
+</section>
+
+<!-- 7 ------------------------------------------------------------------ -->
+<section class="chapter" id="talk">
+  <p class="eyebrow"><span class="en">Chapter 7</span><span class="de">Kapitel 7</span></p>
+  <h2><span class="en">Talking: flee &amp; who starts</span><span class="de">Absprache: Fliehen &amp; wer beginnt</span></h2>
+  <p class="prose lead en">You never show your cards. To agree on something, each player may only say <b>one of four words</b>, and change it as often as they like:</p>
+  <p class="prose lead de">Ihr zeigt nie eure Karten. Um euch zu einigen, darf jede Person nur <b>eines von vier Wörtern</b> sagen und es so oft ändern, wie sie will:</p>
+  <div class="scale en" aria-hidden="true">
+    <div class="lvl"><b>No</b><span>I don’t want to</span></div>
+    <div class="lvl"><b>Open</b><span>either way</span></div>
+    <div class="lvl"><b>Want</b><span>I’d like to</span></div>
+    <div class="lvl hot"><b>Must</b><span>I have to</span></div>
+  </div>
+  <div class="scale de" aria-hidden="true">
+    <div class="lvl"><b>Nein</b><span>will ich nicht</span></div>
+    <div class="lvl"><b>Offen</b><span>ist mir egal</span></div>
+    <div class="lvl"><b>Ja</b><span>wäre ich dafür</span></div>
+    <div class="lvl hot"><b>Unbedingt</b><span>muss ich</span></div>
+  </div>
+  <p class="prose en">You use them twice a round: <b>“Shall we flee?”</b> and <b>“Who starts?”</b> This is how it sounds:</p>
+  <p class="prose de">Ihr braucht sie zweimal pro Runde: <b>„Fliehen wir?“</b> und <b>„Wer beginnt?“</b> So klingt das:</p>
+
+  <div class="convo">
+    <div class="party">
+      <div class="person"><b>Ada</b><div class="cards-row hand-mini" data-cards="KS QC 9S 3H"></div><span class="small en">her secret hand: big enemies</span><span class="small de">ihre geheime Hand: starke Gegner</span></div>
+      <div class="person"><b>Ben</b><div class="cards-row hand-mini" data-cards="8H 9D 7H 4C"></div><span class="small en">his secret hand: potions and a weapon</span><span class="small de">seine geheime Hand: Heiltränke und eine Waffe</span></div>
+    </div>
+    <div class="chat">
+      <div class="msg l"><span class="nm">Ada</span><div class="bubble"><span class="en">Shall we flee? I’d like to. <b class="w">Want</b></span><span class="de">Fliehen wir? Ich wäre dafür. <b class="w">Ja</b></span></div></div>
+      <div class="msg r"><span class="nm">Ben</span><div class="bubble"><span class="en">Hmm, I don’t want to. <b class="w">No</b></span><span class="de">Hm, lieber nicht. <b class="w">Nein</b></span></div><span class="aside en">He doesn’t want to lose his good cards.</span><span class="aside de">Er will seine guten Karten nicht verlieren.</span></div>
+      <div class="msg l"><span class="nm">Ada</span><div class="bubble"><span class="en">I really have to! <b class="w hot">Must</b></span><span class="de">Ich muss unbedingt! <b class="w hot">Unbedingt</b></span></div><span class="aside en">She can’t survive those enemies.</span><span class="aside de">Diese Gegner überlebt sie nicht.</span></div>
+      <div class="msg r"><span class="nm">Ben</span><div class="bubble"><span class="en">Okay, either way then. <b class="w">Open</b></span><span class="de">Na gut, dann ist es mir egal. <b class="w">Offen</b></span></div></div>
+      <div class="msg c"><div class="bubble done"><span class="en">They agree: <b>flee!</b></span><span class="de">Sie sind sich einig: <b>fliehen!</b></span></div></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="prose en">
+      <div class="rule"><b>Fleeing</b>
+        <ul class="tight">
+          <li><b>When:</b> after refilling, before anyone plays a card.</li>
+          <li><b>How:</b> everyone <b>shows</b> their hand. All these cards are <b>shuffled</b> and <b>put under the deck</b>. Nothing is lost, they come back later. Then everyone <b>draws</b> a new hand and the round is played.</li>
+          <li><b>Never</b> two rounds in a row, and no longer once the deck has <b>5 or fewer</b> cards.</li>
+        </ul>
+      </div>
+      <div class="rule"><b>Who starts</b> is decided with the same four words. Starting is strong: you place the first enemy freely.</div>
+    </div>
+    <div class="prose de">
+      <div class="rule"><b>Fliehen</b>
+        <ul class="tight">
+          <li><b>Wann:</b> nach dem Nachziehen, bevor jemand eine Karte spielt.</li>
+          <li><b>Wie:</b> Alle <b>zeigen</b> ihre Hand. Diese Karten werden <b>gemischt</b> und <b>unter das Deck gelegt</b>. Nichts geht verloren, sie kommen später wieder. Dann <b>ziehen</b> alle eine neue Hand und die Runde wird gespielt.</li>
+          <li><b>Nie</b> zwei Runden hintereinander und nicht mehr, sobald das Deck <b>5 oder weniger</b> Karten hat.</li>
+        </ul>
+      </div>
+      <div class="rule"><b>Wer beginnt</b>, entscheidet ihr mit denselben vier Wörtern. Beginnen ist stark: Du legst den ersten Gegner frei hin.</div>
+    </div>
+    <figure class="under" aria-label="↓">
+      <div class="cards-row hand-mini" data-cards="KS QC 9S 3H 8H 9D 7H 4C"></div>
+      <div class="arrow"><span class="en">shuffled ↓ under the deck</span><span class="de">gemischt ↓ unter das Deck</span></div>
+      <div class="deckpile"><div class="cards-row" data-cards="B"></div><div class="cards-row tucked" data-cards="B"></div></div>
+    </figure>
+  </div>
+</section>
+
+<div class="ready">
+  <p class="big"><span class="en">That’s the whole game!</span><span class="de">Das ist das ganze Spiel!</span></p>
+  <p class="en">Grab two decks, sort out the <b>Tutorial</b> cards and play. Everything below is optional.</p>
+  <p class="de">Schnappt euch zwei Kartenspiele, sortiert die <b>Tutorial</b>-Karten heraus und spielt los. Alles Weitere ist freiwillig.</p>
+</div>
+
+<!-- extras ------------------------------------------------------------ -->
+<section class="chapter extras" id="extras">
+  <p class="eyebrow"><span class="en">Extras · optional</span><span class="de">Extras · freiwillig</span></p>
+  <h2><span class="en">Practice puzzles</span><span class="de">Übungsrätsel</span></h2>
+  <p class="prose en">Four little puzzles, like chess problems. Find the order that keeps you alive with the most life.</p>
+  <p class="prose de">Vier kleine Rätsel, wie Schachaufgaben. Findet die Reihenfolge, mit der ihr mit den meisten Leben überlebt.</p>
+  <div class="puzzles"></div>
+</section>
+
+<section class="chapter extras" id="hard">
+  <p class="eyebrow"><span class="en">Extras · expansion</span><span class="de">Extras · Erweiterung</span></p>
+  <h2><span class="en">Expansion: the thieves</span><span class="de">Erweiterung: die Diebe</span></h2>
+  <div class="prose en">
+    <p class="badge-line"><span class="tagx">Expansion</span> Play it once you know the game. It makes Errantry <b>harder</b>.</p>
+    <p><b>Shuffle</b> the <b>4 jokers</b> into the Standard deck. A <b class="kw t">thief</b> is shared out like an <b class="kw e">enemy</b>.</p>
+    <div class="rule"><b>A thief takes your weapon</b>, together with all enemies on it. If you have no weapon, or want to keep it, you lose <b>10</b> life instead.</div>
+  </div>
+  <div class="prose de">
+    <p class="badge-line"><span class="tagx">Erweiterung</span> Spielt sie, wenn ihr das Spiel kennt. Sie macht Errantry <b>schwerer</b>.</p>
+    <p><b>Mischt</b> die <b>4 Joker</b> in das Standard-Deck. Ein <b class="kw t">Dieb</b> wird verteilt wie ein <b class="kw e">Gegner</b>.</p>
+    <div class="rule"><b>Ein Dieb nimmt dir die Waffe</b>, zusammen mit allen Gegnern darauf. Hast du keine Waffe oder willst du sie behalten, verlierst du stattdessen <b>10</b> Leben.</div>
+  </div>
+  <div class="scene-thief"></div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap en">
+    <p><b>Errantry</b>, a game by <b>Tim Hochgreve</b>. Based on <a href="http://stfj.net/art/2011/Scoundrel.pdf" target="_blank" rel="noopener">Scoundrel</a> (2011), the solo card game by Zach Gage and Kurt Bieg.</p>
+    <p>Card images: public-domain (CC0) playing cards from <a href="https://commons.wikimedia.org/wiki/Category:Public_domain_playing_cards" target="_blank" rel="noopener">Wikimedia Commons</a>. Heading font: VTC Goblin Hand by WolfBainX (V.T.C. Vigilante Typeface Corporation), Distro-Ware.</p>
+  </div>
+  <div class="wrap de">
+    <p><b>Errantry</b>, ein Spiel von <b>Tim Hochgreve</b>. Nach <a href="http://stfj.net/art/2011/Scoundrel.pdf" target="_blank" rel="noopener">Scoundrel</a> (2011), dem Solo-Kartenspiel von Zach Gage und Kurt Bieg.</p>
+    <p>Kartenbilder: gemeinfreie (CC0) Spielkarten von <a href="https://commons.wikimedia.org/wiki/Category:Public_domain_playing_cards" target="_blank" rel="noopener">Wikimedia Commons</a>. Überschriften: VTC Goblin Hand von WolfBainX (V.T.C. Vigilante Typeface Corporation), Distro-Ware.</p>
+  </div>
+</footer>
+
+<script src="js/physics.js"></script>
+<script src="js/drag.js"></script>
+<script src="js/deck.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/puzzles.js"></script>
+<script src="js/resolver.js"></script>
+<script src="js/widgets.js"></script>
+<script src="js/page.js"></script>
+</body>
+</html>

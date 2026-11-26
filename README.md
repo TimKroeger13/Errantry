@@ -13,6 +13,14 @@ Simuliert das kooperative Kartenspiel Errantry mit einer trainierten KI, um Deck
 - **Karten** – Grunddeck plus eine eigene Liste „Zusatzkarten nur bei 3 Spielern“.
 - **Spieler-KI** – *Experte* (schließt aus den Flucht-/Startsignalen auf die Partnerhand, stark, ca. 0,4 s je Spiel und Kern) oder *Schnell* (gleiche Bewertung ohne Partnerhand, tausende Spiele pro Sekunde).
 
+## Regelwebseite
+
+`errantry-regeln.html` per Doppelklick öffnen: die Spielregeln zum Weitergeben, Englisch und Deutsch, mit Probier-Szenen und Übungsrätseln (eine einzige Datei, läuft offline).
+
+- Quelltext in `regeln/` (`index.html`, `style.css`, `js/`), danach `node build-regeln.js`.
+- `node --test test/regeln.test.js` gleicht die Regeln der Seite mit der Simulator-Engine ab und prüft die Bestwerte der Rätsel.
+- Kartenbilder: CC0-Spielkarten von Wikimedia Commons. Überschriften: VTC Goblin Hand (Distro-Ware, Lizenz in `regeln/assets/VTCinfo.txt`).
+
 ## Konsole
 
 Jeder Lauf öffnet ein eigenes Fenster mit Fortschrittsbalken und Restzeit, wenn er über `cli/visible.js` gestartet wird:
