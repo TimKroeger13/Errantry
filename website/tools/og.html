@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- Link-preview images (1200 × 630). Render with:
+     node website/tools/og.js   → website/src/og/og-rules.jpg, og-simulator.jpg -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: 'Goblin Hand'; src: url('../src/assets/GoblinHandTim.woff2') format('woff2'); font-weight: 400; }
+  @font-face { font-family: 'Goblin Hand'; src: url('../src/assets/GoblinHandTimBold.woff2') format('woff2'); font-weight: 700; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body { position: relative; background: #22140a; font-family: 'Segoe UI', system-ui, sans-serif; color: #f3e3bf; }
+  .wall { position: absolute; inset: -160px -120px; display: flex; flex-direction: column; gap: 18px; transform: rotate(-8deg); opacity: .36; }
+  .row { display: flex; gap: 18px; }
+  .row img { width: 104px; height: auto; aspect-ratio: 500 / 700; border-radius: 7px; box-shadow: 0 6px 16px rgba(0,0,0,.5); }
+  .row:nth-child(2n) { transform: translateX(-60px); }
+  .shade { position: absolute; inset: 0; background: radial-gradient(ellipse 75% 85% at 32% 50%, rgba(34,20,10,.9), rgba(34,20,10,.55) 70%, rgba(34,20,10,.75)); }
+  .text { position: absolute; left: 64px; top: 0; bottom: 40px; width: 540px; display: flex; flex-direction: column; justify-content: center; }
+  h1 { font-family: 'Goblin Hand', serif; font-weight: 700; color: #f0c36a; font-size: 104px; line-height: .95; text-shadow: 0 6px 30px rgba(0,0,0,.6); }
+  .sub { font-family: 'Goblin Hand', serif; color: #f0c36a; font-size: 36px; margin-top: 4px; }
+  .tag { font-size: 27px; line-height: 1.3; margin-top: 22px; color: #f3e3bf; }
+  .pills { display: flex; gap: 10px; margin-top: 30px; flex-wrap: wrap; }
+  .pill { font-weight: 700; font-size: 19px; padding: 7px 15px; border-radius: 999px; background: #6f3a10; color: #f8e7c2; box-shadow: 0 6px 16px rgba(0,0,0,.35); }
+  .pill.light { background: #f0c36a; color: #1c0d02; }
+  .url { position: absolute; left: 72px; bottom: 34px; font-size: 20px; color: #e2c992; letter-spacing: .02em; }
+  .fan { position: absolute; right: 30px; top: 150px; width: 470px; height: 420px; }
+  .fan img { position: absolute; width: 170px; height: auto; aspect-ratio: 500 / 700; border-radius: 12px; box-shadow: 0 18px 40px rgba(0,0,0,.6); transform-origin: 50% 120%; left: 140px; top: 30px; }
+  .shot { position: absolute; right: 28px; top: 170px; width: 480px; border-radius: 14px; border: 2px solid rgba(243,227,191,.35); box-shadow: 0 24px 60px rgba(0,0,0,.65); transform: rotate(2deg); }
+  body.sim .fan { display: none; }
+  body:not(.sim) .shot { display: none; }
+</style>
+</head>
+<body>
+<div class="wall"></div>
+<div class="shade"></div>
+<div class="text">
+  <h1>Errantry</h1>
+  <div class="sub" id="sub"></div>
+  <p class="tag" id="tag"></p>
+  <div class="pills" id="pills"></div>
+</div>
+<div class="fan"></div>
+<img class="shot" src="../../docs/images/simulator-charts.webp" alt="">
+<div class="url" id="url"></div>
+<script>
+  const C = (f) => '../src/assets/cards/' + f + '.webp';
+  const sim = location.hash === '#sim';
+  document.body.classList.toggle('sim', sim);
+  // card wall
+  const all = [];
+  for (const s of ['Spades', 'Hearts', 'Clubs', 'Diamonds']) for (const r of [2,3,4,5,6,7,8,9,10,'Jack','Queen','King','Ace']) all.push(r + '_of_' + s);
+  let seed = 11; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const wall = document.querySelector('.wall');
+  for (let r = 0; r < 6; r++) { const row = document.createElement('div'); row.className = 'row'; for (let i = 0; i < 13; i++) { const im = new Image(); im.src = C(all[Math.floor(rnd() * all.length)]); row.appendChild(im); } wall.appendChild(row); }
+  // fan of cards
+  const fan = document.querySelector('.fan');
+  ['King_of_Spades', '9_of_Diamonds', 'Red_Joker', '7_of_Hearts', 'Queen_of_Clubs'].forEach((f, i) => {
+    const im = new Image(); im.src = C(f); const k = i - 2;
+    im.style.transform = `translateX(${k * 56}px) rotate(${k * 10}deg)`; im.style.zIndex = i; fan.appendChild(im);
+  });
+  const set = (id, html) => { document.getElementById(id).innerHTML = html; };
+  if (sim) {
+    set('sub', 'Balancing simulator');
+    set('tag', 'Thousands of AI games per second to balance decks, life and player count.');
+    set('pills', '<span class="pill light">Win rates</span><span class="pill">Sweeps</span><span class="pill">Trained AI</span>');
+    set('url', 'tkroeger.com/errantry-simulator');
+  } else {
+    set('sub', 'How to play');
+    set('tag', 'A cooperative card game for 2–3 players.<br>Two ordinary decks. Only four words to talk.');
+    set('pills', '<span class="pill light">Learn in 10 min</span><span class="pill">Try it in the browser</span><span class="pill">EN · DE</span>');
+    set('url', 'tkroeger.com/errantry');
+  }
+</script>
+</body>
+</html>

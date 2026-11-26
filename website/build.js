@@ -31,4 +31,6 @@ html = html.replace(/<script src="(js\/[^"]+)"><\/script>/g, (m, p) => {
 if (/(src|href)="(js|assets)\//.test(html)) throw new Error('an asset was not inlined');
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(__dirname, 'dist', 'index.html'), html);
+// link-preview images (rendered by tools/og.js) are served next to the page
+for (const f of fs.readdirSync(path.join(src, 'og'))) fs.copyFileSync(path.join(src, 'og', f), path.join(__dirname, 'dist', f));
 console.log('website/dist/index.html written (' + Math.round(html.length / 1024) + ' KB, ' + Object.keys(cards).length + ' cards)');
