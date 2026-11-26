@@ -38,7 +38,7 @@
     title: T('Old weapon first', 'Erst die alte Waffe'), player: { hp: 20, weapon: { v: 4, kills: [] } }, cards: ['9D', '4S', '2C', 'QS'],
     goal: T('Your <b>4 weapon</b> is still fresh, and a <b>9</b> is coming. Don’t waste either of them.', 'Deine <b>4er-Waffe</b> ist noch frisch, und eine <b>9</b> kommt dazu. Verschwende keine von beiden.'),
     finishText: (p, best) => (p.hp < best.hp ? null : R.weaponReach(p.weapon) >= R.weaponReach(best.weapon)
-      ? T('<span class="big">Perfect!</span> ' + p.hp + ' life and ' + reach(p.weapon) + ': the 4 took the small ones, the 9 the Queen.', '<span class="big">Perfekt!</span> ' + p.hp + ' Leben und eine 9er-Waffe, die noch bis 11 blockt: Die 4 hat die Kleinen genommen, die 9 die Dame.')
+      ? T('<span class="big">Masterfully done!</span> ' + p.hp + ' life and ' + reach(p.weapon) + ': the 4 took the small ones, the 9 the Queen.', '<span class="big">Meisterhaft!</span> ' + p.hp + ' Leben und eine 9er-Waffe, die noch bis 11 blockt: Die 4 hat die Kleinen genommen, die 9 die Dame.')
       : T('Good: ' + p.hp + ' life is the best possible. But you end with ' + reach(p.weapon) + '. Let the old 4 take the 4 and the 2 first, then switch: your 9 will still block up to 11.', 'Gut: ' + p.hp + ' Leben sind das Beste. Aber du endest mit ' + reach(p.weapon) + '. Lass zuerst die alte 4 die 4 und die 2 nehmen, dann wechsle: Deine 9 blockt dann noch bis 11.')),
   });
   scene('.scene-thief', {

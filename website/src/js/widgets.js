@@ -239,7 +239,7 @@
       lay(false);
       counts();
       if (hand.length === 1) msg += T('<br>One card left: you may <b>keep</b> it or play it.', '<br>Noch eine Karte: Du darfst sie <b>behalten</b> oder ausspielen.');
-      if (!hand.length) { done = true; msg = T('All played! At the end of the round everyone resolves the cards in front of them.', 'Alles gespielt! Am Ende der Runde handeln alle die Karten vor sich ab.'); }
+      if (!hand.length) { done = true; msg = T('All cards are played. At the end of the round everyone resolves the cards in front of them.', 'Alle Karten sind gespielt. Am Ende der Runde handeln alle die Karten vor sich ab.'); }
       say(msg, 'good', hand.length <= 1);
     }
     function build(np, snap) {
@@ -279,7 +279,7 @@
       if (b.dataset.p) build(+b.dataset.p);
       if (b.dataset.a === 'reset') { const order = SET[p].hand; const all = t.items.filter((it) => it.data.card); const snap = order.map((c) => { const it = all.find((x) => D.short(x.data.card) === D.short(D.parse(c))); return it && { x: it.body.x, y: it.body.y }; }); build(p, snap); }
       if (b.dataset.a === 'keep') {
-        if (hand.length === 1) { done = true; say(T('You keep it. It stays in your hand for the next round. Handy if you hope for a better moment. Not allowed in the last hand of the game.', 'Du behältst sie. Sie bleibt für die nächste Runde auf deiner Hand. Praktisch, wenn du auf einen besseren Moment hoffst. In der letzten Hand des Spiels nicht erlaubt.'), 'good'); t.hop(hand[0]); }
+        if (hand.length === 1) { done = true; say(T('You keep it. It stays in your hand for the next round. Wise if you wait for a better moment. Not allowed in the last hand of the game.', 'Du behältst sie. Sie bleibt für die nächste Runde auf deiner Hand. Klug, wenn du auf einen besseren Moment wartest. In der letzten Hand des Spiels nicht erlaubt.'), 'good'); t.hop(hand[0]); }
         else say(T('You may only keep your <b>last</b> card. Play the others first.', 'Du darfst nur deine <b>letzte</b> Karte behalten. Spiel zuerst die anderen aus.'), 'bad');
       }
     });
@@ -368,7 +368,7 @@
       label(T('your weapon', 'deine Waffe'), 'weap-l');
       layout(true);
       if (snap) hand.forEach((it, k) => { const o = snap[k]; if (!o) return; const hx = it.home.x, hy = it.home.y; t.place(it, o.x, o.y); t.moveTo(it, hx, hy, { fly: true, delay: k * 0.07, speed: 1300 }); });
-      if (snap) root.ErrSay(board, T('Back to the start. Fight or flee?', 'Zurück zum Anfang. Kämpfen oder fliehen?'), '', false);
+      if (snap) root.ErrSay(board, T('Back to the start. Will you fight or flee?', 'Zurück zum Anfang. Kämpfen oder fliehen?'), '', false);
     }
     function layout(instant) {
       if (!hand.length) return;

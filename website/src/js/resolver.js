@@ -342,7 +342,7 @@
       if (!animate) return;
       if (r.dead) {
         this.over = true;
-        this.showResult(T(`<b class="big">Down to ${this.player.hp} life. Everyone loses.</b><br>${r.msg} Try another order.`, `<b class="big">${this.player.hp} Leben. Alle verlieren.</b><br>${r.msg} Probier eine andere Reihenfolge.`), 'bad');
+        this.showResult(T(`<b class="big">Fallen at ${this.player.hp} life.</b><br>${r.msg} Here the journey ends for all. Try another order.`, `<b class="big">Gefallen bei ${this.player.hp} Leben.</b><br>${r.msg} Hier endet die Fahrt für alle. Versuch eine andere Reihenfolge.`), 'bad');
         return;
       }
       if (this.actions.length === this.cards.length) this.finish();
@@ -361,9 +361,9 @@
       let txt, cls = '', perfect = false;
       if (hp >= best) {
         perfect = true; cls = 'good';
-        txt = T(`<b class="big">Perfect!</b><br>${hp} life. The best possible!`, `<b class="big">Perfekt!</b><br>${hp} Leben. Besser geht es nicht!`);
+        txt = T(`<b class="big">Masterfully done!</b><br>${hp} life. None could do better.`, `<b class="big">Meisterhaft!</b><br>${hp} Leben. Besser geht es nicht.`);
         if (cfg.explain) txt += ' ' + cfg.explain;
-      } else txt = T(`<b class="big">${hp} life.</b><br>Not bad. But <b>${best}</b> is possible. Can you find it?`, `<b class="big">${hp} Leben.</b><br>Nicht schlecht. Aber <b>${best}</b> sind möglich. Findest du den Weg?`);
+      } else txt = T(`<b class="big">${hp} life.</b><br>Well fought. Yet <b>${best}</b> are possible. Can you find the way?`, `<b class="big">${hp} Leben.</b><br>Gut gekämpft. Doch <b>${best}</b> wären möglich. Findest du den Weg?`);
       this.showResult(txt, cls, perfect);
       if (cfg.onDone) cfg.onDone({ hp, best, perfect });
     }
@@ -408,7 +408,7 @@
       const snap = this.snapshot();
       this.build();
       this.flyFrom(snap);
-      this.say(T('All cards are back. Your move!', 'Alle Karten sind zurück. Du bist dran!'));
+      this.say(T('All cards are back in place. Try again.', 'Alle Karten liegen wieder bereit. Versuch es erneut.'));
     }
 
     remaining() { return this.items.filter((it) => it.where === 'pile'); }

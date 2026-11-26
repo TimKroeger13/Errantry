@@ -54,7 +54,7 @@
       case 'thief':
         if (a.opt === 'steal') {
           if (!p.weapon) return fail(T('You have no weapon the thief could take.', 'Du hast keine Waffe, die der Dieb nehmen könnte.'));
-          msg = T('The thief runs off with your ' + p.weapon.v + ' weapon.', 'Der Dieb rennt mit deiner ' + p.weapon.v + 'er-Waffe davon.');
+          msg = T('The thief slips away with your ' + p.weapon.v + ' weapon.', 'Der Dieb macht sich mit deiner ' + p.weapon.v + 'er-Waffe davon.');
           p.weapon = null;
         } else if (a.opt === 'hurt') {
           dmg = THIEF_DAMAGE;
