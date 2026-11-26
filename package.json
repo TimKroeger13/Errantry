@@ -1,0 +1,11 @@
+{
+  "name": "errantry",
+  "private": true,
+  "description": "Errantry: a cooperative card game for 2–3 players – rules website and balancing simulator",
+  "scripts": {
+    "build": "node simulation/build.js && node website/build.js",
+    "build:website": "node website/build.js",
+    "build:simulation": "node simulation/build.js",
+    "test": "node --test simulation/test/rules.test.js website/test/website.test.js"
+  }
+}

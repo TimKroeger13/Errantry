@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#22140a">
 <script>window.__errs=[];addEventListener('error',function(e){__errs.push(e.message)});</script>
 <script>
-// ---- regeln/js/i18n.js
+// ---- website/src/js/i18n.js
 // Language: English or German. Static text sits twice in the page (class "en" / "de"), CSS shows one.
 // Scripts use T(english, german). The choice is remembered; the first visit follows the browser language.
 (function (root) {
@@ -911,7 +911,7 @@ html.de .sum-stack.box::after { content: 'Schachtel'; font-size: .6rem; letter-s
 </footer>
 
 <script>
-// ---- regeln/js/physics.js
+// ---- website/src/js/physics.js
 // Cards with weight – ported from CardCrafter (cardPhysics.ts + cardWeight.ts).
 // spring: a card hangs on a damped spring towards where it should be, overshoots a little and settles.
 //         The same spring carries it behind the pointer while dragging and back into place when let go.
@@ -998,7 +998,7 @@ html.de .sum-stack.box::after { content: 'Schachtel'; font-size: .6rem; letter-s
 
 </script>
 <script>
-// ---- regeln/js/drag.js
+// ---- website/src/js/drag.js
 // A table of cards that live: pointer drag with spring physics, flights, hover tilt + shine.
 // Positions are only ever set through transform; the container rect is measured on grab and on scroll,
 // never per frame.
@@ -1202,7 +1202,7 @@ html.de .sum-stack.box::after { content: 'Schachtel'; font-size: .6rem; letter-s
 
 </script>
 <script>
-// ---- regeln/js/deck.js
+// ---- website/src/js/deck.js
 // Card faces: the CC0 "Public domain playing cards" set from Wikimedia Commons (2026).
 // In the built page the SVGs are inlined (window.ERR_CARD_DATA); in the source folder they load from assets/cards/.
 (function (root) {
@@ -1272,7 +1272,7 @@ html.de .sum-stack.box::after { content: 'Schachtel'; font-size: .6rem; letter-s
 
 </script>
 <script>
-// ---- regeln/js/rules.js
+// ---- website/src/js/rules.js
 // Errantry rules for the website: resolving the cards in front of one player, plus a solver for the
 // order puzzles. Pure functions, no DOM. Mirrors src/engine.js (applyResolution) – test/regeln.test.js
 // checks both against each other.
@@ -1417,7 +1417,7 @@ html.de .sum-stack.box::after { content: 'Schachtel'; font-size: .6rem; letter-s
 
 </script>
 <script>
-// ---- regeln/js/puzzles.js
+// ---- website/src/js/puzzles.js
 // Order puzzles – like chess problems: resolve the cards in front of you in the best order.
 // `best` is the best life total (checked by test/regeln.test.js against the solver and the engine).
 (function (root, factory) {
@@ -1458,7 +1458,7 @@ html.de .sum-stack.box::after { content: 'Schachtel'; font-size: .6rem; letter-s
 
 </script>
 <script>
-// ---- regeln/js/resolver.js
+// ---- website/src/js/resolver.js
 // "Resolve the cards in front of you" – the interactive scene used for the rule examples, the practice
 // puzzles and the thief example. Drag a card onto You / Weapon / Discard, or tap it and pick an action.
 // Notes pop up as bubbles on the table; the result appears as a card in the middle of the table.
@@ -1914,7 +1914,7 @@ html.de .sum-stack.box::after { content: 'Schachtel'; font-size: .6rem; letter-s
 
 </script>
 <script>
-// ---- regeln/js/widgets.js
+// ---- website/src/js/widgets.js
 // The illustrated, interactive pieces of the rules page (besides the resolver scenes).
 (function (root) {
   'use strict';
@@ -2386,7 +2386,7 @@ html.de .sum-stack.box::after { content: 'Schachtel'; font-size: .6rem; letter-s
 
 </script>
 <script>
-// ---- regeln/js/page.js
+// ---- website/src/js/page.js
 // Wires the page together: menu, chapter highlighting, round steps and all interactive pieces.
 (function (root) {
   'use strict';

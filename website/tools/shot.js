@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Screenshots of the rules site in a real (headless) Edge via the DevTools protocol, after the
 // animations had real time to run. Optional: a script to run in the page before the shot.
-//   node regeln/tools/shot.js <file.html> <out.png> [width] [height] [waitMs] [--mobile] [--eval "js"] [--full]
+//   node website/tools/shot.js <file.html> <out.png> [width] [height] [waitMs] [--mobile] [--eval "js"] [--full]
 'use strict';
 const { spawn } = require('child_process');
 const path = require('path');

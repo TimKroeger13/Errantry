@@ -1,11 +1,11 @@
 'use strict';
-// Cross-checks the website's rules module (regeln/js/rules.js) against the simulator engine.
+// Cross-checks the website's rules module (website/src/js/rules.js) against the simulator engine.
 const test = require('node:test');
 const assert = require('node:assert');
-const config = require('../src/config');
-const engine = require('../src/engine');
-const ai = require('../src/ai');
-const R = require('../regeln/js/rules');
+const config = require('../../simulation/src/config');
+const engine = require('../../simulation/src/engine');
+const ai = require('../../simulation/src/ai');
+const R = require('../src/js/rules');
 const { T } = config;
 
 const T_OF = { S: T.ENEMY, C: T.ENEMY, J: T.THIEF, H: T.HEAL, D: T.WEAPON };
@@ -113,7 +113,7 @@ test('the weapon example from the notes: W8 vs 12, 9, 7, 7', () => {
 });
 
 test('every order puzzle is solvable, and its stated best is right', () => {
-  const puzzles = require('../regeln/js/puzzles');
+  const puzzles = require('../src/js/puzzles');
   const P = (c) => (c === 'JK' ? { s: 'J', r: 0 } : { s: c.slice(-1), r: { J: 11, Q: 12, K: 13, A: 14 }[c.slice(0, -1)] || +c.slice(0, -1) });
   for (const z of puzzles.filter((x) => x.type !== 'flee')) {
     const p = { hp: z.hp, maxHp: 20, weapon: z.weapon ? { v: z.weapon.v, kills: z.weapon.kills.slice() } : null };
